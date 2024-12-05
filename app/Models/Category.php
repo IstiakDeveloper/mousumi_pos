@@ -50,4 +50,9 @@ class Category extends Model
 
         return $slug;
     }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', true);
+    }
 }
