@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProductStockController;
 use App\Http\Controllers\Admin\UnitController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -29,8 +30,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('units', UnitController::class);
     Route::resource('brands', BrandController::class);
     Route::resource('products', ProductController::class);
-
-});
+    Route::resource('product-stocks', ProductStockController::class)
+        ->only(['index', 'create', 'store']);
+    });
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -43,4 +45,4 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::get('/users', [DashboardController::class, 'users'])->name('admin.users');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

@@ -18,7 +18,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $products = Product::query()
-            ->with(['category', 'brand', 'unit'])
+            ->with(['category', 'brand', 'unit', 'stocks', 'images']) // Include stocks relationship
             ->when($request->search, function($query, $search) {
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('sku', 'like', "%{$search}%")
@@ -42,6 +42,7 @@ class ProductController extends Controller
             'filters' => $request->only(['search', 'category_id', 'brand_id', 'status'])
         ]);
     }
+
 
     public function create()
     {
