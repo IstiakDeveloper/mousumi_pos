@@ -1,11 +1,16 @@
 
 <?php
 
+use App\Http\Controllers\Admin\BankAccountController;
+use App\Http\Controllers\Admin\BankTransactionController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\PosController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductStockController;
+use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\UnitController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -32,7 +37,17 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('products', ProductController::class);
     Route::resource('product-stocks', ProductStockController::class)
         ->only(['index', 'create', 'store']);
-    });
+    Route::resource('customers', CustomerController::class);
+    Route::resource('bank-accounts', BankAccountController::class);
+    Route::resource('bank-transactions', BankTransactionController::class);
+    Route::resource('sales', SaleController::class);
+
+    Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+    Route::get('/pos/search-products', [PosController::class, 'searchProducts'])->name('pos.search-products');
+    Route::post('/pos/store', [PosController::class, 'store'])->name('pos.store');
+    Route::get('/sales/{sale}/print', [PosController::class, 'printReceipt'])->name('sales.print');
+});
+
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

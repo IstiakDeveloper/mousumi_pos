@@ -28,6 +28,10 @@ class SalePayment extends Model
         return $this->belongsTo(Sale::class);
     }
 
+    public function bankAccount()
+    {
+        return $this->belongsTo(BankAccount::class);
+    }
 
     public function createdBy()
     {

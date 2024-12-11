@@ -6,269 +6,292 @@
                 <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Add New Product</h2>
+                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Create Product</h2>
                             <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                Create a new product with complete details
+                                Add a new product to your inventory
                             </p>
                         </div>
                         <Link :href="route('admin.products.index')"
-                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
-                            <ArrowLeftIcon class="h-5 w-5 mr-2" />
-                            Back to Products
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-offset-gray-800">
+                        <ArrowLeftIcon class="h-5 w-5 mr-2" />
+                        Back to Products
                         </Link>
                     </div>
                 </div>
             </header>
 
             <!-- Main Content -->
-            <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
-                    <form @submit.prevent="submit" class="space-y-8 divide-y divide-gray-200 dark:divide-gray-700">
-                        <!-- Product Information -->
-                        <div class="space-y-8 divide-y divide-gray-200 dark:divide-gray-700 sm:space-y-5 p-8">
-                            <div>
-                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-                                    Basic Information
-                                </h3>
-                                <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                                    <!-- Name -->
-                                    <div class="sm:col-span-4">
-                                        <InputLabel for="name" value="Product Name" required />
-                                        <TextInput
-                                            id="name"
-                                            v-model="form.name"
-                                            type="text"
-                                            class="mt-1 block w-full"
-                                            required
-                                        />
-                                        <InputError :message="form.errors.name" class="mt-2" />
+            <main class="py-8">
+                <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    <form @submit.prevent="submit" class="space-y-8">
+                        <!-- Basic Information Card -->
+                        <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+                            <div class="px-4 py-5 sm:p-6">
+                                <div class="md:grid md:grid-cols-3 md:gap-6">
+                                    <div class="md:col-span-1">
+                                        <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white">
+                                            Basic Information
+                                        </h3>
+                                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                            Product identification and categorization details.
+                                        </p>
                                     </div>
+                                    <div class="mt-5 md:mt-0 md:col-span-2 space-y-6">
+                                        <!-- Name & SKU -->
+                                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-6">
+                                            <div class="sm:col-span-4">
+                                                <InputLabel for="name" value="Product Name" required />
+                                                <TextInput id="name" v-model="form.name" type="text"
+                                                    class="mt-1 block w-full" placeholder="Enter product name"
+                                                    required />
+                                                <InputError :message="form.errors.name" class="mt-2" />
+                                            </div>
 
-                                    <!-- SKU -->
-                                    <div class="sm:col-span-2">
-                                        <InputLabel for="sku" value="SKU" required />
-                                        <TextInput
-                                            id="sku"
-                                            v-model="form.sku"
-                                            type="text"
-                                            class="mt-1 block w-full"
-                                            required
-                                        />
-                                        <InputError :message="form.errors.sku" class="mt-2" />
-                                    </div>
+                                            <div class="sm:col-span-2">
+                                                <InputLabel for="sku" value="SKU" required />
+                                                <div class="mt-1 flex rounded-md shadow-sm">
+                                                    <TextInput id="sku" v-model="form.sku" type="text"
+                                                        class="block w-full" :placeholder="skuPlaceholder" required />
+                                                    <button type="button"
+                                                        class="relative -ml-px inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-gray-50 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
+                                                        @click="generateSku">
+                                                        <ArrowPathIcon class="h-5 w-5" />
+                                                    </button>
+                                                </div>
+                                                <InputError :message="form.errors.sku" class="mt-2" />
+                                            </div>
 
-                                    <!-- Barcode -->
-                                    <div class="sm:col-span-3">
-                                        <InputLabel for="barcode" value="Barcode" />
-                                        <TextInput
-                                            id="barcode"
-                                            v-model="form.barcode"
-                                            type="text"
-                                            class="mt-1 block w-full"
-                                        />
-                                        <InputError :message="form.errors.barcode" class="mt-2" />
-                                    </div>
+                                            <!-- Category & Brand -->
+                                            <div class="sm:col-span-3">
+                                                <InputLabel for="category_id" value="Category" required />
+                                                <select id="category_id" v-model="form.category_id"
+                                                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"
+                                                    required>
+                                                    <option value="">Select Category</option>
+                                                    <option v-for="category in categories" :key="category.id"
+                                                        :value="category.id">
+                                                        {{ category.name }}
+                                                    </option>
+                                                </select>
+                                                <InputError :message="form.errors.category_id" class="mt-2" />
+                                            </div>
 
-                                    <!-- Category -->
-                                    <div class="sm:col-span-3">
-                                        <InputLabel for="category_id" value="Category" required />
-                                        <select
-                                            id="category_id"
-                                            v-model="form.category_id"
-                                            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                                            required
-                                        >
-                                            <option value="">Select Category</option>
-                                            <option v-for="category in categories" :key="category.id" :value="category.id">
-                                                {{ category.name }}
-                                            </option>
-                                        </select>
-                                        <InputError :message="form.errors.category_id" class="mt-2" />
-                                    </div>
+                                            <div class="sm:col-span-3">
+                                                <InputLabel for="brand_id" value="Brand" />
+                                                <select id="brand_id" v-model="form.brand_id"
+                                                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300">
+                                                    <option value="">Select Brand</option>
+                                                    <option v-for="brand in brands" :key="brand.id" :value="brand.id">
+                                                        {{ brand.name }}
+                                                    </option>
+                                                </select>
+                                                <InputError :message="form.errors.brand_id" class="mt-2" />
+                                            </div>
 
-                                    <!-- Brand -->
-                                    <div class="sm:col-span-3">
-                                        <InputLabel for="brand_id" value="Brand" />
-                                        <select
-                                            id="brand_id"
-                                            v-model="form.brand_id"
-                                            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                                        >
-                                            <option value="">Select Brand</option>
-                                            <option v-for="brand in brands" :key="brand.id" :value="brand.id">
-                                                {{ brand.name }}
-                                            </option>
-                                        </select>
-                                        <InputError :message="form.errors.brand_id" class="mt-2" />
-                                    </div>
+                                            <!-- Barcode & Unit -->
+                                            <div class="sm:col-span-3">
+                                                <InputLabel for="barcode" value="Barcode" />
+                                                <TextInput id="barcode" v-model="form.barcode" type="text"
+                                                    class="mt-1 block w-full" placeholder="Enter barcode" />
+                                                <InputError :message="form.errors.barcode" class="mt-2" />
+                                            </div>
 
-                                    <!-- Unit -->
-                                    <div class="sm:col-span-3">
-                                        <InputLabel for="unit_id" value="Unit" required />
-                                        <select
-                                            id="unit_id"
-                                            v-model="form.unit_id"
-                                            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                                            required
-                                        >
-                                            <option value="">Select Unit</option>
-                                            <option v-for="unit in units" :key="unit.id" :value="unit.id">
-                                                {{ unit.name }} ({{ unit.short_name }})
-                                            </option>
-                                        </select>
-                                        <InputError :message="form.errors.unit_id" class="mt-2" />
+                                            <div class="sm:col-span-3">
+                                                <InputLabel for="unit_id" value="Unit" required />
+                                                <select id="unit_id" v-model="form.unit_id"
+                                                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"
+                                                    required>
+                                                    <option value="">Select Unit</option>
+                                                    <option v-for="unit in units" :key="unit.id" :value="unit.id">
+                                                        {{ unit.name }} ({{ unit.short_name }})
+                                                    </option>
+                                                </select>
+                                                <InputError :message="form.errors.unit_id" class="mt-2" />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Pricing Information -->
-                            <div class="pt-8 sm:pt-5">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-                                    Pricing Information
-                                </h3>
-                                <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                                    <!-- Cost Price -->
-                                    <div class="sm:col-span-2">
-                                        <InputLabel for="cost_price" value="Cost Price" required />
-                                        <div class="mt-1 relative rounded-md shadow-sm">
-                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <span class="text-gray-500 sm:text-sm">$</span>
-                                            </div>
-                                            <TextInput
-                                                id="cost_price"
-                                                v-model="form.cost_price"
-                                                type="number"
-                                                step="0.01"
-                                                class="pl-7 block w-full"
-                                                required
-                                            />
-                                        </div>
-                                        <InputError :message="form.errors.cost_price" class="mt-2" />
+                        <!-- Pricing Card -->
+                        <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+                            <div class="px-4 py-5 sm:p-6">
+                                <div class="md:grid md:grid-cols-3 md:gap-6">
+                                    <div class="md:col-span-1">
+                                        <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white">
+                                            Pricing Details
+                                        </h3>
+                                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                            Set your product's pricing and inventory information.
+                                        </p>
                                     </div>
-
-                                    <!-- Selling Price -->
-                                    <div class="sm:col-span-2">
-                                        <InputLabel for="selling_price" value="Selling Price" required />
-                                        <div class="mt-1 relative rounded-md shadow-sm">
-                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <span class="text-gray-500 sm:text-sm">$</span>
+                                    <div class="mt-5 md:mt-0 md:col-span-2">
+                                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                                            <div>
+                                                <InputLabel for="cost_price" value="Cost Price" required />
+                                                <PriceInput v-model="form.cost_price" id="cost_price" placeholder="0.00"
+                                                    required />
+                                                <InputError :message="form.errors.cost_price" class="mt-2" />
                                             </div>
-                                            <TextInput
-                                                id="selling_price"
-                                                v-model="form.selling_price"
-                                                type="number"
-                                                step="0.01"
-                                                class="pl-7 block w-full"
-                                                required
-                                            />
-                                        </div>
-                                        <InputError :message="form.errors.selling_price" class="mt-2" />
-                                    </div>
 
-                                    <!-- Alert Quantity -->
-                                    <div class="sm:col-span-2">
-                                        <InputLabel for="alert_quantity" value="Alert Quantity" required />
-                                        <TextInput
-                                            id="alert_quantity"
-                                            v-model="form.alert_quantity"
-                                            type="number"
-                                            min="0"
-                                            class="mt-1 block w-full"
-                                            required
-                                        />
-                                        <InputError :message="form.errors.alert_quantity" class="mt-2" />
+                                            <div>
+                                                <InputLabel for="selling_price" value="Selling Price" required />
+                                                <div class="relative mt-1">
+                                                    <div
+                                                        class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                                        <span
+                                                            class="text-gray-500 sm:text-sm dark:text-gray-400">৳</span>
+                                                    </div>
+                                                    <input id="selling_price" v-model="form.selling_price" type="number"
+                                                        step="0.01" min="0" required placeholder="0.00"
+                                                        @blur="validateSellingPrice"
+                                                        class="block w-full rounded-md border-gray-300 pl-7 pr-12 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"
+                                                        :class="{ 'border-red-500': sellingPriceError }">
+                                                    <div
+                                                        class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                                        <span
+                                                            class="text-gray-500 sm:text-sm dark:text-gray-400">BDT</span>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-1">
+                                                    <p v-if="profitMargin && !sellingPriceError"
+                                                        class="text-sm text-green-600 dark:text-green-400">
+                                                        Margin: {{ profitMargin }}%
+                                                    </p>
+                                                    <p v-if="sellingPriceError"
+                                                        class="text-sm text-red-600 dark:text-red-400">
+                                                        {{ sellingPriceError }}
+                                                    </p>
+                                                </div>
+                                                <InputError :message="form.errors.selling_price" class="mt-2" />
+                                            </div>
+
+                                            <div>
+                                                <InputLabel for="alert_quantity" value="Alert Quantity" required />
+                                                <TextInput id="alert_quantity" v-model="form.alert_quantity"
+                                                    type="number" min="0" class="mt-1 block w-full" required />
+                                                <InputError :message="form.errors.alert_quantity" class="mt-2" />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Description and Specifications -->
-                            <div class="pt-8 sm:pt-5">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-                                    Description & Specifications
-                                </h3>
-                                <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4">
-                                    <!-- Description -->
-                                    <div>
-                                        <InputLabel for="description" value="Description" />
-                                        <textarea
-                                            id="description"
-                                            v-model="form.description"
-                                            rows="3"
-                                            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                        />
-                                        <InputError :message="form.errors.description" class="mt-2" />
+                        <!-- Additional Information -->
+                        <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+                            <div class="px-4 py-5 sm:p-6">
+                                <div class="md:grid md:grid-cols-3 md:gap-6">
+                                    <div class="md:col-span-1">
+                                        <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white">
+                                            Additional Information
+                                        </h3>
+                                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                            Add description and specifications for your product.
+                                        </p>
                                     </div>
+                                    <div class="mt-5 md:mt-0 md:col-span-2 space-y-6">
+                                        <div>
+                                            <InputLabel for="description" value="Description" />
+                                            <textarea id="description" v-model="form.description" rows="4"
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"
+                                                placeholder="Enter product description"></textarea>
+                                        </div>
 
-                                    <!-- Specifications -->
-                                    <div>
-                                        <InputLabel value="Specifications" />
-                                        <div class="mt-2 space-y-4">
-                                            <div v-for="(spec, index) in specifications" :key="index"
-                                                class="flex items-center gap-4">
-                                                <TextInput
-                                                    v-model="spec.key"
-                                                    type="text"
-                                                    class="w-1/3"
-                                                    placeholder="Key"
-                                                />
-                                                <TextInput
-                                                    v-model="spec.value"
-                                                    type="text"
-                                                    class="w-1/2"
-                                                    placeholder="Value"
-                                                />
-                                                <button type="button" @click="removeSpecification(index)"
-                                                    class="text-red-600 hover:text-red-900">
-                                                    <TrashIcon class="h-5 w-5" />
+                                        <!-- Specifications -->
+                                        <div class="space-y-4">
+                                            <div class="flex justify-between items-center">
+                                                <InputLabel value="Specifications" />
+                                                <button type="button"
+                                                    class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-100 dark:bg-indigo-900 dark:hover:bg-indigo-800"
+                                                    @click="addSpecification">
+                                                    <PlusIcon class="h-4 w-4 mr-1.5" />
+                                                    Add Specification
                                                 </button>
                                             </div>
-                                            <SecondaryButton type="button" @click="addSpecification">
-                                                Add Specification
-                                            </SecondaryButton>
+
+                                            <TransitionGroup
+                                                enter-active-class="transition-all duration-300 ease-in-out"
+                                                enter-from-class="opacity-0 -translate-y-4"
+                                                enter-to-class="opacity-100 translate-y-0"
+                                                leave-active-class="transition-all duration-200 ease-in-out"
+                                                leave-from-class="opacity-100 translate-y-0"
+                                                leave-to-class="opacity-0 translate-y-4">
+                                                <div v-for="(spec, index) in specifications" :key="index"
+                                                    class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                    <TextInput v-model="spec.key" type="text" class="flex-1"
+                                                        placeholder="Specification name (e.g., Color)" />
+                                                    <TextInput v-model="spec.value" type="text" class="flex-1"
+                                                        placeholder="Specification value (e.g., Red)" />
+                                                    <button type="button"
+                                                        class="p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                                                        @click="removeSpecification(index)">
+                                                        <TrashIcon class="h-5 w-5" />
+                                                    </button>
+                                                </div>
+                                            </TransitionGroup>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Images -->
-                            <div class="pt-8 sm:pt-5">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-                                    Product Images
-                                </h3>
-                                <div class="mt-6">
-                                    <div class="flex items-center justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md">
-                                        <div class="space-y-1 text-center">
-                                            <PhotoIcon class="mx-auto h-12 w-12 text-gray-400" />
-                                            <div class="flex text-sm text-gray-600 dark:text-gray-400">
-                                                <label class="relative cursor-pointer rounded-md font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 focus-within:outline-none">
-                                                    <span>Upload images</span>
-                                                    <input
-                                                        type="file"
-                                                        multiple
-                                                        class="sr-only"
-                                                        accept="image/*"
-                                                        @change="onImagesSelected"
-                                                    >
-                                                </label>
-                                            </div>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                                                PNG, JPG, GIF up to 2MB
-                                            </p>
-                                        </div>
+                        <!-- Product Images -->
+                        <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+                            <div class="px-4 py-5 sm:p-6">
+                                <div class="md:grid md:grid-cols-3 md:gap-6">
+                                    <div class="md:col-span-1">
+                                        <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white">
+                                            Product Images
+                                        </h3>
+                                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                            Add images for your product. First image will be the main image.
+                                        </p>
                                     </div>
+                                    <div class="mt-5 md:mt-0 md:col-span-2">
+                                        <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors"
+                                            @dragover.prevent @drop.prevent="onFilesDrop">
+                                            <div class="text-center">
+                                                <PhotoIcon class="mx-auto h-12 w-12 text-gray-400" />
+                                                <div
+                                                    class="mt-4 flex text-sm leading-6 text-gray-600 dark:text-gray-400">
+                                                    <label for="file-upload"
+                                                        class="relative cursor-pointer rounded-md font-semibold text-indigo-600 dark:text-indigo-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500 dark:hover:text-indigo-300">
+                                                        <span>Upload files</span>
+                                                        <input id="file-upload" type="file" multiple class="sr-only"
+                                                            accept="image/*" @change="onImagesSelected">
+                                                    </label>
+                                                    <p class="pl-1">or drag and drop</p>
+                                                </div>
+                                                <p class="text-xs leading-5 text-gray-600 dark:text-gray-400">
+                                                    PNG, JPG, GIF up to 2MB each
+                                                </p>
+                                            </div>
+                                        </div>
 
-                                    <!-- Image Previews -->
-                                    <div v-if="imagesPreviews.length > 0" class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-                                        <div v-for="(preview, index) in imagesPreviews" :key="index"
-                                            class="relative group">
-                                            <img :src="preview"
-                                                class="h-24 w-24 rounded-lg object-cover"
-                                            >
-                                            <button type="button"
-                                                @click="removeImage(index)"
-                                                class="absolute top-0 right-0 hidden group-hover:flex -mt-2 -mr-2 h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-700 focus:outline-none">
-                                                <XMarkIcon class="h-4 w-4" />
-                                            </button>
+                                        <!-- Image Previews -->
+                                        <div v-if="imagesPreviews.length"
+                                            class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                                            <TransitionGroup
+                                                enter-active-class="transition-all duration-300 ease-in-out"
+                                                enter-from-class="opacity-0 scale-95"
+                                                enter-to-class="opacity-100 scale-100"
+                                                leave-active-class="transition-all duration-200 ease-in-out"
+                                                leave-from-class="opacity-100 scale-100"
+                                                leave-to-class="opacity-0 scale-95">
+                                                <div v-for="(preview, index) in imagesPreviews" :key="index"
+                                                    class="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                                    <img :src="preview" class="h-full w-full object-cover">
+                                                    <div
+                                                        class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <button type="button" @click="removeImage(index)"
+                                                            class="p-2 text-white hover:text-red-500 transition-colors">
+                                                            <TrashIcon class="h-6 w-6" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </TransitionGroup>
                                         </div>
                                     </div>
                                 </div>
@@ -276,14 +299,24 @@
                         </div>
 
                         <!-- Form Actions -->
-                        <div class="p-8 flex justify-end space-x-3">
+                        <div class="flex justify-end space-x-3">
                             <Link :href="route('admin.products.index')"
-                                class="inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                            >
-                                Cancel
+                                class="inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800">
+                            Cancel
                             </Link>
-                            <PrimaryButton :disabled="form.processing">
-                                Create Product
+                            <PrimaryButton type="submit" :disabled="form.processing">
+                                <span v-if="form.processing">
+                                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                            stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                        </path>
+                                    </svg>
+                                    Creating...
+                                </span>
+                                <span v-else>Create Product</span>
                             </PrimaryButton>
                         </div>
                     </form>
@@ -293,8 +326,9 @@
     </AdminLayout>
 </template>
 
+
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useForm, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import {
@@ -308,6 +342,7 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import PriceInput from '@/Components/PriceInput.vue';
 
 const props = defineProps({
     categories: Array,
@@ -334,6 +369,8 @@ const form = useForm({
 
 // Specifications Management
 const specifications = ref([{ key: '', value: '' }]);
+const sellingPriceError = ref('');
+
 
 const addSpecification = () => {
     specifications.value.push({ key: '', value: '' });
@@ -341,6 +378,19 @@ const addSpecification = () => {
 
 const removeSpecification = (index) => {
     specifications.value.splice(index, 1);
+};
+
+const validateSellingPrice = () => {
+    sellingPriceError.value = '';
+
+    if (form.selling_price && form.cost_price) {
+        const selling = parseFloat(form.selling_price);
+        const cost = parseFloat(form.cost_price);
+
+        if (selling < cost) {
+            sellingPriceError.value = 'Selling price cannot be less than cost price';
+        }
+    }
 };
 
 // Image Management
@@ -433,10 +483,11 @@ watch(() => form.name, (newValue) => {
 }, { immediate: true });
 
 // Validate selling price is greater than cost price
-watch(() => form.selling_price, (newValue) => {
-    if (newValue && form.cost_price && parseFloat(newValue) < parseFloat(form.cost_price)) {
-        alert('Selling price cannot be less than cost price');
-        form.selling_price = form.cost_price;
-    }
+const profitMargin = computed(() => {
+    if (!form.cost_price || !form.selling_price) return null;
+    const cost = parseFloat(form.cost_price);
+    const selling = parseFloat(form.selling_price);
+    if (cost <= 0) return null;
+    return ((selling - cost) / cost * 100).toFixed(2);
 });
 </script>

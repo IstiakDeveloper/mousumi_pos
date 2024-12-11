@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Builder;
 
 class BankAccount extends Model
 {
@@ -20,13 +21,27 @@ class BankAccount extends Model
     ];
 
     protected $casts = [
-        'status' => 'boolean',
         'opening_balance' => 'decimal:2',
-        'current_balance' => 'decimal:2'
+        'current_balance' => 'decimal:2',
+        'status' => 'boolean'
     ];
 
+    /**
+     * Scope a query to only include active bank accounts.
+     */
+    public function scopeActive(Builder $query): void
+    {
+        $query->where('status', true);
+    }
+
+    // Relationships
     public function transactions()
     {
         return $this->hasMany(BankTransaction::class);
+    }
+
+    public function salePayments()
+    {
+        return $this->hasMany(SalePayment::class);
     }
 }

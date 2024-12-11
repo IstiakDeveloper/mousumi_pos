@@ -15,7 +15,7 @@ export default {
         extend: {
             backdropBlur: {
                 sm: '4px',
-              },
+            },
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
@@ -27,4 +27,9 @@ export default {
         forms,
         require('@tailwindcss/forms'),
     ],
+    variants: {
+        extend: {
+            display: ['print']
+        }
+    }
 };

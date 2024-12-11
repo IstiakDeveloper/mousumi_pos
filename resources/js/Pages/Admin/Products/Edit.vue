@@ -1,4 +1,3 @@
-<!-- resources/js/Pages/Admin/Products/Edit.vue -->
 <template>
     <AdminLayout>
         <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
