@@ -37,9 +37,10 @@ class PosController extends Controller
             ],
         ]);
     }
+
     public function productsByCategory($categoryId = null)
     {
-        $query = Product::with(['category', 'unit', 'productStocks'])
+        $query = Product::with(['category', 'unit', 'productStocks', 'primaryImage'])
             ->where('status', true);
 
         if ($categoryId) {
@@ -56,12 +57,15 @@ class PosController extends Controller
                 'stock' => $stock,
                 'category' => $product->category->name,
                 'unit' => $product->unit->name,
+                'image' => $product->primaryImage ? $product->primaryImage->image : null, // Fetch the primary image
             ];
         });
     }
+
+
     public function products()
     {
-        return Product::with(['category', 'unit', 'productStocks'])
+        return Product::with(['category', 'unit', 'productStocks', 'primaryImage'])
             ->where('status', true)
             ->get()
             ->map(function ($product) {
@@ -74,13 +78,15 @@ class PosController extends Controller
                     'stock' => $stock,
                     'category' => $product->category->name,
                     'unit' => $product->unit->name,
+                    'image' => $product->primaryImage ? $product->primaryImage->image : null, // Fetch the primary image
                 ];
             });
     }
 
+
     public function searchProducts(Request $request)
     {
-        $query = Product::with(['category', 'unit', 'productStocks'])
+        $query = Product::with(['category', 'unit', 'productStocks', 'primaryImage'])
             ->where('status', true);
 
         if ($request->filled('search')) {
@@ -103,11 +109,13 @@ class PosController extends Controller
                     'stock' => $stock,
                     'category' => $product->category->name,
                     'unit' => $product->unit->name,
+                    'image' => $product->primaryImage ? $product->primaryImage->image : null, // Fetch the primary image
                 ];
             });
 
         return response()->json($products);
     }
+
 
     public function store(Request $request)
     {

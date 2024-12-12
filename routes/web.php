@@ -50,6 +50,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     ->name('pos.print-receipt');
     Route::get('/pos/products-by-category', [PosController::class, 'productsByCategory'])
     ->name('pos.products.by.category');
+    Route::get('/pos/products', [PosController::class, 'products'])
+    ->name('pos.products');
 });
 
 

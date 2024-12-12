@@ -45,13 +45,16 @@
 
                     <!-- Product Grid -->
                     <div class="flex-1 overflow-auto bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <div class="grid grid-cols-3 gap-4 p-4">
+                        <div class="grid grid-cols-4 gap-4 p-4">
                             <div v-for="product in searchQuery ? searchResults : products" :key="product.id"
                                 class="bg-white dark:bg-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
                                 <div class="p-4">
                                     <div
-                                        class="w-full aspect-square bg-gray-100 dark:bg-gray-600 rounded-lg mb-3 flex items-center justify-center">
-                                        <CubeIcon class="w-12 h-12 text-gray-400" />
+                                        class="w-full aspect-square bg-gray-100 dark:bg-gray-600 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+                                        <template v-if="product.name">
+                                            <img :src="getImageUrl(product.image)" :alt="product.name"
+                                                class="object-cover w-4/5 h-4/5 rounded-lg">
+                                        </template>
                                     </div>
                                     <div class="text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">{{
                                         product.name }}</div>
@@ -74,6 +77,7 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
 
                 <!-- Cart Items -->
@@ -383,7 +387,9 @@ const props = defineProps({
 const products = ref([])
 const showAddCustomer = ref(false)
 const quickCategories = ref(props.categories || [])
-
+const getImageUrl = (path) => {
+    return `/storage/${path}`;
+};
 
 
 const form = useForm({
