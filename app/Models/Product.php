@@ -66,4 +66,9 @@ class Product extends Model
     {
         return $this->stocks()->sum('quantity');
     }
+
+    public function productStocks()
+    {
+        return $this->hasMany(ProductStock::class, 'product_id', 'id');
+    }
 }

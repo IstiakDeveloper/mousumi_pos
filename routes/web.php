@@ -45,7 +45,11 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
     Route::get('/pos/search-products', [PosController::class, 'searchProducts'])->name('pos.search-products');
     Route::post('/pos/store', [PosController::class, 'store'])->name('pos.store');
-    Route::get('/sales/{sale}/print', [PosController::class, 'printReceipt'])->name('sales.print');
+
+    Route::get('/pos/print-receipt/{id}', [PosController::class, 'printReceipt'])
+    ->name('pos.print-receipt');
+    Route::get('/pos/products-by-category', [PosController::class, 'productsByCategory'])
+    ->name('pos.products.by.category');
 });
 
 

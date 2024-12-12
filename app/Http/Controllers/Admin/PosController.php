@@ -10,9 +10,12 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SalePayment;
 use App\Models\BankAccount;
+use App\Models\Category;
 use App\Models\ProductStock;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Barryvdh\DomPDF\Facade\Pdf; // Update this import at the top of your controller
+
 
 class PosController extends Controller
 {
@@ -20,10 +23,12 @@ class PosController extends Controller
     {
         $customers = Customer::active()->select('id', 'name', 'phone')->get();
         $bankAccounts = BankAccount::active()->select('id', 'account_name', 'bank_name')->get();
+        $categories = Category::where('status', true)->get(); // Add this line
 
         return Inertia::render('Admin/Pos/Index', [
             'customers' => $customers,
             'bankAccounts' => $bankAccounts,
+            'categories' => $categories, // Add this line
             'paymentMethods' => [
                 ['id' => 'cash', 'name' => 'Cash'],
                 ['id' => 'card', 'name' => 'Card'],
@@ -31,6 +36,46 @@ class PosController extends Controller
                 ['id' => 'mobile_banking', 'name' => 'Mobile Banking'],
             ],
         ]);
+    }
+    public function productsByCategory($categoryId = null)
+    {
+        $query = Product::with(['category', 'unit', 'productStocks'])
+            ->where('status', true);
+
+        if ($categoryId) {
+            $query->where('category_id', $categoryId);
+        }
+
+        return $query->get()->map(function ($product) {
+            $stock = $product->productStocks->sum('quantity');
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'selling_price' => $product->selling_price,
+                'stock' => $stock,
+                'category' => $product->category->name,
+                'unit' => $product->unit->name,
+            ];
+        });
+    }
+    public function products()
+    {
+        return Product::with(['category', 'unit', 'productStocks'])
+            ->where('status', true)
+            ->get()
+            ->map(function ($product) {
+                $stock = $product->productStocks->sum('quantity');
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'selling_price' => $product->selling_price,
+                    'stock' => $stock,
+                    'category' => $product->category->name,
+                    'unit' => $product->unit->name,
+                ];
+            });
     }
 
     public function searchProducts(Request $request)
@@ -126,7 +171,7 @@ class PosController extends Controller
                     'payment_method' => $request->payment_method,
                     'bank_account_id' => $request->bank_account_id,
                     'transaction_id' => $request->transaction_id,
-                    'note' => $request->payment_note,
+                    'note' => $request->note,
                     'created_by' => auth()->id(),
                 ]);
 
@@ -139,28 +184,32 @@ class PosController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Sale completed successfully',
-                'sale' => $sale->load('saleItems', 'customer'),
-            ]);
+            // Load relationships and return
+            $sale->load(['saleItems.product', 'customer', 'salePayments']);
+
+            // Return directly with Inertia instead of redirect
+            return to_route('admin.pos.index')->with('sale', $sale);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while processing the sale',
-                'error' => $e->getMessage(),
-            ], 500);
+            return back()->withErrors(['error' => 'An error occurred while processing the sale: ' . $e->getMessage()]);
         }
     }
 
-    public function printReceipt(Sale $sale)
+    public function printReceipt($id)
     {
-        $sale->load(['customer', 'saleItems.product', 'salePayments']);
+        $sale = Sale::with(['saleItems.product', 'customer', 'salePayments'])
+            ->findOrFail($id);
 
-        return Inertia::render('Admin/Pos/Receipt', [
+        $pdf = Pdf::loadView('pdf.receipt', [
             'sale' => $sale,
-            'autoPrint' => true
+            'company' => [
+                'name' => config('app.name'),
+                'address' => config('app.address'),
+                'phone' => config('app.phone'),
+                'email' => config('app.email'),
+            ]
         ]);
+
+        return $pdf->stream('receipt-' . $sale->invoice_no . '.pdf');
     }
 }

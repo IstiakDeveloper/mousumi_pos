@@ -16,10 +16,12 @@ class SaleItem extends Model
     ];
 
     protected $casts = [
+        'quantity' => 'integer',
         'unit_price' => 'decimal:2',
         'subtotal' => 'decimal:2'
     ];
 
+    // Relationships
     public function sale()
     {
         return $this->belongsTo(Sale::class);

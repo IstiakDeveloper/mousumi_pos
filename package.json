@@ -23,6 +23,7 @@
         "@headlessui/vue": "^1.7.23",
         "@heroicons/vue": "^2.2.0",
         "date-fns": "^4.1.0",
-        "howler": "^2.2.4"
+        "howler": "^2.2.4",
+        "html2pdf.js": "^0.10.2"
     }
 }
