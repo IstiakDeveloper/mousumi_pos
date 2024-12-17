@@ -56,6 +56,10 @@ class Sale extends Model
     {
         return $this->hasMany(SalePayment::class);
     }
+    public function bankAccount()
+    {
+        return $this->belongsTo(BankAccount::class); // Adjust the relationship type and model as necessary
+    }
 
     public function createdBy()
     {

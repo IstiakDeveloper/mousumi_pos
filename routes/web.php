@@ -40,7 +40,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('customers', CustomerController::class);
     Route::resource('bank-accounts', BankAccountController::class);
     Route::resource('bank-transactions', BankTransactionController::class);
-    Route::resource('sales', SaleController::class);
+    // Route::resource('sales', SaleController::class);
 
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
     Route::get('/pos/search-products', [PosController::class, 'searchProducts'])->name('pos.search-products');
@@ -52,6 +52,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     ->name('pos.products.by.category');
     Route::get('/pos/products', [PosController::class, 'products'])
     ->name('pos.products');
+
+    Route::prefix('sales')->name('sales.')->group(function () {
+        Route::get('/', [SaleController::class, 'index'])->name('index');
+        Route::get('/{id}', [SaleController::class, 'show'])->name('show');
+        Route::delete('/{sale}', [SaleController::class, 'destroy'])->name('destroy');
+        Route::get('/print/{id}', [SaleController::class, 'printReceipt'])->name('print-receipt');
+    });
 });
 
 

@@ -3,69 +3,38 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Customer;
 use App\Models\Sale;
 use App\Models\SaleItem;
-use App\Models\SalePayment;
 use App\Models\BankAccount;
-use App\Models\Category;
 use App\Models\ProductStock;
+use App\Models\Category;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-use Barryvdh\DomPDF\Facade\Pdf; // Update this import at the top of your controller
-
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PosController extends Controller
 {
     public function index()
     {
-        $customers = Customer::active()->select('id', 'name', 'phone')->get();
-        $bankAccounts = BankAccount::active()->select('id', 'account_name', 'bank_name')->get();
-        $categories = Category::where('status', true)->get(); // Add this line
-
         return Inertia::render('Admin/Pos/Index', [
-            'customers' => $customers,
-            'bankAccounts' => $bankAccounts,
-            'categories' => $categories, // Add this line
-            'paymentMethods' => [
-                ['id' => 'cash', 'name' => 'Cash'],
-                ['id' => 'card', 'name' => 'Card'],
-                ['id' => 'bank', 'name' => 'Bank Transfer'],
-                ['id' => 'mobile_banking', 'name' => 'Mobile Banking'],
-            ],
+            'customers' => Customer::active()
+                ->select('id', 'name', 'phone', 'balance', 'credit_limit')
+                ->get(),
+            'bankAccounts' => BankAccount::active()
+                ->select('id', 'account_name', 'bank_name', 'current_balance')
+                ->get(),
+            'categories' => Category::where('status', true)
+                ->select('id', 'name')
+                ->get(),
         ]);
     }
 
-    public function productsByCategory($categoryId = null)
-    {
-        $query = Product::with(['category', 'unit', 'productStocks', 'primaryImage'])
-            ->where('status', true);
-
-        if ($categoryId) {
-            $query->where('category_id', $categoryId);
-        }
-
-        return $query->get()->map(function ($product) {
-            $stock = $product->productStocks->sum('quantity');
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'sku' => $product->sku,
-                'selling_price' => $product->selling_price,
-                'stock' => $stock,
-                'category' => $product->category->name,
-                'unit' => $product->unit->name,
-                'image' => $product->primaryImage ? $product->primaryImage->image : null, // Fetch the primary image
-            ];
-        });
-    }
-
-
     public function products()
     {
-        return Product::with(['category', 'unit', 'productStocks', 'primaryImage'])
+        return Product::with(['productStocks', 'primaryImage'])
             ->where('status', true)
             ->get()
             ->map(function ($product) {
@@ -76,17 +45,36 @@ class PosController extends Controller
                     'sku' => $product->sku,
                     'selling_price' => $product->selling_price,
                     'stock' => $stock,
-                    'category' => $product->category->name,
-                    'unit' => $product->unit->name,
-                    'image' => $product->primaryImage ? $product->primaryImage->image : null, // Fetch the primary image
+                    'image' => $product->primaryImage ? $product->primaryImage->image : null,
                 ];
             });
     }
 
+    public function productsByCategory(Request $request)
+    {
+        $query = Product::with(['productStocks', 'primaryImage'])
+            ->where('status', true);
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        return $query->get()->map(function ($product) {
+            $stock = $product->productStocks->sum('quantity');
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'selling_price' => $product->selling_price,
+                'stock' => $stock,
+                'image' => $product->primaryImage ? $product->primaryImage->image : null,
+            ];
+        });
+    }
 
     public function searchProducts(Request $request)
     {
-        $query = Product::with(['category', 'unit', 'productStocks', 'primaryImage'])
+        $query = Product::with(['productStocks', 'primaryImage'])
             ->where('status', true);
 
         if ($request->filled('search')) {
@@ -98,24 +86,18 @@ class PosController extends Controller
             });
         }
 
-        $products = $query->take(10)->get()
-            ->map(function ($product) {
-                $stock = $product->productStocks->sum('quantity');
-                return [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'sku' => $product->sku,
-                    'selling_price' => $product->selling_price,
-                    'stock' => $stock,
-                    'category' => $product->category->name,
-                    'unit' => $product->unit->name,
-                    'image' => $product->primaryImage ? $product->primaryImage->image : null, // Fetch the primary image
-                ];
-            });
-
-        return response()->json($products);
+        return $query->take(10)->get()->map(function ($product) {
+            $stock = $product->productStocks->sum('quantity');
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'selling_price' => $product->selling_price,
+                'stock' => $stock,
+                'image' => $product->primaryImage ? $product->primaryImage->image : null,
+            ];
+        });
     }
-
 
     public function store(Request $request)
     {
@@ -125,13 +107,11 @@ class PosController extends Controller
             'items.*.quantity' => 'required|numeric|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
             'subtotal' => 'required|numeric|min:0',
-            'tax' => 'required|numeric|min:0',
             'discount' => 'required|numeric|min:0',
             'total' => 'required|numeric|min:0',
             'paid' => 'required|numeric|min:0',
-            'payment_method' => 'required|in:cash,card,bank,mobile_banking',
-            'bank_account_id' => 'required_if:payment_method,bank,card',
-            'transaction_id' => 'required_if:payment_method,bank,mobile_banking',
+            'bank_account_id' => 'required|exists:bank_accounts,id',
+            'customer_id' => 'nullable|exists:customers,id',
         ]);
 
         try {
@@ -142,7 +122,6 @@ class PosController extends Controller
                 'invoice_no' => 'INV-' . date('Ymd') . '-' . str_pad(Sale::count() + 1, 4, '0', STR_PAD_LEFT),
                 'customer_id' => $request->customer_id,
                 'subtotal' => $request->subtotal,
-                'tax' => $request->tax,
                 'discount' => $request->discount,
                 'total' => $request->total,
                 'paid' => $request->paid,
@@ -152,12 +131,11 @@ class PosController extends Controller
                 'created_by' => auth()->id(),
             ]);
 
-            // Create sale items
+            // Create sale items and update stock
             foreach ($request->items as $item) {
                 SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $item['product_id'],
-                    'product_variant_id' => $item['product_variant_id'] ?? null,
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
                     'subtotal' => $item['quantity'] * $item['unit_price'],
@@ -165,47 +143,49 @@ class PosController extends Controller
 
                 // Update stock
                 $stock = ProductStock::firstOrCreate([
-                    'product_id' => $item['product_id'],
-                    'product_variant_id' => $item['product_variant_id'] ?? null,
+                    'product_id' => $item['product_id']
                 ]);
                 $stock->decrement('quantity', $item['quantity']);
             }
 
-            // Create payment record
+            // Update customer balance if customer exists and there is due amount
+            if ($request->customer_id && $sale->due > 0) {
+                $customer = Customer::find($request->customer_id);
+                if ($customer) {
+                    // Check credit limit
+                    $newBalance = $customer->balance + $sale->due;
+                    if ($newBalance > $customer->credit_limit) {
+                        throw new \Exception('This sale would exceed the customer\'s credit limit.');
+                    }
+                    $customer->increment('balance', $sale->due);
+                }
+            }
+
+            // Create bank transaction
             if ($request->paid > 0) {
-                SalePayment::create([
-                    'sale_id' => $sale->id,
+                $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+                $bankAccount->transactions()->create([
+                    'transaction_type' => 'deposit',
                     'amount' => $request->paid,
-                    'payment_method' => $request->payment_method,
-                    'bank_account_id' => $request->bank_account_id,
-                    'transaction_id' => $request->transaction_id,
-                    'note' => $request->note,
+                    'date' => now(),
+                    'description' => "Payment received for invoice {$sale->invoice_no}",
                     'created_by' => auth()->id(),
                 ]);
-
-                // Update bank account balance if payment method is bank or card
-                if (in_array($request->payment_method, ['bank', 'card']) && $request->bank_account_id) {
-                    $bankAccount = BankAccount::find($request->bank_account_id);
-                    $bankAccount->increment('current_balance', $request->paid);
-                }
+                $bankAccount->increment('current_balance', $request->paid);
             }
 
             DB::commit();
 
-            // Load relationships and return
-            $sale->load(['saleItems.product', 'customer', 'salePayments']);
-
-            // Return directly with Inertia instead of redirect
             return to_route('admin.pos.index')->with('sale', $sale);
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'An error occurred while processing the sale: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 
     public function printReceipt($id)
     {
-        $sale = Sale::with(['saleItems.product', 'customer', 'salePayments'])
+        $sale = Sale::with(['saleItems.product', 'customer', 'createdBy'])
             ->findOrFail($id);
 
         $pdf = Pdf::loadView('pdf.receipt', [
@@ -218,6 +198,6 @@ class PosController extends Controller
             ]
         ]);
 
-        return $pdf->stream('receipt-' . $sale->invoice_no . '.pdf');
+        return $pdf->stream("receipt-{$sale->invoice_no}.pdf");
     }
 }

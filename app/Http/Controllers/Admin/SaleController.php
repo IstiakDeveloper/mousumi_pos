@@ -3,183 +3,212 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Customer;
-use App\Models\Product;
+use App\Models\BankAccount;
 use App\Models\Sale;
+use App\Models\Customer;
+use App\Models\ProductStock;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class SaleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $sales = Sale::with('customer', 'items', 'payments')->latest()->get();
-        return Inertia::render('Admin/Sales/Index', compact('sales'));
+        $query = Sale::with(['customer', 'createdBy'])
+            ->latest();
+
+        // Filter by date range
+        if ($request->filled(['start_date', 'end_date'])) {
+            $query->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date . ' 23:59:59'
+            ]);
+        }
+
+        // Filter by payment status
+        if ($request->filled('payment_status')) {
+            $query->where('payment_status', $request->payment_status);
+        }
+
+        // Filter by customer
+        if ($request->filled('customer_id')) {
+            $query->where('customer_id', $request->customer_id);
+        }
+
+        // Filter by invoice number
+        if ($request->filled('invoice_no')) {
+            $query->where('invoice_no', 'like', '%' . $request->invoice_no . '%');
+        }
+
+        // Get sales with pagination
+        $sales = $query->paginate(10)
+            ->withQueryString()
+            ->through(function ($sale) {
+                return [
+                    'id' => $sale->id,
+                    'invoice_no' => $sale->invoice_no,
+                    'date' => $sale->created_at->format('d M, Y h:i A'),
+                    'customer' => $sale->customer ? [
+                        'id' => $sale->customer->id,
+                        'name' => $sale->customer->name,
+                        'phone' => $sale->customer->phone,
+                    ] : null,
+                    'subtotal' => $sale->subtotal,
+                    'discount' => $sale->discount,
+                    'total' => $sale->total,
+                    'paid' => $sale->paid,
+                    'due' => $sale->due,
+                    'payment_status' => $sale->payment_status,
+                    'created_by' => $sale->createdBy->name,
+                ];
+            });
+
+        // Get all payment statuses for filter
+        $paymentStatuses = Sale::distinct()
+            ->pluck('payment_status');
+
+        // Get active customers for filter
+        $customers = Customer::active()
+            ->select('id', 'name', 'phone')
+            ->get();
+
+        // Calculate summary
+        $summary = [
+            'total_sales' => $query->count(),
+            'total_amount' => $query->sum('total'),
+            'total_paid' => $query->sum('paid'),
+            'total_due' => $query->sum('due'),
+        ];
+
+        return Inertia::render('Admin/Sales/Index', [
+            'sales' => $sales,
+            'filters' => $request->only(['start_date', 'end_date', 'payment_status', 'customer_id', 'invoice_no']),
+            'paymentStatuses' => $paymentStatuses,
+            'customers' => $customers,
+            'summary' => $summary,
+        ]);
     }
 
-    public function create()
+    public function show($id)
     {
-        $customers = Customer::all();
-        $products = Product::with('variants')->get();
-        return Inertia::render('Admin/Sales/Create', compact('customers', 'products'));
+        $sale = Sale::with([
+            'customer',
+            'saleItems.product',
+            'createdBy'
+        ])->findOrFail($id);
+
+        return Inertia::render('Admin/Sales/Show', [
+            'sale' => [
+                'id' => $sale->id,
+                'invoice_no' => $sale->invoice_no,
+                'date' => $sale->created_at->format('d M, Y h:i A'),
+                'customer' => $sale->customer ? [
+                    'id' => $sale->customer->id,
+                    'name' => $sale->customer->name,
+                    'phone' => $sale->customer->phone,
+                    'address' => $sale->customer->address,
+                ] : null,
+                'items' => $sale->saleItems->map(fn($item) => [
+                    'product' => [
+                        'name' => $item->product->name,
+                        'sku' => $item->product->sku,
+                    ],
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'subtotal' => $item->subtotal,
+                ]),
+                'subtotal' => $sale->subtotal,
+                'discount' => $sale->discount,
+                'total' => $sale->total,
+                'paid' => $sale->paid,
+                'due' => $sale->due,
+                'payment_status' => $sale->payment_status,
+                'note' => $sale->note,
+                'created_by' => $sale->createdBy->name,
+            ],
+        ]);
     }
 
-    public function store(Request $request)
+    public function destroy($id)
     {
-        $validatedData = $request->validate([
-            'customer_id' => 'nullable|exists:customers,id',
-            'items' => 'required|array',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.product_variant_id' => 'nullable|exists:product_variants,id',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.unit_price' => 'required|numeric|min:0',
-            'tax' => 'required|numeric|min:0',
-            'discount' => 'required|numeric|min:0',
-            'payments' => 'nullable|array',
-            'payments.*.amount' => 'required|numeric|min:0',
-            'payments.*.payment_method' => 'required|in:cash,card,bank,mobile_banking',
-            'payments.*.bank_account_id' => 'nullable|exists:bank_accounts,id',
-            'payments.*.transaction_id' => 'nullable|string',
-            'payments.*.note' => 'nullable|string',
-            'note' => 'nullable|string',
+        try {
+            DB::beginTransaction();
+
+            $sale = Sale::with(['saleItems', 'customer'])->findOrFail($id);
+
+            // Check if sale is within 7 days
+            if ($sale->created_at->diffInDays(now()) > 7) {
+                return response()->json([
+                    'success' => false,
+                    'massage' => 'Sales older than 7 days cannot be deleted.' // Changed 'message' to 'massage'
+                ], 403);
+            }
+
+            // Restore product stock
+            foreach ($sale->saleItems as $item) {
+                $stock = ProductStock::firstOrCreate([
+                    'product_id' => $item->product_id
+                ]);
+                $stock->increment('quantity', $item->quantity);
+            }
+
+            // Update customer balance if there was due amount
+            if ($sale->customer && $sale->due > 0) {
+                $sale->customer->decrement('balance', $sale->due);
+            }
+
+            // Reverse bank transaction if payment was made
+            if ($sale->paid > 0 && $sale->bank_account_id) {
+                $bankAccount = BankAccount::findOrFail($sale->bank_account_id);
+                $bankAccount->decrement('current_balance', $sale->paid);
+
+                // Create reverse transaction record
+                $bankAccount->transactions()->create([
+                    'transaction_type' => 'withdrawal',
+                    'amount' => $sale->paid,
+                    'date' => now(),
+                    'description' => "Reversed payment for deleted invoice {$sale->invoice_no}",
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            // Delete sale and its items
+            $sale->delete();
+
+            DB::commit();
+
+            session()->flash('success', 'Sale deleted successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'massage' => 'Error deleting sale: ' . $e->getMessage() // Changed 'message' to 'massage'
+            ], 500);
+        }
+    }
+
+    public function printReceipt($id)
+    {
+        $sale = Sale::with(['saleItems.product', 'customer', 'createdBy', 'bankAccount'])
+            ->findOrFail($id);
+
+        $pdf = PDF::loadView('admin.sales.receipt', [
+            'sale' => $sale,
+            'company' => [
+                'name' => config('app.name'),
+                'address' => config('app.address'),
+                'phone' => config('app.phone'),
+                'email' => config('app.email'),
+                'logo' => public_path('images/logo.png'),
+            ]
         ]);
 
-        $sale = DB::transaction(function () use ($validatedData) {
-            $sale = Sale::create([
-                'invoice_no' => Sale::generateInvoiceNumber(),
-                'customer_id' => $validatedData['customer_id'],
-                'subtotal' => $this->calculateSubtotal($validatedData['items']),
-                'tax' => $validatedData['tax'],
-                'discount' => $validatedData['discount'],
-                'total' => $this->calculateTotal($validatedData['items'], $validatedData['tax'], $validatedData['discount']),
-                'paid' => $this->calculateTotalPayments($validatedData['payments'] ?? []),
-                'payment_status' => 'due',
-                'note' => $validatedData['note'],
-                'created_by' => auth()->id(),
-            ]);
+        // Set paper size for 80mm receipt
+        $pdf->setPaper([0, 0, 226.772, 841.89], 'portrait');
 
-            foreach ($validatedData['items'] as $itemData) {
-                $sale->items()->create($itemData);
-                $this->updateProductStock($itemData['product_id'], $itemData['quantity']);
-            }
-
-            foreach ($validatedData['payments'] ?? [] as $paymentData) {
-                $sale->payments()->create($paymentData + ['created_by' => auth()->id()]);
-            }
-
-            $sale->updatePaymentStatus();
-
-            return $sale;
-        });
-
-        return redirect()->route('admin.sales.show', $sale->id)->with('success', 'Sale created successfully.');
-    }
-
-    public function show(Sale $sale)
-    {
-        $sale->load('customer', 'items.product', 'items.productVariant', 'payments.bankAccount');
-        return Inertia::render('Admin/Sales/Show', compact('sale'));
-    }
-
-    public function edit(Sale $sale)
-    {
-        $sale->load('customer', 'items.product', 'items.productVariant', 'payments.bankAccount');
-        $customers = Customer::all();
-        $products = Product::with('variants')->get();
-        return Inertia::render('Admin/Sales/Edit', compact('sale', 'customers', 'products'));
-    }
-
-    public function update(Request $request, Sale $sale)
-    {
-        $validatedData = $request->validate([
-            'customer_id' => 'nullable|exists:customers,id',
-            'items' => 'required|array',
-            'items.*.id' => 'sometimes|exists:sale_items,id',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.product_variant_id' => 'nullable|exists:product_variants,id',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.unit_price' => 'required|numeric|min:0',
-            'tax' => 'required|numeric|min:0',
-            'discount' => 'required|numeric|min:0',
-            'payments' => 'nullable|array',
-            'payments.*.id' => 'sometimes|exists:sale_payments,id',
-            'payments.*.amount' => 'required|numeric|min:0',
-            'payments.*.payment_method' => 'required|in:cash,card,bank,mobile_banking',
-            'payments.*.bank_account_id' => 'nullable|exists:bank_accounts,id',
-            'payments.*.transaction_id' => 'nullable|string',
-            'payments.*.note' => 'nullable|string',
-            'note' => 'nullable|string',
-        ]);
-
-        $sale = DB::transaction(function () use ($sale, $validatedData) {
-            $sale->update([
-                'customer_id' => $validatedData['customer_id'],
-                'subtotal' => $this->calculateSubtotal($validatedData['items']),
-                'tax' => $validatedData['tax'],
-                'discount' => $validatedData['discount'],
-                'total' => $this->calculateTotal($validatedData['items'], $validatedData['tax'], $validatedData['discount']),
-                'note' => $validatedData['note'],
-            ]);
-
-            $sale->items()->whereNotIn('id', collect($validatedData['items'])->pluck('id'))->delete();
-
-            foreach ($validatedData['items'] as $itemData) {
-                if (isset($itemData['id'])) {
-                    $item = $sale->items()->find($itemData['id']);
-                    $item->update($itemData);
-                    $this->updateProductStock($item->product_id, $itemData['quantity'] - $item->quantity);
-                } else {
-                    $item = $sale->items()->create($itemData);
-                    $this->updateProductStock($item->product_id, $item->quantity);
-                }
-            }
-
-            $sale->payments()->whereNotIn('id', collect($validatedData['payments'] ?? [])->pluck('id'))->delete();
-
-            foreach ($validatedData['payments'] ?? [] as $paymentData) {
-                if (isset($paymentData['id'])) {
-                    $sale->payments()->find($paymentData['id'])->update($paymentData);
-                } else {
-                    $sale->payments()->create($paymentData + ['created_by' => auth()->id()]);
-                }
-            }
-
-            $sale->updatePaymentStatus();
-
-            return $sale;
-        });
-
-        return redirect()->route('admin.sales.show', $sale->id)->with('success', 'Sale updated successfully.');
-    }
-
-    public function destroy(Sale $sale)
-    {
-        $sale->delete();
-        return redirect()->route('admin.sales.index')->with('success', 'Sale deleted successfully.');
-    }
-
-    private function calculateSubtotal($items)
-    {
-        return collect($items)->sum(function ($item) {
-            return $item['quantity'] * $item['unit_price'];
-        });
-    }
-
-    private function calculateTotal($items, $tax, $discount)
-    {
-        $subtotal = $this->calculateSubtotal($items);
-        return ($subtotal + $tax) - $discount;
-    }
-
-    private function calculateTotalPayments($payments)
-    {
-        return collect($payments)->sum('amount');
-    }
-
-    private function updateProductStock($productId, $quantity)
-    {
-        $product = Product::find($productId);
-        $product->decrement('stock_quantity', $quantity);
+        return $pdf->stream("receipt-{$sale->invoice_no}.pdf");
     }
 }

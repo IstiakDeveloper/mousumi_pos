@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('email')->nullable()->unique();
             $table->string('phone')->unique();
             $table->string('address')->nullable();
-            $table->decimal('credit_limit', 10, 2)->default(0);
-            $table->decimal('balance', 10, 2)->default(0);
+            $table->decimal('credit_limit', 10, 2)->nullable()->default(0);
+            $table->decimal('balance', 10, 2)->nullable()->default(0);
             $table->integer('points')->default(0);
             $table->boolean('status')->default(true);
             $table->timestamps();
