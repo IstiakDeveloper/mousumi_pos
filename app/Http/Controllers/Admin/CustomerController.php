@@ -37,7 +37,7 @@ class CustomerController extends Controller
 
         $customers = $query->latest()
             ->paginate(10)
-            ->through(fn ($customer) => [
+            ->through(fn($customer) => [
                 'id' => $customer->id,
                 'name' => $customer->name,
                 'phone' => $customer->phone,
@@ -57,88 +57,83 @@ class CustomerController extends Controller
 
     public function show(Customer $customer)
     {
-        $customer->load(['sales' => function ($query) {
-            $query->latest()->with('saleItems.product');
-        }]);
+        try {
+            // Get sales with payment status
+            $sales = Sale::where('customer_id', $customer->id)
+                ->with(['saleItems.product'])
+                ->latest()
+                ->get()
+                ->map(function ($sale) {
+                    return [
+                        'id' => $sale->id,
+                        'invoice_no' => $sale->invoice_no,
+                        'date' => $sale->created_at->format('d M, Y'),
+                        'total' => number_format($sale->total, 2, '.', ''),
+                        'paid' => number_format($sale->paid, 2, '.', ''),
+                        'due' => number_format($sale->due, 2, '.', ''),
+                        'payment_status' => $sale->payment_status,
+                    ];
+                });
 
-        // Get recent payments
-        $recentPayments = SalePayment::with(['sale', 'bankAccount', 'createdBy'])
-            ->whereHas('sale', function ($query) use ($customer) {
+            // Get recent payments
+            $recentPayments = SalePayment::whereHas('sale', function ($query) use ($customer) {
                 $query->where('customer_id', $customer->id);
             })
-            ->latest()
-            ->take(5)
-            ->get();
+                ->with(['sale', 'bankAccount'])
+                ->latest()
+                ->take(5)
+                ->get()
+                ->map(function ($payment) {
+                    return [
+                        'id' => $payment->id,
+                        'date' => $payment->created_at->format('d M, Y'),
+                        'amount' => number_format($payment->amount, 2, '.', ''),
+                        'invoice_no' => $payment->sale->invoice_no,
+                        'bank_account' => optional($payment->bankAccount)->bank_name
+                    ];
+                });
 
-        // Sales summary
-        $salesSummary = Sale::where('customer_id', $customer->id)
-            ->selectRaw('
-                COUNT(*) as total_invoices,
-                SUM(total) as total_amount,
-                SUM(paid) as total_paid,
-                SUM(due) as total_due,
-                COUNT(CASE WHEN payment_status = "paid" THEN 1 END) as paid_invoices,
-                COUNT(CASE WHEN payment_status = "partial" THEN 1 END) as partial_invoices,
-                COUNT(CASE WHEN payment_status = "due" THEN 1 END) as due_invoices
-            ')
-            ->first();
+            // Calculate sales summary
+            $salesSummary = Sale::where('customer_id', $customer->id)
+                ->selectRaw('
+                    COUNT(*) as total_invoices,
+                    COALESCE(SUM(total), 0) as total_amount,
+                    COALESCE(SUM(paid), 0) as total_paid,
+                    COALESCE(SUM(due), 0) as total_due
+                ')
+                ->first();
 
-        // Monthly sales chart data
-        $monthlySales = Sale::where('customer_id', $customer->id)
-            ->whereBetween('created_at', [now()->subMonths(11), now()])
-            ->selectRaw('
-                DATE_FORMAT(created_at, "%Y-%m") as month,
-                SUM(total) as total_amount,
-                SUM(paid) as paid_amount,
-                COUNT(*) as invoice_count
-            ')
-            ->groupBy('month')
-            ->orderBy('month')
-            ->get();
+            // Get active bank accounts
+            $bankAccounts = BankAccount::where('status', true)
+                ->select('id', 'account_name', 'bank_name', 'current_balance')
+                ->get();
 
-        return Inertia::render('Admin/Customers/Show', [
-            'customer' => [
-                'id' => $customer->id,
-                'name' => $customer->name,
-                'phone' => $customer->phone,
-                'email' => $customer->email,
-                'address' => $customer->address,
-                'credit_limit' => $customer->credit_limit,
-                'balance' => $customer->balance,
-                'points' => $customer->points,
-                'status' => $customer->status,
-                'created_at' => $customer->created_at->format('d M, Y')
-            ],
-            'sales' => $customer->sales->map(fn ($sale) => [
-                'id' => $sale->id,
-                'invoice_no' => $sale->invoice_no,
-                'date' => $sale->created_at->format('d M, Y'),
-                'total' => $sale->total,
-                'paid' => $sale->paid,
-                'due' => $sale->due,
-                'payment_status' => $sale->payment_status,
-                'items_count' => $sale->saleItems->count(),
-                'items' => $sale->saleItems->map(fn ($item) => [
-                    'product_name' => $item->product->name,
-                    'quantity' => $item->quantity,
-                    'unit_price' => $item->unit_price,
-                    'subtotal' => $item->subtotal
-                ])
-            ]),
-            'recent_payments' => $recentPayments->map(fn ($payment) => [
-                'id' => $payment->id,
-                'date' => $payment->created_at->format('d M, Y'),
-                'amount' => $payment->amount,
-                'payment_method' => $payment->payment_method,
-                'invoice_no' => $payment->sale->invoice_no,
-                'bank_account' => $payment->bankAccount ? $payment->bankAccount->bank_name : null,
-                'created_by' => $payment->createdBy->name
-            ]),
-            'sales_summary' => $salesSummary,
-            'monthly_sales' => $monthlySales,
-        ]);
+            return Inertia::render('Admin/Customers/Show', [
+                'customer' => [
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'phone' => $customer->phone,
+                    'email' => $customer->email,
+                    'address' => $customer->address,
+                    'credit_limit' => number_format($customer->credit_limit, 2, '.', ''),
+                    'balance' => number_format($customer->balance, 2, '.', ''),
+                    'status' => $customer->status,
+                ],
+                'sales' => $sales,
+                'recent_payments' => $recentPayments,
+                'sales_summary' => [
+                    'total_invoices' => $salesSummary->total_invoices ?? 0,
+                    'total_amount' => number_format($salesSummary->total_amount ?? 0, 2, '.', ''),
+                    'total_paid' => number_format($salesSummary->total_paid ?? 0, 2, '.', ''),
+                    'total_due' => number_format($salesSummary->total_due ?? 0, 2, '.', '')
+                ],
+                'bankAccounts' => $bankAccounts
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in customer show: ' . $e->getMessage());
+            return back()->with('error', 'An error occurred while loading customer details.');
+        }
     }
-
     public function create()
     {
         return Inertia::render('Admin/Customers/Create');
@@ -193,15 +188,16 @@ class CustomerController extends Controller
 
     public function addPayment(Request $request, Customer $customer)
     {
+
+
         $validatedData = $request->validate([
-            'sale_id' => 'required|exists:sales,id',
-            'amount' => 'required|numeric|min:0.01',
-            'payment_method' => 'required|in:cash,card,bank,mobile_banking',
+            'sale_id' => 'nullable|exists:sales,id',
+            'amount' => 'nullable|numeric|min:0.01',
+            'payment_method' => 'nullable|in:cash,card,bank,mobile_banking',
             'bank_account_id' => 'required_if:payment_method,bank,card|exists:bank_accounts,id',
             'transaction_id' => 'nullable|string',
             'note' => 'nullable|string'
         ]);
-
         try {
             DB::beginTransaction();
 

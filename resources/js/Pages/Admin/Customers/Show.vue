@@ -1,260 +1,363 @@
+# resources/js/Pages/Admin/Customers/Show.vue
+
 <template>
-    <AdminLayout :title="`Customer: ${customer.name}`">
+    <AdminLayout :title="'Customer Details - ' + customer.name" :user="$page.props.auth.user">
         <div class="container mx-auto px-4 py-6">
-            <!-- Customer Header -->
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {{ customer.name }}
-                    </h1>
-                    <div class="text-gray-500 dark:text-gray-400 space-x-2">
-                        <span>{{ customer.phone }}</span>
-                        <span v-if="customer.email">• {{ customer.email }}</span>
-                    </div>
-                </div>
-                <div class="flex space-x-2">
-                    <Link
-                        :href="route('admin.customers.edit', customer.id)"
-                        class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
-                    >
-                        <EditIcon class="w-5 h-5 inline-block mr-1" />
-                        Edit
-                    </Link>
-                    <button
-                        @click="toggleCustomerStatus"
-                        class="px-4 py-2 rounded-lg"
-                        :class="customer.status ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'"
-                    >
-                        {{ customer.status ? 'Deactivate' : 'Activate' }}
-                    </button>
-                </div>
-            </div>
+            <!-- Back Button -->
+            <Link :href="route('admin.customers.index')"
+                class="mb-6 inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
+            <ArrowLeftIcon class="w-5 h-5 mr-2" />
+            Back to Customers
+            </Link>
 
-            <!-- Customer Details Grid -->
-            <div class="grid md:grid-cols-3 gap-6 mb-6">
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4">Customer Info</h3>
-                    <div class="space-y-2">
-                        <p><strong>Address:</strong> {{ customer.address || 'N/A' }}</p>
-                        <p><strong>Credit Limit:</strong> ৳{{ formatNumber(customer.credit_limit) }}</p>
-                        <p><strong>Balance:</strong> ৳{{ formatNumber(customer.balance) }}</p>
-                        <p><strong>Loyalty Points:</strong> {{ customer.points }}</p>
-                        <p><strong>Status:</strong>
-                            <span
-                                :class="customer.status ? 'text-green-600' : 'text-red-600'"
-                            >
-                                {{ customer.status ? 'Active' : 'Inactive' }}
-                            </span>
-                        </p>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Summary Cards -->
+                <div class="space-y-6">
+                    <!-- Customer Info Card -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                                Customer Information
+                            </h3>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400">Name</label>
+                                <div class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ customer.name }}</div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400">Phone</label>
+                                <div class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ customer.phone }}</div>
+                            </div>
+                            <div v-if="customer.email">
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
+                                <div class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ customer.email }}</div>
+                            </div>
+                            <div v-if="customer.address">
+                                <label
+                                    class="block text-sm font-medium text-gray-600 dark:text-gray-400">Address</label>
+                                <div class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ customer.address }}</div>
+                            </div>
+                            <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Status</span>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" :class="{
+                                        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': customer.status,
+                                        'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200': !customer.status
+                                    }">
+                                        {{ customer.status ? 'Active' : 'Inactive' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Sales Summary -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4">Sales Summary</h3>
-                    <div class="space-y-2">
-                        <p><strong>Total Invoices:</strong> {{ salesSummary.total_invoices }}</p>
-                        <p><strong>Total Sales:</strong> ৳{{ formatNumber(salesSummary.total_amount) }}</p>
-                        <p><strong>Total Paid:</strong> ৳{{ formatNumber(salesSummary.total_paid) }}</p>
-                        <p><strong>Total Due:</strong> ৳{{ formatNumber(salesSummary.total_due) }}</p>
-                        <div class="flex space-x-2 mt-2">
-                            <span class="badge bg-green-100 text-green-800">
-                                Paid: {{ salesSummary.paid_invoices }}
-                            </span>
-                            <span class="badge bg-yellow-100 text-yellow-800">
-                                Partial: {{ salesSummary.partial_invoices }}
-                            </span>
-                            <span class="badge bg-red-100 text-red-800">
-                                Due: {{ salesSummary.due_invoices }}
-                            </span>
+                    <!-- Sales Summary -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Sales Summary</h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-sm text-gray-600 dark:text-gray-400">Total Sales</label>
+                                    <div class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                        {{ sales_summary.total_invoices }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-gray-600 dark:text-gray-400">Total Amount</label>
+                                    <div class="mt-1 text-2xl font-bold text-blue-600">
+                                        ৳{{ formatNumber(sales_summary.total_amount) }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-gray-600 dark:text-gray-400">Total Paid</label>
+                                    <div class="mt-1 text-2xl font-bold text-green-600">
+                                        ৳{{ formatNumber(sales_summary.total_paid) }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-gray-600 dark:text-gray-400">Total Due</label>
+                                    <div class="mt-1 text-2xl font-bold text-red-600">
+                                        ৳{{ formatNumber(sales_summary.total_due) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Payments -->
+                    <div v-if="recent_payments.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Recent Payments</h3>
+                        </div>
+                        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <div v-for="payment in recent_payments" :key="payment.id" class="p-4">
+                                <div class="flex justify-between">
+                                    <div>
+                                        <div class="font-medium text-gray-900 dark:text-gray-100">
+                                            ৳{{ formatNumber(payment.amount) }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">{{ payment.invoice_no }}</div>
+                                    </div>
+                                    <div class="text-sm text-gray-500">{{ payment.date }}</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Monthly Sales Chart -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4">Monthly Sales</h3>
-                    <LineChart
-                        v-if="monthlySalesChartData.length"
-                        :data="monthlySalesChartData"
-                        :lines="[
-                            { dataKey: 'total_amount', stroke: '#3B82F6' },
-                            { dataKey: 'paid_amount', stroke: '#10B981' }
-                        ]"
-                        height={250}
-                    />
-                    <p v-else class="text-gray-500">No sales data available</p>
-                </div>
-            </div>
+                <!-- Sales List & Payment Form -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Add Payment Form -->
+                    <div v-if="salesWithDue.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Add Payment</h3>
+                        </div>
+                        <form @submit.prevent="submitPayment" class="p-6 space-y-4">
+                            <!-- Sale Selection -->
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Invoice</label>
+                                <select v-model="form.sale_id"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800">
+                                    <option value="">Select Invoice</option>
+                                    <option v-for="sale in salesWithDue" :key="sale.id" :value="sale.id">
+                                        {{ sale.invoice_no }} - Due: ৳{{ formatNumber(sale.due) }}
+                                    </option>
+                                </select>
+                                <div v-if="form.errors.sale_id" class="mt-1 text-sm text-red-600">
+                                    {{ form.errors.sale_id }}
+                                </div>
+                            </div>
 
-            <!-- Recent Payments -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold">Recent Payments</h3>
-                    <button
-                        @click="openPaymentModal"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                        <PlusIcon class="w-5 h-5 inline-block mr-1" />
-                        Add Payment
-                    </button>
-                </div>
+                            <!-- Amount -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount</label>
+                                <div class="mt-1 relative rounded-md shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center">
+                                        <span class="text-gray-500 sm:text-sm">৳</span>
+                                    </div>
+                                    <input type="number" v-model="form.amount"
+                                        class="mt-1 block w-full pl-7 rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800"
+                                        step="0.01" :max="selectedSaleDue"
+                                        :placeholder="selectedSale ? `Max: ${formatNumber(selectedSaleDue)}` : '0.00'" />
+                                </div>
+                                <div v-if="form.errors.amount" class="mt-1 text-sm text-red-600">
+                                    {{ form.errors.amount }}
+                                </div>
+                            </div>
 
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b">
-                            <th class="text-left py-2">Date</th>
-                            <th class="text-left">Invoice</th>
-                            <th class="text-right">Amount</th>
-                            <th class="text-left">Method</th>
-                            <th class="text-left">Bank</th>
-                            <th class="text-left">Created By</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr
-                            v-for="payment in recentPayments"
-                            :key="payment.id"
-                            class="border-b last:border-b-0"
-                        >
-                            <td class="py-2">{{ payment.date }}</td>
-                            <td>{{ payment.invoice_no }}</td>
-                            <td class="text-right">৳{{ formatNumber(payment.amount) }}</td>
-                            <td>{{ payment.payment_method }}</td>
-                            <td>{{ payment.bank_account || 'N/A' }}</td>
-                            <td>{{ payment.created_by }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+                            <!-- Bank Account -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Bank
+                                    Account</label>
+                                <select v-model="form.bank_account_id"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800">
+                                    <option value="">Select Bank Account</option>
+                                    <option v-for="account in bankAccounts" :key="account.id" :value="account.id">
+                                        {{ account.bank_name }} - {{ account.account_name }}
+                                    </option>
+                                </select>
+                                <div v-if="form.errors.bank_account_id" class="mt-1 text-sm text-red-600">
+                                    {{ form.errors.bank_account_id }}
+                                </div>
+                            </div>
 
-            <!-- Sales History -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold mb-4">Sales History</h3>
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b">
-                            <th class="text-left py-2">Date</th>
-                            <th class="text-left">Invoice</th>
-                            <th class="text-right">Total</th>
-                            <th class="text-right">Paid</th>
-                            <th class="text-right">Due</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr
-                            v-for="sale in sales"
-                            :key="sale.id"
-                            class="border-b last:border-b-0"
-                        >
-                            <td class="py-2">{{ sale.date }}</td>
-                            <td>{{ sale.invoice_no }}</td>
-                            <td class="text-right">৳{{ formatNumber(sale.total) }}</td>
-                            <td class="text-right">৳{{ formatNumber(sale.paid) }}</td>
-                            <td class="text-right">৳{{ formatNumber(sale.due) }}</td>
-                            <td class="text-center">
-                                <span
-                                    :class="{
-                                        'bg-green-100 text-green-800': sale.payment_status === 'paid',
-                                        'bg-yellow-100 text-yellow-800': sale.payment_status === 'partial',
-                                        'bg-red-100 text-red-800': sale.payment_status === 'due'
-                                    }"
-                                    class="px-2 py-1 rounded-full text-xs"
-                                >
-                                    {{ sale.payment_status }}
-                                </span>
-                            </td>
-                            <td class="text-right">
-                                <button
-                                    @click="viewSaleDetails(sale)"
-                                    class="text-blue-600 hover:text-blue-900"
-                                >
-                                    <EyeIcon class="w-5 h-5" />
+                            <!-- Note -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Note</label>
+                                <textarea v-model="form.note"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800"
+                                    rows="2"></textarea>
+                                <div v-if="form.errors.note" class="mt-1 text-sm text-red-600">
+                                    {{ form.errors.note }}
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="flex justify-end pt-4">
+                                <button type="submit"
+                                    :disabled="form.processing || !form.amount || !form.bank_account_id || !form.sale_id"
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+                                    Add Payment
                                 </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+                            </div>
+                        </form>
+                    </div>
 
-            <!-- Add Payment Modal -->
-            <PaymentModal
-                v-if="showPaymentModal"
-                :customer-id="customer.id"
-                @close="closePaymentModal"
-            />
+                    <!-- Sales List -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Sales History</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Invoice
+                                        </th>
+                                        <th
+                                            class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Total
+                                        </th>
+                                        <th
+                                            class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Paid
+                                        </th>
+                                        <th
+                                            class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Due
+                                        </th>
+                                        <th
+                                            class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Status
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    <tr v-for="sale in sales" :key="sale.id">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900 dark:text-gray-100">{{ sale.invoice_no }}
+                                            </div>
+                                            <div class="text-xs text-gray-500">{{ sale.date }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
+                                            ৳{{ formatNumber(sale.total) }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600">
+                                            ৳{{ formatNumber(sale.paid) }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600">
+                                            ৳{{ formatNumber(sale.due) }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                                                :class="{
+                                                    'bg-green-100 text-green-800': sale.payment_status === 'paid',
+                                                    'bg-yellow-100 text-yellow-800': sale.payment_status === 'partial',
+                                                    'bg-red-100 text-red-800': sale.payment_status === 'due'
+                                                }">
+                                                {{ sale.payment_status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </AdminLayout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
-import {
-    EditIcon,
-    PlusIcon,
-    EyeIcon
-} from 'lucide-vue-next'
+import { ref, computed, watch } from 'vue'
+import { Link, useForm } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import PaymentModal from '@/Components/PaymentModal.vue'
-import LineChart from '@/Components/LineChart.vue'
+import { ArrowLeft as ArrowLeftIcon } from 'lucide-vue-next'
 
-// Props from the server
 const props = defineProps({
-    customer: Object,
-    sales: Array,
-    recent_payments: Array,
-    sales_summary: Object,
-    monthly_sales: Array
+    customer: {
+        type: Object,
+        required: true
+    },
+    sales: {
+        type: Array,
+        required: true,
+        default: () => []
+    },
+    sales_summary: {
+        type: Object,
+        required: true,
+        default: () => ({
+            total_invoices: 0,
+            total_amount: '0.00',
+            total_paid: '0.00',
+            total_due: '0.00'
+        })
+    },
+    recent_payments: {
+        type: Array,
+        default: () => []
+    },
+    bankAccounts: {
+        type: Array,
+        required: true,
+        default: () => []
+    }
 })
 
-// Reactive state
-const showPaymentModal = ref(false)
-
-// Computed properties for chart and summary
-const monthlySalesChartData = computed(() =>
-    props.monthly_sales.map(month => ({
-        ...month,
-        month: new Date(month.month + '-01').toLocaleString('default', { month: 'short' })
-    }))
-)
-
-const salesSummary = computed(() => props.sales_summary || {
-    total_invoices: 0,
-    total_amount: 0,
-    total_paid: 0,
-    total_due: 0,
-    paid_invoices: 0,
-    partial_invoices: 0,
-    due_invoices: 0
+const form = useForm({
+    sale_id: '',
+    amount: '',
+    bank_account_id: '',
+    note: ''
 })
 
-const recentPayments = computed(() => props.recent_payments || [])
-const sales = computed(() => props.sales || [])
+// Computed Properties
+const salesWithDue = computed(() => {
+    return props.sales.filter(sale => {
+        const due = parseFloat(sale.due || 0)
+        return due > 0
+    })
+})
 
-// Methods
-const toggleCustomerStatus = () => {
-    router.put(route('admin.customers.toggle-status', props.customer.id), {}, {
-        preserveState: true,
-        preserveScroll: true
+const selectedSale = computed(() => {
+    if (!form.sale_id) return null
+    return props.sales.find(sale => sale.id === form.sale_id) || null
+})
+
+const selectedSaleDue = computed(() => {
+    if (!selectedSale.value) return 0
+    return parseFloat(selectedSale.value.due || 0)
+})
+
+// Format number helper
+const formatNumber = (value) => {
+    if (!value) return '0.00'
+    if (typeof value === 'string') {
+        value = parseFloat(value)
+    }
+    return value.toLocaleString('bn-BD', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
     })
 }
 
-const formatNumber = (value) => {
-    return new Intl.NumberFormat('en-BD').format(value || 0)
+// Methods
+const submitPayment = () => {
+    if (!form.sale_id || !selectedSale.value) return
+
+    const dueAmount = selectedSaleDue.value
+    if (parseFloat(form.amount) > dueAmount) {
+        form.amount = dueAmount
+    }
+
+    form.post(route('admin.customers.add-payment', props.customer.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            form.reset()
+        }
+    })
 }
 
-const openPaymentModal = () => {
-    showPaymentModal.value = true
-}
-
-const closePaymentModal = () => {
-    showPaymentModal.value = false
-}
-
-const viewSaleDetails = (sale) => {
-    router.visit(route('admin.sales.show', sale.id))
-}
+// Watch for changes
+watch(() => form.sale_id, (newValue) => {
+    if (newValue && selectedSale.value) {
+        form.amount = selectedSale.value.due
+    } else {
+        form.amount = ''
+    }
+})
 </script>
+
+<style scoped>
+.dark {
+    color-scheme: dark;
+}
+</style>

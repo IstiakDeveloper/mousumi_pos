@@ -38,6 +38,10 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('product-stocks', ProductStockController::class)
         ->only(['index', 'create', 'store']);
     Route::resource('customers', CustomerController::class);
+    Route::post('customers/{customer}/toggle-status', [CustomerController::class, 'toggleStatus'])
+        ->name('customers.toggle-status');
+    Route::post('customers/{customer}/add-payment', [CustomerController::class, 'addPayment'])
+        ->name('customers.add-payment');
     Route::resource('bank-accounts', BankAccountController::class);
     Route::resource('bank-transactions', BankTransactionController::class);
     // Route::resource('sales', SaleController::class);
