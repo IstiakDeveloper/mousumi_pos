@@ -40,7 +40,10 @@ class BankTransactionController extends Controller
         $bankAccount = BankAccount::findOrFail($validatedData['bank_account_id']);
 
         DB::transaction(function () use ($validatedData, $bankAccount) {
-            $transaction = BankTransaction::create($validatedData);
+            $transaction = BankTransaction::create(array_merge(
+                $validatedData,
+                ['created_by' => auth()->id()] // Automatically set created_by
+            ));
 
             if ($transaction->transaction_type === 'deposit') {
                 $bankAccount->current_balance += $transaction->amount;
@@ -53,6 +56,7 @@ class BankTransactionController extends Controller
 
         return redirect()->route('admin.bank-transactions.index')->with('success', 'Bank transaction created successfully.');
     }
+
 
     public function edit(BankTransaction $bankTransaction)
     {

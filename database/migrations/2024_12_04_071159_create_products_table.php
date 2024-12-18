@@ -20,7 +20,7 @@ return new class extends Migration
             $table->foreignId('category_id')->constrained();
             $table->foreignId('brand_id')->nullable()->constrained();
             $table->foreignId('unit_id')->constrained();
-            $table->decimal('cost_price', 10, 2);
+            $table->decimal('cost_price', 10, 2)->nullable();
             $table->decimal('selling_price', 10, 2);
             $table->integer('alert_quantity')->default(0);
             $table->text('description')->nullable();

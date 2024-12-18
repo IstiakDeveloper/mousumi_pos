@@ -352,61 +352,83 @@ const activeDropdowns = ref([])
 // Navigation items
 const singleNavItems = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: 'fa-tachometer-alt' },
-    { name: 'Analytics', href: '/admin/analytics', icon: 'fa-chart-line' }
+    { name: 'POS', href: '/admin/pos', icon: 'fa-cash-register' },
 ]
 
 const dropdownNavItems = [
     {
-        name: 'User Management',
-        icon: 'fa-users',
+        name: 'Products',
+        icon: 'fa-box',
         items: [
-            { name: 'All Users', href: '/admin/users', icon: 'fa-user-friends' },
-            { name: 'Roles', href: '/admin/users/roles', icon: 'fa-user-shield' },
-            { name: 'Permissions', href: '/admin/users/permissions', icon: 'fa-lock' }
+            { name: 'Products', href: '/admin/products', icon: 'fa-boxes' },
+            { name: 'Categories', href: '/admin/categories', icon: 'fa-folder' },
+            { name: 'Brands', href: '/admin/brands', icon: 'fa-tag' },
+            { name: 'Units', href: '/admin/units', icon: 'fa-ruler' },
+            { name: 'Stock Management', href: '/admin/product-stocks', icon: 'fa-warehouse' }
         ]
     },
     {
-        name: 'Content',
-        icon: 'fa-newspaper',
-        items: [
-            { name: 'Pages', href: '/admin/content/pages', icon: 'fa-file' },
-            { name: 'Blog Posts', href: '/admin/content/posts', icon: 'fa-blog' },
-            { name: 'Media', href: '/admin/content/media', icon: 'fa-images' }
-        ]
-    },
-    {
-        name: 'E-commerce',
+        name: 'Sales',
         icon: 'fa-shopping-cart',
         items: [
-            { name: 'Products', href: '/admin/products', icon: 'fa-box' },
-            { name: 'Orders', href: '/admin/orders', icon: 'fa-shopping-bag' },
-            { name: 'Customers', href: '/admin/customers', icon: 'fa-user-circle' },
-            { name: 'Discounts', href: '/admin/discounts', icon: 'fa-percent' }
+            { name: 'Sales List', href: '/admin/sales', icon: 'fa-list' },
+            { name: 'POS', href: '/admin/pos', icon: 'fa-cash-register' }
+        ]
+    },
+    {
+        name: 'Customers',
+        icon: 'fa-users',
+        items: [
+            { name: 'Customers List', href: '/admin/customers', icon: 'fa-user-friends' },
+            { name: 'Customer Payments', href: '/admin/customers/payments', icon: 'fa-money-bill' }
+        ]
+    },
+    {
+        name: 'Banking',
+        icon: 'fa-university',
+        items: [
+            { name: 'Bank Accounts', href: '/admin/bank-accounts', icon: 'fa-piggy-bank' },
+            { name: 'Transactions', href: '/admin/bank-transactions', icon: 'fa-exchange-alt' }
+        ]
+    },
+    {
+        name: 'Reports',
+        icon: 'fa-chart-line',
+        items: [
+            { name: 'Sales Report', href: '/admin/reports/sales', icon: 'fa-chart-bar' },
+            { name: 'Inventory Report', href: '/admin/reports/inventory', icon: 'fa-boxes' },
+            { name: 'Customer Report', href: '/admin/reports/customers', icon: 'fa-user-chart' },
+            { name: 'Financial Report', href: '/admin/reports/financial', icon: 'fa-dollar-sign' }
         ]
     },
     {
         name: 'Settings',
         icon: 'fa-cog',
         items: [
-            { name: 'General', href: '/admin/settings/general', icon: 'fa-sliders-h' },
-            { name: 'Security', href: '/admin/settings/security', icon: 'fa-shield-alt' },
-            { name: 'Appearance', href: '/admin/settings/appearance', icon: 'fa-paint-brush' },
-            { name: 'Integrations', href: '/admin/settings/integrations', icon: 'fa-plug' }
+            { name: 'General Settings', href: '/admin/settings/general', icon: 'fa-sliders-h' },
+            { name: 'Business Settings', href: '/admin/settings/business', icon: 'fa-building' },
+            { name: 'User Management', href: '/admin/settings/users', icon: 'fa-users-cog' },
+            { name: 'Backup', href: '/admin/settings/backup', icon: 'fa-database' }
         ]
     }
 ]
 
-// Quick actions
+// Quick actions for frequently used features
 const quickActions = [
     {
-        name: 'Add New Post',
-        icon: 'fa-plus-circle',
-        handler: () => { /* Add handler */ }
+        name: 'New Sale',
+        icon: 'fa-cash-register',
+        handler: () => router.visit('/admin/pos')
     },
     {
-        name: 'Generate Report',
-        icon: 'fa-file-alt',
-        handler: () => { /* Add handler */ }
+        name: 'Add Product',
+        icon: 'fa-plus-circle',
+        handler: () => router.visit('/admin/products/create')
+    },
+    {
+        name: 'Print Barcodes',
+        icon: 'fa-barcode',
+        handler: () => router.visit('/admin/products/barcode/print')
     }
 ]
 

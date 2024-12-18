@@ -19,18 +19,18 @@ class ProductController extends Controller
     {
         $products = Product::query()
             ->with(['category', 'brand', 'unit', 'stocks', 'images']) // Include stocks relationship
-            ->when($request->search, function($query, $search) {
+            ->when($request->search, function ($query, $search) {
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('sku', 'like', "%{$search}%")
                     ->orWhere('barcode', 'like', "%{$search}%");
             })
-            ->when($request->category_id, function($query, $category_id) {
+            ->when($request->category_id, function ($query, $category_id) {
                 $query->where('category_id', $category_id);
             })
-            ->when($request->brand_id, function($query, $brand_id) {
+            ->when($request->brand_id, function ($query, $brand_id) {
                 $query->where('brand_id', $brand_id);
             })
-            ->when($request->status !== null, function($query) use ($request) {
+            ->when($request->status !== null, function ($query) use ($request) {
                 $query->where('status', $request->status);
             })
             ->latest()
@@ -42,6 +42,7 @@ class ProductController extends Controller
             'filters' => $request->only(['search', 'category_id', 'brand_id', 'status'])
         ]);
     }
+
 
 
     public function create()
@@ -62,8 +63,7 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'unit_id' => 'required|exists:units,id',
-            'cost_price' => 'required|numeric|min:0',
-            'selling_price' => 'required|numeric|min:0|gte:cost_price',
+            'selling_price' => 'required|numeric|min:0',
             'alert_quantity' => 'required|integer|min:0',
             'description' => 'nullable|string',
             'specifications' => 'nullable|array',
@@ -117,7 +117,6 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'unit_id' => 'required|exists:units,id',
-            'cost_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0|gte:cost_price',
             'alert_quantity' => 'required|integer|min:0',
             'description' => 'nullable|string',

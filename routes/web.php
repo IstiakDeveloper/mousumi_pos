@@ -2,7 +2,9 @@
 <?php
 
 use App\Http\Controllers\Admin\BankAccountController;
+use App\Http\Controllers\Admin\BankReportController;
 use App\Http\Controllers\Admin\BankTransactionController;
+use App\Http\Controllers\Admin\BarcodeController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CustomerController;
@@ -35,6 +37,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('units', UnitController::class);
     Route::resource('brands', BrandController::class);
     Route::resource('products', ProductController::class);
+    Route::post('/products/barcode/print', [ProductController::class, 'printBarcodes'])
+        ->name('products.barcode.print');
     Route::resource('product-stocks', ProductStockController::class)
         ->only(['index', 'create', 'store']);
     Route::resource('customers', CustomerController::class);
@@ -51,11 +55,11 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::post('/pos/store', [PosController::class, 'store'])->name('pos.store');
 
     Route::get('/pos/print-receipt/{id}', [PosController::class, 'printReceipt'])
-    ->name('pos.print-receipt');
+        ->name('pos.print-receipt');
     Route::get('/pos/products-by-category', [PosController::class, 'productsByCategory'])
-    ->name('pos.products.by.category');
+        ->name('pos.products.by.category');
     Route::get('/pos/products', [PosController::class, 'products'])
-    ->name('pos.products');
+        ->name('pos.products');
 
     Route::prefix('sales')->name('sales.')->group(function () {
         Route::get('/', [SaleController::class, 'index'])->name('index');
@@ -63,6 +67,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::delete('/{sale}', [SaleController::class, 'destroy'])->name('destroy');
         Route::get('/print/{id}', [SaleController::class, 'printReceipt'])->name('print-receipt');
     });
+    Route::post('/products/{product}/barcode', [BarcodeController::class, 'generate']);
+    Route::post('/products/barcode/print', [BarcodeController::class, 'print']);
+
+
+    Route::get('/reports/bank', [BankReportController::class, 'index'])->name('reports.bank');
+    Route::get('/reports/bank/download', [BankReportController::class, 'downloadPdf'])
+        ->name('reports.bank.download');
 });
 
 

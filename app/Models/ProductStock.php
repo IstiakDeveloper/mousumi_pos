@@ -9,7 +9,11 @@ class ProductStock extends Model
     protected $fillable = [
         'product_id',
         'product_variant_id',
-        'quantity'
+        'quantity',
+        'total_cost',
+        'unit_cost',
+        'note',
+        'created_by'
     ];
 
     public function product()
@@ -20,5 +24,11 @@ class ProductStock extends Model
     public function variant()
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+
+    // Add the createdBy relationship
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

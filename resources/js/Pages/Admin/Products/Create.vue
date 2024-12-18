@@ -1,7 +1,7 @@
 <template>
     <AdminLayout>
         <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <!-- Header -->
+            <!-- Header (remains the same) -->
             <header class="bg-white dark:bg-gray-800 shadow">
                 <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                     <div class="flex items-center justify-between">
@@ -90,9 +90,16 @@
 
                                             <!-- Barcode & Unit -->
                                             <div class="sm:col-span-3">
-                                                <InputLabel for="barcode" value="Barcode" />
-                                                <TextInput id="barcode" v-model="form.barcode" type="text"
-                                                    class="mt-1 block w-full" placeholder="Enter barcode" />
+                                                <InputLabel for="barcode" value="Barcode" required />
+                                                <div class="mt-1 flex rounded-md shadow-sm">
+                                                    <TextInput id="barcode" v-model="form.barcode" type="text"
+                                                        class="block w-full" :placeholder="barcodePlaceholder" required />
+                                                    <button type="button"
+                                                        class="relative -ml-px inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-gray-50 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
+                                                        @click="generateBarcode">
+                                                        <ArrowPathIcon class="h-5 w-5" />
+                                                    </button>
+                                                </div>
                                                 <InputError :message="form.errors.barcode" class="mt-2" />
                                             </div>
 
@@ -123,18 +130,11 @@
                                             Pricing Details
                                         </h3>
                                         <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                            Set your product's pricing and inventory information.
+                                            Set your product's selling price and inventory information.
                                         </p>
                                     </div>
                                     <div class="mt-5 md:mt-0 md:col-span-2">
-                                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                                            <div>
-                                                <InputLabel for="cost_price" value="Cost Price" required />
-                                                <PriceInput v-model="form.cost_price" id="cost_price" placeholder="0.00"
-                                                    required />
-                                                <InputError :message="form.errors.cost_price" class="mt-2" />
-                                            </div>
-
+                                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                             <div>
                                                 <InputLabel for="selling_price" value="Selling Price" required />
                                                 <div class="relative mt-1">
@@ -145,24 +145,12 @@
                                                     </div>
                                                     <input id="selling_price" v-model="form.selling_price" type="number"
                                                         step="0.01" min="0" required placeholder="0.00"
-                                                        @blur="validateSellingPrice"
-                                                        class="block w-full rounded-md border-gray-300 pl-7 pr-12 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"
-                                                        :class="{ 'border-red-500': sellingPriceError }">
+                                                        class="block w-full rounded-md border-gray-300 pl-7 pr-12 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300">
                                                     <div
                                                         class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                                                         <span
                                                             class="text-gray-500 sm:text-sm dark:text-gray-400">BDT</span>
                                                     </div>
-                                                </div>
-                                                <div class="mt-1">
-                                                    <p v-if="profitMargin && !sellingPriceError"
-                                                        class="text-sm text-green-600 dark:text-green-400">
-                                                        Margin: {{ profitMargin }}%
-                                                    </p>
-                                                    <p v-if="sellingPriceError"
-                                                        class="text-sm text-red-600 dark:text-red-400">
-                                                        {{ sellingPriceError }}
-                                                    </p>
                                                 </div>
                                                 <InputError :message="form.errors.selling_price" class="mt-2" />
                                             </div>
@@ -299,7 +287,8 @@
                         </div>
 
                         <!-- Form Actions -->
-                        <div class="flex justify-end space-x-3">
+                          <!-- Form Actions -->
+                          <div class="flex justify-end space-x-3">
                             <Link :href="route('admin.products.index')"
                                 class="inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800">
                             Cancel
@@ -335,14 +324,12 @@ import {
     ArrowLeftIcon,
     PhotoIcon,
     TrashIcon,
-    XMarkIcon,
+    ArrowPathIcon
 } from '@heroicons/vue/24/outline';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import SecondaryButton from '@/Components/SecondaryButton.vue';
-import PriceInput from '@/Components/PriceInput.vue';
 
 const props = defineProps({
     categories: Array,
@@ -358,7 +345,6 @@ const form = useForm({
     category_id: '',
     brand_id: '',
     unit_id: '',
-    cost_price: '',
     selling_price: '',
     alert_quantity: 0,
     description: '',
@@ -369,8 +355,6 @@ const form = useForm({
 
 // Specifications Management
 const specifications = ref([{ key: '', value: '' }]);
-const sellingPriceError = ref('');
-
 
 const addSpecification = () => {
     specifications.value.push({ key: '', value: '' });
@@ -380,19 +364,6 @@ const removeSpecification = (index) => {
     specifications.value.splice(index, 1);
 };
 
-const validateSellingPrice = () => {
-    sellingPriceError.value = '';
-
-    if (form.selling_price && form.cost_price) {
-        const selling = parseFloat(form.selling_price);
-        const cost = parseFloat(form.cost_price);
-
-        if (selling < cost) {
-            sellingPriceError.value = 'Selling price cannot be less than cost price';
-        }
-    }
-};
-
 // Image Management
 const imagesPreviews = ref([]);
 const selectedImages = ref([]);
@@ -400,7 +371,6 @@ const selectedImages = ref([]);
 const onImagesSelected = (event) => {
     const files = Array.from(event.target.files);
 
-    // Validate files
     const validFiles = files.filter(file => {
         // Check file size (2MB limit)
         if (file.size > 2 * 1024 * 1024) {
@@ -434,29 +404,26 @@ const removeImage = (index) => {
     form.images.splice(index, 1);
 };
 
-// Form Submission
-const submit = () => {
-    // Convert specifications array to object
-    const specsObject = specifications.value.reduce((acc, spec) => {
-        if (spec.key && spec.value) {
-            acc[spec.key] = spec.value;
-        }
-        return acc;
-    }, {});
+// Barcode Generation
+const generateBarcode = () => {
+    // Generate a random 13-digit EAN-13 barcode
+    const randomDigits = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10));
 
-    form.specifications = specsObject;
+    // Calculate the check digit
+    const checkSum = randomDigits.reduce((sum, digit, index) => {
+        return sum + digit * (index % 2 === 0 ? 1 : 3);
+    }, 0);
+    const checkDigit = (10 - (checkSum % 10)) % 10;
 
-    form.post(route('admin.products.store'), {
-        onSuccess: () => {
-            // Reset form state
-            specifications.value = [{ key: '', value: '' }];
-            imagesPreviews.value = [];
-            selectedImages.value = [];
-        },
-        preserveScroll: true,
-        forceFormData: true
-    });
+    form.barcode = [...randomDigits, checkDigit].join('');
 };
+
+// Generate Barcode on Name Change
+watch(() => form.name, (newValue) => {
+    if (newValue && !form.barcode) {
+        generateBarcode();
+    }
+}, { immediate: true });
 
 // Generate SKU
 const generateSku = () => {
@@ -482,12 +449,31 @@ watch(() => form.name, (newValue) => {
     }
 }, { immediate: true });
 
-// Validate selling price is greater than cost price
-const profitMargin = computed(() => {
-    if (!form.cost_price || !form.selling_price) return null;
-    const cost = parseFloat(form.cost_price);
-    const selling = parseFloat(form.selling_price);
-    if (cost <= 0) return null;
-    return ((selling - cost) / cost * 100).toFixed(2);
-});
+// Form Submission
+const submit = () => {
+    // Convert specifications array to object
+    const specsObject = specifications.value.reduce((acc, spec) => {
+        if (spec.key && spec.value) {
+            acc[spec.key] = spec.value;
+        }
+        return acc;
+    }, {});
+
+    form.specifications = specsObject;
+
+    form.post(route('admin.products.store'), {
+        onSuccess: () => {
+            // Reset form state
+            specifications.value = [{ key: '', value: '' }];
+            imagesPreviews.value = [];
+            selectedImages.value = [];
+        },
+        preserveScroll: true,
+        forceFormData: true
+    });
+};
+
+// Placeholder for auto-generated fields
+const skuPlaceholder = computed(() => form.name ? 'Click to generate SKU' : 'Enter product name first');
+const barcodePlaceholder = computed(() => form.name ? 'Click to generate Barcode' : 'Enter product name first');
 </script>

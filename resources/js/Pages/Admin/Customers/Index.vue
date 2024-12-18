@@ -172,7 +172,7 @@ watch(search, _.debounce((value) => {
 
 // Methods
 const formatNumber = (value) => {
-    return Number(value).toLocaleString('bn-BD', {
+    return Number(value).toLocaleString('en-BD', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });

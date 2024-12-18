@@ -188,21 +188,19 @@ class CustomerController extends Controller
 
     public function addPayment(Request $request, Customer $customer)
     {
-
-
         $validatedData = $request->validate([
-            'sale_id' => 'nullable|exists:sales,id',
-            'amount' => 'nullable|numeric|min:0.01',
-            'payment_method' => 'nullable|in:cash,card,bank,mobile_banking',
-            'bank_account_id' => 'required_if:payment_method,bank,card|exists:bank_accounts,id',
-            'transaction_id' => 'nullable|string',
+            'sale_id' => 'required|exists:sales,id',
+            'amount' => 'required|numeric|min:0.01',
+            'bank_account_id' => 'required|exists:bank_accounts,id',
             'note' => 'nullable|string'
         ]);
+
         try {
             DB::beginTransaction();
 
-            // Get the sale
+            // Get the sale and bank account
             $sale = Sale::findOrFail($validatedData['sale_id']);
+            $bankAccount = BankAccount::findOrFail($validatedData['bank_account_id']);
 
             // Check if payment amount is valid
             if ($validatedData['amount'] > $sale->due) {
@@ -213,42 +211,40 @@ class CustomerController extends Controller
             $payment = SalePayment::create([
                 'sale_id' => $sale->id,
                 'amount' => $validatedData['amount'],
-                'payment_method' => $validatedData['payment_method'],
-                'bank_account_id' => $validatedData['bank_account_id'] ?? null,
-                'transaction_id' => $validatedData['transaction_id'],
+                'payment_method' => 'bank', // Always bank
+                'bank_account_id' => $bankAccount->id,
                 'note' => $validatedData['note'],
                 'created_by' => auth()->id()
             ]);
 
-            // Update sale
+            // Update sale amounts and status
             $sale->increment('paid', $validatedData['amount']);
             $sale->decrement('due', $validatedData['amount']);
-            $sale->payment_status = $sale->due > 0 ? 'partial' : 'paid';
+            $sale->payment_status = $sale->due <= 0 ? 'paid' : 'partial';
             $sale->save();
 
             // Update customer balance
             $customer->decrement('balance', $validatedData['amount']);
 
-            // Create bank transaction if payment is by bank or card
-            if (in_array($validatedData['payment_method'], ['bank', 'card']) && isset($validatedData['bank_account_id'])) {
-                $bankAccount = BankAccount::findOrFail($validatedData['bank_account_id']);
+            // Create bank transaction and update balance
+            $transaction = $bankAccount->transactions()->create([
+                'transaction_type' => 'deposit',
+                'amount' => $validatedData['amount'],
+                'description' => "Payment received for invoice {$sale->invoice_no} from customer {$customer->name}",
+                'date' => now(),
+                'created_by' => auth()->id()
+            ]);
 
-                $bankAccount->transactions()->create([
-                    'transaction_type' => 'deposit',
-                    'amount' => $validatedData['amount'],
-                    'description' => "Payment received for invoice {$sale->invoice_no}",
-                    'date' => now(),
-                    'created_by' => auth()->id()
-                ]);
-
-                $bankAccount->increment('current_balance', $validatedData['amount']);
-            }
+            // Update bank account balance
+            $bankAccount->current_balance += $validatedData['amount'];
+            $bankAccount->save();
 
             DB::commit();
 
             return back()->with('success', 'Payment added successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('Payment Error: ' . $e->getMessage());
             return back()->with('error', 'Error adding payment: ' . $e->getMessage());
         }
     }

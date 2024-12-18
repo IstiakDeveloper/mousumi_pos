@@ -44,4 +44,12 @@ class BankAccount extends Model
     {
         return $this->hasMany(SalePayment::class);
     }
+
+    public function updateBalance($amount, $type = 'deposit')
+    {
+        $this->current_balance = $type === 'deposit'
+            ? $this->current_balance + $amount
+            : $this->current_balance - $amount;
+        $this->save();
+    }
 }

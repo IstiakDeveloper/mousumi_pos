@@ -149,15 +149,16 @@
                                 </div>
                             </div>
 
-                            <!-- Bank Account -->
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Bank
-                                    Account</label>
-                                <select v-model="form.bank_account_id"
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Bank Account
+                                </label>
+                                <select v-model="form.bank_account_id" @change="handleBankAccountSelect"
                                     class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800">
                                     <option value="">Select Bank Account</option>
                                     <option v-for="account in bankAccounts" :key="account.id" :value="account.id">
-                                        {{ account.bank_name }} - {{ account.account_name }}
+                                        {{ account.bank_name }} - {{ account.account_name }} ({{ account.account_number
+                                        }})
                                     </option>
                                 </select>
                                 <div v-if="form.errors.bank_account_id" class="mt-1 text-sm text-red-600">
@@ -252,6 +253,8 @@
                 </div>
             </div>
         </div>
+
+
     </AdminLayout>
 </template>
 
@@ -296,8 +299,19 @@ const form = useForm({
     sale_id: '',
     amount: '',
     bank_account_id: '',
+    payment_method: 'bank', // Default to bank since we're always using bank accounts
     note: ''
-})
+});
+
+const handleBankAccountSelect = () => {
+    if (form.bank_account_id) {
+        form.payment_method = 'bank';
+    }
+};
+
+const canSubmit = computed(() => {
+    return !!form.amount && !!form.bank_account_id && !!form.sale_id && !form.processing;
+});
 
 // Computed Properties
 const salesWithDue = computed(() => {
@@ -323,7 +337,7 @@ const formatNumber = (value) => {
     if (typeof value === 'string') {
         value = parseFloat(value)
     }
-    return value.toLocaleString('bn-BD', {
+    return value.toLocaleString('en-BD', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     })
@@ -331,20 +345,20 @@ const formatNumber = (value) => {
 
 // Methods
 const submitPayment = () => {
-    if (!form.sale_id || !selectedSale.value) return
+    if (!canSubmit.value) return;
 
-    const dueAmount = selectedSaleDue.value
-    if (parseFloat(form.amount) > dueAmount) {
-        form.amount = dueAmount
+    if (selectedSale.value && parseFloat(form.amount) > selectedSaleDue.value) {
+        form.amount = selectedSaleDue.value;
     }
 
     form.post(route('admin.customers.add-payment', props.customer.id), {
         preserveScroll: true,
         onSuccess: () => {
-            form.reset()
+            // Show success notification if you have one
+            window.location.reload(); // Reload to refresh all balances
         }
-    })
-}
+    });
+};
 
 // Watch for changes
 watch(() => form.sale_id, (newValue) => {
