@@ -1,5 +1,7 @@
 <!-- Index.vue -->
 <template>
+
+    <Head title="Product Stocks" />
     <AdminLayout>
         <div class="min-h-screen py-6 bg-gray-50 dark:bg-gray-900">
             <!-- Header -->
@@ -13,8 +15,8 @@
                     </div>
                     <Link :href="route('admin.product-stocks.create')"
                         class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-                        <PlusIcon class="h-5 w-5 mr-2" />
-                        Add Stock
+                    <PlusIcon class="h-5 w-5 mr-2" />
+                    Add Stock
                     </Link>
                 </div>
 
@@ -129,22 +131,28 @@
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-50 dark:bg-gray-700">
                             <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     Product Info
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     Quantity
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     Unit Cost
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     Total Value
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th scope="col"
+                                    class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     Status
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     Actions
                                 </th>
                             </tr>
@@ -175,14 +183,13 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                                        :class="{
-                                            'bg-green-100 text-green-800': stock.stock_status === 'in',
-                                            'bg-yellow-100 text-yellow-800': stock.stock_status === 'low',
-                                            'bg-red-100 text-red-800': stock.stock_status === 'out'
-                                        }">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" :class="{
+                                        'bg-green-100 text-green-800': stock.stock_status === 'in',
+                                        'bg-yellow-100 text-yellow-800': stock.stock_status === 'low',
+                                        'bg-red-100 text-red-800': stock.stock_status === 'out'
+                                    }">
                                         {{ stock.stock_status === 'in' ? 'In Stock' :
-                                           stock.stock_status === 'low' ? 'Low Stock' : 'Out of Stock' }}
+                                            stock.stock_status === 'low' ? 'Low Stock' : 'Out of Stock' }}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -208,18 +215,16 @@
         </div>
 
         <!-- Delete Confirmation Modal -->
-        <ConfirmationModal :show="!!stockToDelete" @close="stockToDelete = null"
-            title="Delete Stock"
+        <ConfirmationModal :show="!!stockToDelete" @close="stockToDelete = null" title="Delete Stock"
             message="Are you sure you want to delete this stock entry? This action cannot be undone."
-            confirm-text="Delete"
-            @confirm="deleteStock">
+            confirm-text="Delete" @confirm="deleteStock">
         </ConfirmationModal>
     </AdminLayout>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import Pagination from '@/Components/Pagination.vue';
@@ -247,7 +252,7 @@ const stockToDelete = ref(null);
 // Methods
 const formatNumber = (value) => {
     if (!value) return '0.00';
-    return Number(value).toLocaleString('bn-BD', {
+    return Number(value).toLocaleString('en-BD', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });

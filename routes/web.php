@@ -9,10 +9,14 @@ use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ExpenseCategoryController;
+use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\PosController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductStockController;
+use App\Http\Controllers\Admin\ProductStockReportController;
 use App\Http\Controllers\Admin\SaleController;
+use App\Http\Controllers\Admin\SaleReportController;
 use App\Http\Controllers\Admin\UnitController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -33,6 +37,7 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('categories', CategoryController::class);
     Route::resource('units', UnitController::class);
     Route::resource('brands', BrandController::class);
@@ -74,8 +79,22 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/reports/bank', [BankReportController::class, 'index'])->name('reports.bank');
     Route::get('/reports/bank/download', [BankReportController::class, 'downloadPdf'])
         ->name('reports.bank.download');
-});
 
+    Route::get('/reports/stock', [ProductStockReportController::class, 'index'])
+        ->name('reports.stock');
+    Route::get('/reports/stock/download', [ProductStockReportController::class, 'downloadPdf'])
+        ->name('reports.stock.download');
+
+    Route::get('/reports/sales', [SaleReportController::class, 'index'])
+        ->name('reports.sales');
+    Route::get('/reports/sales/download', [SaleReportController::class, 'downloadPdf'])
+        ->name('reports.sales.download');
+
+    Route::resource('expenses', ExpenseController::class);
+    Route::post('expenses/{expense}/restore', [ExpenseController::class, 'restore'])->name('expenses.restore');
+    Route::resource('expense-categories', ExpenseCategoryController::class);
+
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -84,7 +103,6 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/users', [DashboardController::class, 'users'])->name('admin.users');
 });
 

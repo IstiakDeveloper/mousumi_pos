@@ -1,5 +1,5 @@
-# /resources/js/Pages/Admin/Products/Index.vue
 <template>
+    <Head title="Products" />
     <AdminLayout>
         <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
             <!-- Header Section -->
@@ -174,7 +174,7 @@
 # /resources/js/Pages/Admin/Products/Index.vue (Script Part)
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { router, Link } from '@inertiajs/vue3';
+import { router, Link, Head } from '@inertiajs/vue3';
 import { debounce } from 'lodash';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import Pagination from '@/Components/Pagination.vue';

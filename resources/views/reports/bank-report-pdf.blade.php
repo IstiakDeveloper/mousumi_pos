@@ -5,12 +5,35 @@
     <meta charset="utf-8">
     <title>Bank Report</title>
     <style>
-        body {
+  body {
             font-family: 'DejaVu Sans', sans-serif;
-            font-size: 10px;
+            font-size: 9px;
             line-height: 1.3;
             margin: 15px 15px;
             color: #333;
+        }
+
+        .transactions-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8px; /* Smaller font for detailed transactions */
+        }
+
+        .month-header {
+            background: #f4f4f4;
+            padding: 6px;
+            margin-top: 10px;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+
+        .monthly-summary {
+            background: #f8f8f8;
+            font-weight: bold;
+        }
+
+        .transaction-row:nth-child(even) {
+            background-color: #f9f9f9;
         }
 
         .header {
@@ -154,7 +177,7 @@
 <body>
     <div class="header">
         <div class="company-name">{{ config('app.name', 'Company Name') }}</div>
-        <div class="report-title">Bank Balance Report</div>
+        <div class="report-title">Bank Transaction Report</div>
         <div class="date-range">Report Period: {{ $date_range['from'] }} to {{ $date_range['to'] }}</div>
     </div>
 
@@ -177,7 +200,7 @@
 
     @foreach($reports as $index => $report)
         <div class="account-section">
-            @if($index > 0 && $index % 2 == 0)
+            @if($index > 0)
                 <div class="page-break"></div>
             @endif
 
@@ -185,36 +208,59 @@
                 <div class="account-name">{{ $report['account']['bank'] }} - {{ $report['account']['name'] }}</div>
                 <div class="account-details">
                     Account No: {{ $report['account']['number'] }}<br>
+                    Opening Balance: {{ number_format($report['opening_balance'], 2) }} BDT<br>
                     Previous Balance: {{ number_format($report['previous_balance'], 2) }} BDT
                 </div>
             </div>
 
-            <table class="transactions-table">
-                <thead>
-                    <tr>
-                        <th class="col-month">Month</th>
-                        <th class="col-amount text-right">Deposits</th>
-                        <th class="col-amount text-right">Withdrawals</th>
-                        <th class="col-amount text-right">Net Change</th>
-                        <th class="col-amount text-right">Balance</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($report['monthly_data'] as $month)
+            @foreach($report['monthly_data'] as $monthData)
+                <div class="month-header">
+                    {{ $monthData['month'] }}
+                </div>
+
+                <table class="transactions-table">
+                    <thead>
                         <tr>
-                            <td>{{ $month['month'] }}</td>
-                            <td class="text-right amount">{{ number_format($month['deposits'], 2) }}</td>
-                            <td class="text-right amount">{{ number_format($month['withdrawals'], 2) }}</td>
-                            <td class="text-right amount {{ $month['net'] >= 0 ? 'positive' : 'negative' }}">
-                                {{ number_format($month['net'], 2) }}
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th class="text-right">Deposits</th>
+                            <th class="text-right">Withdrawals</th>
+                            <th class="text-right">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($monthData['transactions'] as $transaction)
+                            <tr class="transaction-row">
+                                <td>{{ $transaction['date'] }}</td>
+                                <td>{{ $transaction['description'] }}</td>
+                                <td>{{ ucfirst($transaction['type']) }}</td>
+                                <td class="text-right amount">
+                                    {{ $transaction['deposit'] > 0 ? number_format($transaction['deposit'], 2) : '-' }}
+                                </td>
+                                <td class="text-right amount">
+                                    {{ $transaction['withdrawal'] > 0 ? number_format($transaction['withdrawal'], 2) : '-' }}
+                                </td>
+                                <td class="text-right amount {{ $transaction['balance'] >= 0 ? 'positive' : 'negative' }}">
+                                    {{ number_format($transaction['balance'], 2) }}
+                                </td>
+                            </tr>
+                        @endforeach
+                        <tr class="monthly-summary">
+                            <td colspan="3">Monthly Total</td>
+                            <td class="text-right amount positive">
+                                {{ number_format($monthData['summary']['deposits'], 2) }}
                             </td>
-                            <td class="text-right amount {{ $month['balance'] >= 0 ? 'positive' : 'negative' }}">
-                                {{ number_format($month['balance'], 2) }}
+                            <td class="text-right amount negative">
+                                {{ number_format($monthData['summary']['withdrawals'], 2) }}
+                            </td>
+                            <td class="text-right amount {{ $monthData['summary']['ending_balance'] >= 0 ? 'positive' : 'negative' }}">
+                                {{ number_format($monthData['summary']['ending_balance'], 2) }}
                             </td>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            @endforeach
         </div>
     @endforeach
 

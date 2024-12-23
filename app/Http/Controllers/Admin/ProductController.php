@@ -68,7 +68,8 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'specifications' => 'nullable|array',
             'status' => 'boolean',
-            'images.*' => 'image|max:2048'
+            'images.*' => 'image|max:2048',
+            'primary_image_index' => 'required|integer|min:0'
         ]);
 
         $validated['slug'] = Str::slug($request->name);
@@ -76,9 +77,11 @@ class ProductController extends Controller
         $product = Product::create($validated);
 
         if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
+            foreach ($request->file('images') as $index => $image) {
                 $product->images()->create([
-                    'image' => $image->store('products', 'public')
+                    'image' => $image->store('products', 'public'),
+                    'is_primary' => $index === (int)$request->primary_image_index,
+                    'sort_order' => $index
                 ]);
             }
         }

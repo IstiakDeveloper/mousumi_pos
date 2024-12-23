@@ -1,4 +1,5 @@
 <template>
+    <Head title="Customer Edit" />
     <AdminLayout>
       <template #header>
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -59,6 +60,7 @@
 
   <script>
   import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { Head } from '@inertiajs/vue3';
 
   export default {
     components: {

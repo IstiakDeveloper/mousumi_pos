@@ -1,4 +1,5 @@
 <template>
+    <Head title="Product Edit" />
     <AdminLayout>
         <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
             <!-- Header -->
@@ -160,7 +161,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import { useForm, Link } from '@inertiajs/vue3';
+import { useForm, Link, Head } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import {
     ArrowLeftIcon,

@@ -1,6 +1,5 @@
-# resources/js/Pages/Admin/Customers/Index.vue
-
 <template>
+    <Head title="Customers" />
     <AdminLayout title="Customers">
         <div class="container mx-auto px-4 py-6">
             <!-- Header Actions -->
@@ -138,7 +137,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import { Head, Link, router } from '@inertiajs/vue3'
 import _ from 'lodash'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import Pagination from '@/Components/Pagination.vue'

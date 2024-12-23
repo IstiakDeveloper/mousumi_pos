@@ -32,6 +32,11 @@ class DatabaseSeeder extends Seeder
             'address' => null,
             'status' => 1,  // Use integer 1 for active status
         ]);
+
+        $this->call([
+            UnitSeeder::class,
+            CategorySeeder::class,
+        ]);
     }
 
 }

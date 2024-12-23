@@ -1,6 +1,5 @@
-# resources/js/Pages/Admin/Customers/Show.vue
-
 <template>
+    <Head title="Customer" />
     <AdminLayout :title="'Customer Details - ' + customer.name" :user="$page.props.auth.user">
         <div class="container mx-auto px-4 py-6">
             <!-- Back Button -->
@@ -260,7 +259,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { Link, useForm } from '@inertiajs/vue3'
+import { Head, Link, useForm } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import { ArrowLeft as ArrowLeftIcon } from 'lucide-vue-next'
 

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('bank_transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('bank_account_id')->constrained();
-            $table->string('transaction_type'); // deposit, withdrawal, transfer
+            $table->string('transaction_type');
             $table->decimal('amount', 10, 2);
             $table->text('description')->nullable();
             $table->date('date');

@@ -168,9 +168,11 @@
                                     :class="transaction.type === 'deposit' ? 'text-green-600' : 'text-red-600'">
                                     {{ formatPrice(transaction.amount) }}
                                 </td>
-                                <td class="px-4 py-3 text-right font-medium"
-                                    :class="getBalanceColorClass(transaction.running_balance)">
-                                    {{ formatPrice(transaction.running_balance) }}
+                                <td class="px-4 py-3 text-right" :class="{
+                                    'text-green-600': transaction.type === 'deposit' || transaction.type === 'loan_taken',
+                                    'text-red-600': transaction.type === 'withdrawal' || transaction.type === 'loan_payment'
+                                }">
+                                    {{ formatPrice(transaction.amount) }}
                                 </td>
                                 <td class="px-4 py-3">{{ transaction.created_by }}</td>
                             </tr>
@@ -280,6 +282,10 @@ const getTransactionTypeClass = (type) => {
             return 'bg-red-100 text-red-800 dark:bg-red-200 dark:text-red-900'
         case 'transfer':
             return 'bg-blue-100 text-blue-800 dark:bg-blue-200 dark:text-blue-900'
+        case 'loan_taken':
+            return 'bg-purple-100 text-purple-800 dark:bg-purple-200 dark:text-purple-900'
+        case 'loan_payment':
+            return 'bg-orange-100 text-orange-800 dark:bg-orange-200 dark:text-orange-900'
         default:
             return 'bg-gray-100 text-gray-800 dark:bg-gray-200 dark:text-gray-900'
     }

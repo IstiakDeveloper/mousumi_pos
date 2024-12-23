@@ -1,6 +1,5 @@
-# resources/js/Pages/Admin/Sales/Show.vue
-
 <template>
+    <Head title="Sale" />
     <AdminLayout :title="'Sale Details - ' + sale.invoice_no">
         <div class="container mx-auto px-4 py-6">
             <!-- Header Actions -->
@@ -231,7 +230,7 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import {
     ArrowLeft as ArrowLeftIcon,

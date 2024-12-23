@@ -1,4 +1,5 @@
 <template>
+    <Head title="Brands" />
     <AdminLayout>
         <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
             <!-- Header -->
@@ -189,7 +190,7 @@
 
 <script setup>
 import { ref, watch } from 'vue';
-import { router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { debounce } from 'lodash';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import {

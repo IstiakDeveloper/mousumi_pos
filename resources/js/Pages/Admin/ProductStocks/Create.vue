@@ -1,4 +1,6 @@
 <template>
+
+    <Head title="Stock Create" />
     <AdminLayout>
         <div class="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
@@ -111,7 +113,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({

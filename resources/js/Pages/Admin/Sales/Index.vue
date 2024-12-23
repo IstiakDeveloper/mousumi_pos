@@ -1,4 +1,5 @@
 <template>
+    <Head title="Sales" />
     <AdminLayout title="Sales List">
         <!-- Page Container -->
         <div class="container mx-auto px-4 py-6">
@@ -274,7 +275,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import { Head, Link, router } from '@inertiajs/vue3'
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/vue'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
@@ -306,7 +307,7 @@ const filters = ref({
 
 // Methods
 const formatNumber = (value) => {
-    return Number(value).toLocaleString('bn-BD', {
+    return Number(value).toLocaleString('en-BD', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     })

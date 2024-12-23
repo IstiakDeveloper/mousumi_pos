@@ -13,6 +13,14 @@ use Illuminate\Support\Facades\DB;
 
 class BankReportController extends Controller
 {
+    private function getTransactionEffect($type, $amount)
+    {
+        return match ($type) {
+            'deposit', 'loan_taken' => $amount,
+            'withdrawal', 'loan_payment' => -$amount,
+            default => 0,
+        };
+    }
     public function index(Request $request)
     {
         $request->validate([
@@ -36,9 +44,12 @@ class BankReportController extends Controller
             // Get previous balance (before from_date)
             $previousBalance = $account->opening_balance +
                 DB::table('bank_transactions')
-                    ->where('bank_account_id', $account->id)
-                    ->where('date', '<', $fromDate)
-                    ->sum(DB::raw('CASE WHEN transaction_type = "deposit" THEN amount ELSE -amount END'));
+                ->where('bank_account_id', $account->id)
+                ->where('date', '<', $fromDate)
+                ->sum(DB::raw('CASE
+                        WHEN transaction_type IN ("deposit", "loan_taken") THEN amount
+                        ELSE -amount
+                    END'));
 
             // Get all transactions for the period
             $transactions = BankTransaction::with('createdBy')
@@ -48,7 +59,9 @@ class BankReportController extends Controller
                 ->orderBy('id')
                 ->get()
                 ->map(function ($transaction) use (&$previousBalance) {
-                    $balance = $previousBalance + ($transaction->transaction_type === 'deposit' ? $transaction->amount : -$transaction->amount);
+                    $effect = $this->getTransactionEffect($transaction->transaction_type, $transaction->amount);
+                    $balance = $previousBalance + $effect;
+
                     $result = [
                         'id' => $transaction->id,
                         'date' => $transaction->date,
@@ -66,12 +79,14 @@ class BankReportController extends Controller
             $monthlySummary = $transactions->groupBy(function ($transaction) {
                 return Carbon::parse($transaction['date'])->format('Y-m');
             })->map(function ($monthTransactions) {
+                $deposits = $monthTransactions->whereIn('type', ['deposit', 'loan_taken'])->sum('amount');
+                $withdrawals = $monthTransactions->whereIn('type', ['withdrawal', 'loan_payment'])->sum('amount');
+
                 return [
                     'month' => Carbon::parse($monthTransactions->first()['date'])->format('F Y'),
-                    'deposits' => $monthTransactions->where('type', 'deposit')->sum('amount'),
-                    'withdrawals' => $monthTransactions->where('type', 'withdrawal')->sum('amount'),
-                    'net' => $monthTransactions->where('type', 'deposit')->sum('amount') -
-                            $monthTransactions->where('type', 'withdrawal')->sum('amount'),
+                    'deposits' => $deposits,
+                    'withdrawals' => $withdrawals,
+                    'net' => $deposits - $withdrawals,
                     'transaction_count' => $monthTransactions->count()
                 ];
             })->values();
@@ -94,10 +109,10 @@ class BankReportController extends Controller
         $summary = [
             'total_accounts' => $accounts->count(),
             'total_balance' => $accounts->sum('current_balance'),
-            'total_deposits' => BankTransaction::where('transaction_type', 'deposit')
+            'total_deposits' => BankTransaction::whereIn('transaction_type', ['deposit', 'loan_taken'])
                 ->whereBetween('date', [$fromDate, $toDate])
                 ->sum('amount'),
-            'total_withdrawals' => BankTransaction::where('transaction_type', 'withdrawal')
+            'total_withdrawals' => BankTransaction::whereIn('transaction_type', ['withdrawal', 'loan_payment'])
                 ->whereBetween('date', [$fromDate, $toDate])
                 ->sum('amount'),
             'total_transactions' => BankTransaction::whereBetween('date', [$fromDate, $toDate])->count()
@@ -115,6 +130,7 @@ class BankReportController extends Controller
         ]);
     }
 
+    # BankReportController.php
     public function downloadPdf(Request $request)
     {
         $request->validate([
@@ -129,44 +145,63 @@ class BankReportController extends Controller
         }
         $accounts = $query->get();
 
-        // Get date range
         $fromDate = $request->from_date ? Carbon::parse($request->from_date) : Carbon::now()->startOfMonth();
         $toDate = $request->to_date ? Carbon::parse($request->to_date) : Carbon::now()->endOfMonth();
 
-        // Get monthly transactions for each account
         $reports = $accounts->map(function ($account) use ($fromDate, $toDate) {
-            // Previous balance calculation
+            // Get previous balance before from_date
             $previousBalance = $account->opening_balance +
                 DB::table('bank_transactions')
-                    ->where('bank_account_id', $account->id)
-                    ->where('date', '<', $fromDate)
-                    ->sum(DB::raw('CASE WHEN transaction_type = "deposit" THEN amount ELSE -amount END'));
-
-            // Monthly transactions
-            $transactions = DB::table('bank_transactions')
-                ->select(
-                    DB::raw('DATE_FORMAT(date, "%Y-%m") as month'),
-                    DB::raw('SUM(CASE WHEN transaction_type = "deposit" THEN amount ELSE 0 END) as deposits'),
-                    DB::raw('SUM(CASE WHEN transaction_type = "withdrawal" THEN amount ELSE 0 END) as withdrawals')
-                )
                 ->where('bank_account_id', $account->id)
+                ->where('date', '<', $fromDate)
+                ->sum(DB::raw('CASE WHEN transaction_type = "deposit" THEN amount ELSE -amount END'));
+
+            // Get all transactions with details
+            $allTransactions = BankTransaction::where('bank_account_id', $account->id)
                 ->whereBetween('date', [$fromDate, $toDate])
-                ->groupBy('month')
-                ->orderBy('month')
+                ->orderBy('date')
                 ->get();
 
-            // Calculate running balance
+            // Group transactions by month
+            $monthlyData = [];
             $runningBalance = $previousBalance;
-            $monthlyData = $transactions->map(function ($transaction) use (&$runningBalance) {
-                $runningBalance += ($transaction->deposits - $transaction->withdrawals);
-                return [
-                    'month' => Carbon::createFromFormat('Y-m', $transaction->month)->format('F Y'),
-                    'deposits' => $transaction->deposits,
-                    'withdrawals' => $transaction->withdrawals,
-                    'net' => $transaction->deposits - $transaction->withdrawals,
-                    'balance' => $runningBalance
+
+            foreach (
+                $allTransactions->groupBy(function ($transaction) {
+                    return Carbon::parse($transaction->date)->format('Y-m');
+                }) as $month => $transactions
+            ) {
+                $monthTransactions = [];
+                foreach ($transactions as $transaction) {
+                    // Update running balance
+                    $amount = $transaction->transaction_type == 'deposit' ? $transaction->amount : -$transaction->amount;
+                    $runningBalance += $amount;
+
+                    $monthTransactions[] = [
+                        'date' => Carbon::parse($transaction->date)->format('d M, Y'),
+                        'description' => $transaction->description,
+                        'type' => $transaction->transaction_type,
+                        'deposit' => $transaction->transaction_type == 'deposit' ? $transaction->amount : 0,
+                        'withdrawal' => $transaction->transaction_type == 'withdrawal' ? $transaction->amount : 0,
+                        'balance' => $runningBalance
+                    ];
+                }
+
+                // Calculate monthly summary
+                $monthlyDeposits = $transactions->where('transaction_type', 'deposit')->sum('amount');
+                $monthlyWithdrawals = $transactions->where('transaction_type', 'withdrawal')->sum('amount');
+
+                $monthlyData[] = [
+                    'month' => Carbon::createFromFormat('Y-m', $month)->format('F Y'),
+                    'transactions' => $monthTransactions,
+                    'summary' => [
+                        'deposits' => $monthlyDeposits,
+                        'withdrawals' => $monthlyWithdrawals,
+                        'net' => $monthlyDeposits - $monthlyWithdrawals,
+                        'ending_balance' => $runningBalance
+                    ]
                 ];
-            });
+            }
 
             return [
                 'account' => [
@@ -176,7 +211,7 @@ class BankReportController extends Controller
                 ],
                 'opening_balance' => $account->opening_balance,
                 'previous_balance' => $previousBalance,
-                'current_balance' => $account->current_balance,
+                'current_balance' => $runningBalance,
                 'monthly_data' => $monthlyData
             ];
         });
@@ -202,8 +237,8 @@ class BankReportController extends Controller
             ]
         ];
 
-        $pdf = Pdf::loadView('reports.bank-report-pdf', $data);
-        $pdf->setPaper('a4');
+        $pdf = PDF::loadView('reports.bank-report-pdf', $data);
+        $pdf->setPaper('a4', 'landscape');
 
         return $pdf->download('bank-report-' . now()->format('Y-m-d') . '.pdf');
     }

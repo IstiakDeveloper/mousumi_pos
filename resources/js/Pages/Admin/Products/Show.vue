@@ -1,5 +1,5 @@
-# /resources/js/Pages/Admin/Products/Show.vue
 <template>
+    <Head title="Product" />
     <AdminLayout>
         <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
             <!-- Header Section -->
@@ -177,7 +177,7 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { PencilIcon } from '@heroicons/vue/24/outline';
 import BarcodeGenerator from '@/Components/BarcodeGenerator.vue';

@@ -1,4 +1,6 @@
 <template>
+
+    <Head title="Product Create" />
     <AdminLayout>
         <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
             <!-- Header (remains the same) -->
@@ -93,7 +95,8 @@
                                                 <InputLabel for="barcode" value="Barcode" required />
                                                 <div class="mt-1 flex rounded-md shadow-sm">
                                                     <TextInput id="barcode" v-model="form.barcode" type="text"
-                                                        class="block w-full" :placeholder="barcodePlaceholder" required />
+                                                        class="block w-full" :placeholder="barcodePlaceholder"
+                                                        required />
                                                     <button type="button"
                                                         class="relative -ml-px inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-gray-50 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
                                                         @click="generateBarcode">
@@ -258,28 +261,44 @@
                                             </div>
                                         </div>
 
-                                        <!-- Image Previews -->
-                                        <div v-if="imagesPreviews.length"
-                                            class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                                            <TransitionGroup
-                                                enter-active-class="transition-all duration-300 ease-in-out"
-                                                enter-from-class="opacity-0 scale-95"
-                                                enter-to-class="opacity-100 scale-100"
-                                                leave-active-class="transition-all duration-200 ease-in-out"
-                                                leave-from-class="opacity-100 scale-100"
-                                                leave-to-class="opacity-0 scale-95">
-                                                <div v-for="(preview, index) in imagesPreviews" :key="index"
-                                                    class="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-                                                    <img :src="preview" class="h-full w-full object-cover">
-                                                    <div
-                                                        class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                        <button type="button" @click="removeImage(index)"
-                                                            class="p-2 text-white hover:text-red-500 transition-colors">
-                                                            <TrashIcon class="h-6 w-6" />
-                                                        </button>
+                                        <!-- Image Previews Section Update -->
+                                        <div v-if="imagesPreviews.length" class="mt-4 space-y-4">
+                                            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                                                <TransitionGroup
+                                                    enter-active-class="transition-all duration-300 ease-in-out"
+                                                    enter-from-class="opacity-0 scale-95"
+                                                    enter-to-class="opacity-100 scale-100"
+                                                    leave-active-class="transition-all duration-200 ease-in-out"
+                                                    leave-from-class="opacity-100 scale-100"
+                                                    leave-to-class="opacity-0 scale-95">
+                                                    <div v-for="(preview, index) in imagesPreviews" :key="index"
+                                                        class="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                                        <img :src="preview" class="h-full w-full object-cover">
+                                                        <div
+                                                            class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                                                            <button type="button" @click="setPrimaryImage(index)"
+                                                                class="p-2 text-white hover:text-indigo-400 transition-colors"
+                                                                :class="{ 'text-indigo-400': primaryImageIndex === index }">
+                                                                <StarIcon class="h-6 w-6"
+                                                                    :class="{ 'fill-current': primaryImageIndex === index }" />
+                                                            </button>
+                                                            <button type="button" @click="removeImage(index)"
+                                                                class="p-2 text-white hover:text-red-500 transition-colors">
+                                                                <TrashIcon class="h-6 w-6" />
+                                                            </button>
+                                                        </div>
+                                                        <!-- Primary Image Badge -->
+                                                        <div v-if="primaryImageIndex === index"
+                                                            class="absolute top-2 left-2 bg-indigo-500 text-white px-2 py-1 rounded-md text-xs font-medium">
+                                                            Primary
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </TransitionGroup>
+                                                </TransitionGroup>
+                                            </div>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                Click the star icon to set an image as primary. The first uploaded image
+                                                will be automatically set as primary if none is selected.
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -287,8 +306,8 @@
                         </div>
 
                         <!-- Form Actions -->
-                          <!-- Form Actions -->
-                          <div class="flex justify-end space-x-3">
+                        <!-- Form Actions -->
+                        <div class="flex justify-end space-x-3">
                             <Link :href="route('admin.products.index')"
                                 class="inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800">
                             Cancel
@@ -318,13 +337,14 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue';
-import { useForm, Link } from '@inertiajs/vue3';
+import { useForm, Link, Head } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import {
     ArrowLeftIcon,
     PhotoIcon,
     TrashIcon,
-    ArrowPathIcon
+    ArrowPathIcon,
+    StarIcon
 } from '@heroicons/vue/24/outline';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
@@ -350,11 +370,13 @@ const form = useForm({
     description: '',
     specifications: {},
     images: [],
+    primary_image_index: 0,
     status: true
 });
 
 // Specifications Management
 const specifications = ref([{ key: '', value: '' }]);
+const primaryImageIndex = ref(0);
 
 const addSpecification = () => {
     specifications.value.push({ key: '', value: '' });
@@ -372,12 +394,10 @@ const onImagesSelected = (event) => {
     const files = Array.from(event.target.files);
 
     const validFiles = files.filter(file => {
-        // Check file size (2MB limit)
         if (file.size > 2 * 1024 * 1024) {
             alert(`File ${file.name} is too large. Maximum size is 2MB.`);
             return false;
         }
-        // Check file type
         if (!file.type.startsWith('image/')) {
             alert(`File ${file.name} is not an image.`);
             return false;
@@ -396,26 +416,42 @@ const onImagesSelected = (event) => {
     });
 
     form.images = [...form.images, ...validFiles];
+
+    // Set first image as primary if no primary image is set
+    if (primaryImageIndex.value === null && imagesPreviews.value.length > 0) {
+        primaryImageIndex.value = 0;
+        form.primary_image_index = 0;
+    }
 };
 
 const removeImage = (index) => {
     imagesPreviews.value.splice(index, 1);
     selectedImages.value.splice(index, 1);
     form.images.splice(index, 1);
+
+    // Update primary image index if necessary
+    if (primaryImageIndex.value === index) {
+        primaryImageIndex.value = imagesPreviews.value.length > 0 ? 0 : null;
+        form.primary_image_index = primaryImageIndex.value;
+    } else if (primaryImageIndex.value > index) {
+        primaryImageIndex.value--;
+        form.primary_image_index = primaryImageIndex.value;
+    }
+};
+
+// Add setPrimaryImage function
+const setPrimaryImage = (index) => {
+    primaryImageIndex.value = index;
+    form.primary_image_index = index;
 };
 
 // Barcode Generation
 const generateBarcode = () => {
-    // Generate a random 13-digit EAN-13 barcode
-    const randomDigits = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10));
+    // Generate a random 6-digit barcode
+    const randomDigits = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10));
 
-    // Calculate the check digit
-    const checkSum = randomDigits.reduce((sum, digit, index) => {
-        return sum + digit * (index % 2 === 0 ? 1 : 3);
-    }, 0);
-    const checkDigit = (10 - (checkSum % 10)) % 10;
-
-    form.barcode = [...randomDigits, checkDigit].join('');
+    // Join digits to create the barcode
+    form.barcode = randomDigits.join('');
 };
 
 // Generate Barcode on Name Change

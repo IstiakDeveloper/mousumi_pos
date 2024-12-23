@@ -12,14 +12,14 @@
         }
 
         body {
-            font-family: 'Courier New', monospace; /* Standard receipt font */
+            font-family: 'Courier New', monospace;
             font-size: 10px;
-            width: 80mm; /* Standard thermal receipt width */
+            width: 80mm;
             margin: 0 auto;
             padding: 5mm;
         }
 
-        /* Header Styles */
+        /* Existing styles remain unchanged */
         .receipt-header {
             text-align: center;
             border-bottom: 1px dashed #000;
@@ -38,7 +38,7 @@
             margin-bottom: 3px;
         }
 
-        /* Invoice Details */
+
         .invoice-details {
             margin: 10px 0;
             border-bottom: 1px dashed #000;
@@ -168,8 +168,8 @@
             <tr>
                 <td>{{ $item->product->name }}</td>
                 <td class="quantity">{{ $item->quantity }}</td>
-                <td class="price">${{ number_format($item->unit_price, 2) }}</td>
-                <td class="amount">${{ number_format($item->subtotal, 2) }}</td>
+                <td class="price">BDT {{ number_format($item->unit_price, 2) }}</td>
+                <td class="amount">BDT {{ number_format($item->subtotal, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -179,15 +179,15 @@
         <table class="totals-table">
             <tr>
                 <td>Subtotal:</td>
-                <td>${{ number_format($sale->subtotal, 2) }}</td>
+                <td>BDT {{ number_format($sale->subtotal, 2) }}</td>
             </tr>
             <tr>
                 <td>Tax:</td>
-                <td>${{ number_format($sale->tax, 2) }}</td>
+                <td>BDT {{ number_format($sale->tax, 2) }}</td>
             </tr>
             <tr>
                 <td>Discount:</td>
-                <td>${{ number_format($sale->discount, 2) }}</td>
+                <td>BDT {{ number_format($sale->discount, 2) }}</td>
             </tr>
         </table>
 
@@ -195,7 +195,7 @@
             <table class="totals-table">
                 <tr>
                     <td><strong>TOTAL:</strong></td>
-                    <td><strong>${{ number_format($sale->total, 2) }}</strong></td>
+                    <td><strong>BDT {{ number_format($sale->total, 2) }}</strong></td>
                 </tr>
             </table>
         </div>
@@ -204,11 +204,11 @@
             <table class="totals-table">
                 <tr>
                     <td>Paid Amount:</td>
-                    <td>${{ number_format($sale->paid, 2) }}</td>
+                    <td>BDT {{ number_format($sale->paid, 2) }}</td>
                 </tr>
                 <tr>
                     <td>Change:</td>
-                    <td>${{ number_format(max(0, $sale->paid - $sale->total), 2) }}</td>
+                    <td>BDT {{ number_format(max(0, $sale->paid - $sale->total), 2) }}</td>
                 </tr>
                 <tr>
                     <td>Payment Method:</td>

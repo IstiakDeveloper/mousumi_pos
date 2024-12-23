@@ -20,27 +20,67 @@ class BarcodeController extends Controller
             $product->save();
         }
 
-        $barcode = $generator->getBarcode($product->barcode, $generator::TYPE_CODE_128);
-
-        // Ensure the directory exists
-        Storage::disk('public')->makeDirectory('barcodes');
+        // Generate a compact barcode
+        $barcode = $generator->getBarcode(
+            $product->barcode,
+            $generator::TYPE_CODE_128,
+            1,     // Reduced bar width for more compact size
+            30,    // Reduced height
+            [0, 0, 0]  // Black color
+        );
 
         // Store barcode image
         $path = 'barcodes/' . $product->barcode . '.png';
-        Storage::disk('public')->put($path, $barcode);
+        Storage::disk('public')->makeDirectory('barcodes');
 
-        // Verify file exists and is readable
-        if (!Storage::disk('public')->exists($path)) {
-            return response()->json([
-                'error' => 'Failed to generate barcode image'
-            ], 500);
-        }
+        // Add small white padding
+        $originalImage = imagecreatefromstring($barcode);
+        $width = imagesx($originalImage);
+        $height = imagesy($originalImage);
+
+        // Create new image with minimal padding
+        $paddedImage = imagecreatetruecolor($width + 10, $height + 10);
+        $white = imagecolorallocate($paddedImage, 255, 255, 255);
+        imagefill($paddedImage, 0, 0, $white);
+
+        // Copy original barcode to padded image
+        imagecopy($paddedImage, $originalImage, 5, 5, 0, 0, $width, $height);
+
+        // Save as PNG
+        ob_start();
+        imagepng($paddedImage, null, 0);
+        $barcodeData = ob_get_clean();
+
+        // Clean up
+        imagedestroy($originalImage);
+        imagedestroy($paddedImage);
+
+        Storage::disk('public')->put($path, $barcodeData);
 
         return response()->json([
             'barcode' => $product->barcode,
             'image_url' => Storage::disk('public')->url($path),
             'product' => $product->only(['id', 'name', 'sku', 'selling_price'])
         ]);
+    }
+
+    private function generateUniqueBarcode()
+    {
+        do {
+            // Generate a 6-digit number
+            $barcode = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        } while (Product::where('barcode', $barcode)->exists());
+
+        return $barcode;
+    }
+
+    private function calculateEAN13CheckDigit($barcode)
+    {
+        $sum = 0;
+        for ($i = 0; $i < 12; $i++) {
+            $sum += intval($barcode[$i]) * ($i % 2 ? 3 : 1);
+        }
+        return (10 - ($sum % 10)) % 10;
     }
 
 
@@ -82,25 +122,5 @@ class BarcodeController extends Controller
         ]);
     }
 
-    private function generateUniqueBarcode()
-    {
-        do {
-            // Generate a 12-digit EAN-13 compatible number
-            $barcode = '200' . str_pad(random_int(0, 999999999), 9, '0', STR_PAD_LEFT);
-            // Add check digit
-            $barcode .= $this->calculateEAN13CheckDigit($barcode);
-        } while (Product::where('barcode', $barcode)->exists());
 
-        return $barcode;
-    }
-
-    private function calculateEAN13CheckDigit($barcode)
-    {
-        $sum = 0;
-        for ($i = 0; $i < 12; $i++) {
-            $sum += $barcode[$i] * ($i % 2 ? 3 : 1);
-        }
-        $checkDigit = (10 - ($sum % 10)) % 10;
-        return $checkDigit;
-    }
 }
