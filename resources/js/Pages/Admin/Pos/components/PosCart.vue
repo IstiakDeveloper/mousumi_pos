@@ -1,6 +1,6 @@
 # resources/js/Pages/Admin/Pos/components/PosCart.vue
 <template>
-    <div class="h-1/2 mt-4 overflow-auto bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+    <div class="h-2/2 mt-4 overflow-auto bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>

@@ -2,46 +2,23 @@
     <AdminLayout title="Point of Sale">
         <div class="flex h-[calc(100vh-64px)] dark:bg-gray-900">
             <!-- Left Side -->
-            <div class="w-2/3 flex flex-col p-4 border-r border-gray-200 dark:border-gray-700">
-                <PosSearch
-                    :categories="categories"
-                    :selected-category="selectedCategory"
-                    @search="handleSearch"
-                    @filter="handleCategoryFilter"
-                />
+            <div class="w-[60%] flex flex-col p-4 border-r border-gray-200 dark:border-gray-700">
+                <PosSearch :categories="categories" :selected-category="selectedCategory" @search="handleSearch"
+                    @filter="handleCategoryFilter" @add-scanned-product="handleScannedProduct" />
 
-                <PosProductGrid
-                    :products="displayProducts"
-                    :loading="loading"
-                    @add-to-cart="addToCart"
-                />
+                <PosProductGrid :products="displayProducts" :loading="loading" @add-to-cart="addToCart" />
 
-                <PosCart
-                    :items="cartItems"
-                    @update-quantity="updateCartItemQuantity"
-                    @remove-item="removeCartItem"
-                />
+                <PosCart :items="cartItems" @update-quantity="updateCartItemQuantity" @remove-item="removeCartItem" />
             </div>
 
             <!-- Right Side -->
-            <div class="w-1/3 flex flex-col p-4 bg-gray-50 dark:bg-gray-800">
-                <PosPayment
-                    :customers="customers"
-                    :bank-accounts="bankAccounts"
-                    :cart-items="cartItems"
-                    :cart-summary="cartSummary"
-                    @process-sale="processSale"
-                    @reset-cart="resetCart"
-                />
+            <div class="w-[40%] flex flex-col p-4 bg-gray-50 dark:bg-gray-800">
+                <PosPayment :customers="customers" :bank-accounts="bankAccounts" :cart-items="cartItems"
+                    :cart-summary="cartSummary" @process-sale="processSale" @reset-cart="resetCart" />
             </div>
         </div>
 
-        <PosSuccessModal
-            v-if="showSuccessModal"
-            :sale="lastSale"
-            @close="closeSuccessModal"
-            @print="printReceipt"
-        />
+        <PosSuccessModal v-if="showSuccessModal" :sale="lastSale" @close="closeSuccessModal" @print="printReceipt" />
     </AdminLayout>
 </template>
 
@@ -171,6 +148,11 @@ const addToCart = (product) => {
         })
     }
 }
+
+const handleScannedProduct = (product) => {
+    console.log('Adding scanned product to cart:', product);
+    addToCart(product);
+};
 
 const updateCartItemQuantity = (index, quantity) => {
     if (quantity > 0) {

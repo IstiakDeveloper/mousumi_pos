@@ -98,6 +98,15 @@ class PosController extends Controller
             ];
         });
     }
+    public function searchByBarcode(Request $request)
+    {
+        $barcode = $request->input('barcode');
+        $product = Product::where('barcode', $barcode)
+            ->orWhere('sku', $barcode)
+            ->first();
+
+        return response()->json($product ? [$product] : []);
+    }
 
     public function store(Request $request)
     {

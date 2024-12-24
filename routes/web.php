@@ -1,4 +1,3 @@
-
 <?php
 
 use App\Http\Controllers\Admin\BankAccountController;
@@ -8,9 +7,11 @@ use App\Http\Controllers\Admin\BarcodeController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\CustomerSalesReportController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExpenseCategoryController;
 use App\Http\Controllers\Admin\ExpenseController;
+use App\Http\Controllers\Admin\ExtraIncomeController;
 use App\Http\Controllers\Admin\PosController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductStockController;
@@ -54,10 +55,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('bank-accounts', BankAccountController::class);
     Route::resource('bank-transactions', BankTransactionController::class);
     // Route::resource('sales', SaleController::class);
+    Route::resource('extra-incomes', ExtraIncomeController::class);
 
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
     Route::get('/pos/search-products', [PosController::class, 'searchProducts'])->name('pos.search-products');
     Route::post('/pos/store', [PosController::class, 'store'])->name('pos.store');
+    Route::get('pos/search-by-barcode', [PosController::class, 'searchByBarcode'])
+        ->name('pos.search-by-barcode');
 
     Route::get('/pos/print-receipt/{id}', [PosController::class, 'printReceipt'])
         ->name('pos.print-receipt');
@@ -89,6 +93,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         ->name('reports.sales');
     Route::get('/reports/sales/download', [SaleReportController::class, 'downloadPdf'])
         ->name('reports.sales.download');
+
+    Route::get('/reports/customer-sales', [CustomerSalesReportController::class, 'index'])
+        ->name('reports.customer-sales.index');
 
     Route::resource('expenses', ExpenseController::class);
     Route::post('expenses/{expense}/restore', [ExpenseController::class, 'restore'])->name('expenses.restore');

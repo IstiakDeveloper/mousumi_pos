@@ -329,7 +329,7 @@
                 <div class="mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="py-4 text-center sm:text-left">
                         <p class="text-sm text-gray-500 dark:text-gray-400">
-                            © {{ new Date().getFullYear() }} Your Company. All rights reserved.
+                            © {{ new Date().getFullYear() }} Mousumi Prokashon. All rights reserved.
                         </p>
                     </div>
                 </div>
@@ -383,6 +383,7 @@ const dropdownNavItems = [
         icon: 'fa-shopping-cart',
         items: [
             { name: 'Sales List', href: '/admin/sales', icon: 'fa-list' },
+            { name: 'Extra Income', href: '/admin/extra-incomes', icon: 'fa-coins' },
             { name: 'POS', href: '/admin/pos', icon: 'fa-cash-register' }
         ]
     },
