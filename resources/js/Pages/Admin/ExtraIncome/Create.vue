@@ -179,7 +179,7 @@
   </template>
 
   <script setup>
-  import { computed } from 'vue'
+  import { computed, onMounted } from 'vue'
   import { useForm, Link } from '@inertiajs/vue3'
   import AdminLayout from '@/Layouts/AdminLayout.vue'
   import TextInput from '@/Components/TextInput.vue'
@@ -220,6 +220,11 @@
     if (!selectedBank.value || !form.amount) return 0
     return Number(selectedBank.value.current_balance) + Number(form.amount)
   })
+  onMounted(() => {
+  if (props.bankAccounts.length > 0) {
+    form.bank_account_id = props.bankAccounts[0].id
+  }
+})
 
   const submit = () => {
     form.post(route('admin.extra-incomes.store'), {

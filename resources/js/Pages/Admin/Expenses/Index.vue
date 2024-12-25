@@ -5,10 +5,8 @@
                 <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">
                     Expenses
                 </h2>
-                <button
-                    @click="openCreateModal"
-                    class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                >
+                <button @click="openCreateModal"
+                    class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
                     <PlusIcon class="w-5 h-5 mr-2" />
                     Add Expense
                 </button>
@@ -52,12 +50,20 @@
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Date</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Category</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Bank Account</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Description</th>
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Amount</th>
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Actions</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Date
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                            Category</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Bank
+                            Account
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                            Description
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Amount
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
+                            Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -162,8 +168,9 @@ const isEditing = ref(false)
 const currentExpense = ref(null)
 
 const filters = reactive({
-    category_id: props.filters.category_id || '',
-    bank_id: props.filters.bank_id || '',
+    expense_category_id: props.categories.length > 0 ? props.categories[0].id : '',
+        bank_id: props.bankAccounts.length > 0 ? props.bankAccounts[0].id : '',
+
     from_date: props.filters.from_date || '',
     to_date: props.filters.to_date || ''
 })
@@ -212,8 +219,8 @@ const closeModal = () => {
 
 const resetForm = () => {
     Object.assign(form, {
-        expense_category_id: '',
-        bank_account_id: '',
+        expense_category_id: props.categories.length > 0 ? props.categories[0].id : '',
+        bank_account_id: props.bankAccounts.length > 0 ? props.bankAccounts[0].id : '',
         amount: '',
         description: '',
         reference_no: '',
@@ -253,9 +260,10 @@ const formatDate = (date) => {
 }
 
 const formatAmount = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'BDT'
+    const number = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
     }).format(amount)
+    return `৳ ${number}`
 }
 </script>

@@ -1,4 +1,5 @@
 <template>
+
     <Head title="Transections" />
     <AdminLayout>
         <template #header>
@@ -15,29 +16,16 @@
                         <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Available Balance</h3>
                         <p class="text-2xl font-bold text-green-600">{{ formatCurrency(summary.available_balance) }}</p>
                     </div>
-                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Total Loans Taken</h3>
-                        <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(summary.total_loans) }}</p>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Due Balance</h3>
-                        <p class="text-2xl font-bold text-red-600">{{ formatCurrency(summary.due_balance) }}</p>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Total Loan Paid</h3>
-                        <p class="text-2xl font-bold text-green-600">{{ formatCurrency(summary.total_loan_paid) }}</p>
-                    </div>
                 </div>
 
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-4">
-                            <input v-model="search" type="text" placeholder="Search..."
-                                   class="px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900
+                            <input v-model="search" type="text" placeholder="Search..." class="px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900
                                           text-gray-700 dark:text-gray-200 rounded-md focus:outline-none focus:ring-2
                                           focus:ring-blue-500">
                             <a :href="route('admin.bank-transactions.create')"
-                               class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
                                 Create Transaction
                             </a>
                         </div>
@@ -78,7 +66,8 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm" :class="getTransactionTypeClass(transaction.transaction_type)">
+                                        <div class="text-sm"
+                                            :class="getTransactionTypeClass(transaction.transaction_type)">
                                             {{ formatTransactionType(transaction.transaction_type) }}
                                         </div>
                                     </td>
@@ -98,13 +87,11 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <a :href="route('admin.bank-transactions.edit', transaction.id)"
-                                           class="text-indigo-600 dark:text-indigo-500 hover:text-indigo-900
+                                        <a :href="route('admin.bank-transactions.edit', transaction.id)" class="text-indigo-600 dark:text-indigo-500 hover:text-indigo-900
                                                   dark:hover:text-indigo-400 mr-4">
                                             Edit
                                         </a>
-                                        <a @click="destroy(transaction.id)"
-                                           class="text-red-600 dark:text-red-500 hover:text-red-900
+                                        <a @click="destroy(transaction.id)" class="text-red-600 dark:text-red-500 hover:text-red-900
                                                   dark:hover:text-red-400 cursor-pointer">
                                             Delete
                                         </a>
@@ -148,10 +135,12 @@ export default {
     },
     methods: {
         formatCurrency(amount) {
-            return new Intl.NumberFormat('en-BD', {
-                style: 'currency',
-                currency: 'BDT'
+            const number = new Intl.NumberFormat('en-BD', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
             }).format(amount)
+
+            return `৳ ${number}`
         },
         formatDate(date) {
             return format(new Date(date), 'MMM dd, yyyy')
@@ -163,11 +152,8 @@ export default {
         },
         getTransactionTypeClass(type) {
             const classes = {
-                deposit: 'text-green-600',
-                withdrawal: 'text-red-600',
-                loan_taken: 'text-blue-600',
-                loan_payment: 'text-purple-600',
-                transfer: 'text-gray-600'
+                in: 'text-green-600',
+                out: 'text-red-600',
             }
             return classes[type] || 'text-gray-500'
         },

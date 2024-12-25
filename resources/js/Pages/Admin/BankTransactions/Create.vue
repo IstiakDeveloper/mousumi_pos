@@ -30,14 +30,11 @@
                                     Transaction Type
                                 </label>
                                 <select id="transaction_type" v-model="form.transaction_type"
-                                        class="mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-700
-                                               bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 rounded-md" required>
-                                    <option value="deposit">Deposit</option>
-                                    <option value="withdrawal">Withdrawal</option>
-                                    <option value="loan_taken">Loan Taken</option>
-                                    <option value="loan_payment">Loan Payment</option>
-                                    <option value="transfer">Transfer</option>
-                                </select>
+                class="mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-700
+                       bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 rounded-md" required>
+            <option value="in">In</option>
+            <option value="out">Out</option>
+        </select>
                             </div>
 
                             <div class="mb-4">
@@ -104,7 +101,7 @@ export default {
         return {
             form: {
                 bank_account_id: '',
-                transaction_type: 'deposit',
+                transaction_type: 'in',
                 amount: '',
                 description: '',
                 date: new Date().toISOString().split('T')[0],

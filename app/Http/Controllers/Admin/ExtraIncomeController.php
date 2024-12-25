@@ -84,7 +84,7 @@ class ExtraIncomeController extends Controller
             // Create bank transaction
             BankTransaction::create([
                 'bank_account_id' => $validated['bank_account_id'],
-                'transaction_type' => 'credit',
+                'transaction_type' => 'in',
                 'amount' => $validated['amount'],
                 'description' => "Extra Income: {$validated['title']}",
                 'date' => $validated['date'],

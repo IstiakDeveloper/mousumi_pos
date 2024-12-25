@@ -174,7 +174,7 @@ class PosController extends Controller
             if ($request->paid > 0) {
                 $bankAccount = BankAccount::findOrFail($request->bank_account_id);
                 $bankAccount->transactions()->create([
-                    'transaction_type' => 'deposit',
+                    'transaction_type' => 'in',
                     'amount' => $request->paid,
                     'date' => now(),
                     'description' => "Payment received for invoice {$sale->invoice_no}",

@@ -115,11 +115,11 @@ const getProductImage = (product) => {
 const getImageUrl = (path) => path ? `/storage/${path}` : null;
 
 const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-BD', {
-        style: 'currency',
-        currency: 'BDT',
-        minimumFractionDigits: 2
+    const number =  new Intl.NumberFormat('en-BD', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
     }).format(price || 0);
+    return `৳ ${number}`
 };
 
 const getTotalStock = (product) => {

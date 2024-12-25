@@ -15,13 +15,11 @@ class BankTransactionController extends Controller
     {
         $bankTransactions = BankTransaction::with('bankAccount')->get();
 
-        // Calculate summary statistics
+        // Simplified summary statistics for in/out only
         $summary = [
             'available_balance' => BankAccount::sum('current_balance'),
-            'total_loans' => BankTransaction::where('transaction_type', 'loan_taken')->sum('amount'),
-            'total_loan_paid' => BankTransaction::where('transaction_type', 'loan_payment')->sum('amount'),
-            'due_balance' => BankTransaction::where('transaction_type', 'loan_taken')->sum('amount') -
-                BankTransaction::where('transaction_type', 'loan_payment')->sum('amount'),
+            'total_in' => BankTransaction::where('transaction_type', 'in')->sum('amount'),
+            'total_out' => BankTransaction::where('transaction_type', 'out')->sum('amount'),
         ];
 
         return Inertia::render('Admin/BankTransactions/Index', [
@@ -30,20 +28,12 @@ class BankTransactionController extends Controller
         ]);
     }
 
-    public function create()
-    {
-        $bankAccounts = BankAccount::all();
-        return Inertia::render('Admin/BankTransactions/Create', [
-            'bankAccounts' => $bankAccounts,
-        ]);
-    }
-
     public function store(Request $request)
     {
         $validatedData = $request->validate([
             'bank_account_id' => 'required|exists:bank_accounts,id',
-            'transaction_type' => 'required|in:deposit,withdrawal,transfer,loan_taken,loan_payment',
-            'amount' => 'required|numeric',
+            'transaction_type' => 'required|in:in,out',  // Modified to only allow in/out
+            'amount' => 'required|numeric|min:0',
             'description' => 'nullable',
             'date' => 'required|date',
         ]);
@@ -56,15 +46,11 @@ class BankTransactionController extends Controller
                 ['created_by' => auth()->id()]
             ));
 
-            switch ($transaction->transaction_type) {
-                case 'deposit':
-                case 'loan_taken':
-                    $bankAccount->current_balance += $transaction->amount;
-                    break;
-                case 'withdrawal':
-                case 'loan_payment':
-                    $bankAccount->current_balance -= $transaction->amount;
-                    break;
+            // Simplified logic for in/out
+            if ($transaction->transaction_type === 'in') {
+                $bankAccount->current_balance += $transaction->amount;
+            } else {
+                $bankAccount->current_balance -= $transaction->amount;
             }
 
             $bankAccount->save();
@@ -73,6 +59,51 @@ class BankTransactionController extends Controller
         return redirect()->route('admin.bank-transactions.index')
             ->with('success', 'Bank transaction created successfully.');
     }
+
+    public function update(Request $request, BankTransaction $bankTransaction)
+    {
+        $validatedData = $request->validate([
+            'bank_account_id' => 'required|exists:bank_accounts,id',
+            'transaction_type' => 'required|in:in,out',  // Modified to only allow in/out
+            'amount' => 'required|numeric|min:0',
+            'description' => 'nullable',
+            'date' => 'required|date',
+        ]);
+
+        $bankAccount = BankAccount::findOrFail($validatedData['bank_account_id']);
+
+        DB::transaction(function () use ($validatedData, $bankTransaction, $bankAccount) {
+            // Revert the previous transaction
+            if ($bankTransaction->transaction_type === 'in') {
+                $bankAccount->current_balance -= $bankTransaction->amount;
+            } else {
+                $bankAccount->current_balance += $bankTransaction->amount;
+            }
+
+            // Apply the new transaction
+            if ($validatedData['transaction_type'] === 'in') {
+                $bankAccount->current_balance += $validatedData['amount'];
+            } else {
+                $bankAccount->current_balance -= $validatedData['amount'];
+            }
+
+            $bankAccount->save();
+            $bankTransaction->update($validatedData);
+        });
+
+        return redirect()->route('admin.bank-transactions.index')
+            ->with('success', 'Bank transaction updated successfully.');
+    }
+
+    public function create()
+    {
+        $bankAccounts = BankAccount::all();
+        return Inertia::render('Admin/BankTransactions/Create', [
+            'bankAccounts' => $bankAccounts,
+        ]);
+    }
+
+
 
 
     public function edit(BankTransaction $bankTransaction)
@@ -84,50 +115,7 @@ class BankTransactionController extends Controller
         ]);
     }
 
-    public function update(Request $request, BankTransaction $bankTransaction)
-    {
-        $validatedData = $request->validate([
-            'bank_account_id' => 'required|exists:bank_accounts,id',
-            'transaction_type' => 'required|in:deposit,withdrawal,transfer,loan_taken,loan_payment',
-            'amount' => 'required|numeric',
-            'description' => 'nullable',
-            'date' => 'required|date',
-        ]);
 
-        $bankAccount = BankAccount::findOrFail($validatedData['bank_account_id']);
-
-        DB::transaction(function () use ($validatedData, $bankTransaction, $bankAccount) {
-            // Revert the previous transaction
-            switch ($bankTransaction->transaction_type) {
-                case 'deposit':
-                case 'loan_taken':
-                    $bankAccount->current_balance -= $bankTransaction->amount;
-                    break;
-                case 'withdrawal':
-                case 'loan_payment':
-                    $bankAccount->current_balance += $bankTransaction->amount;
-                    break;
-            }
-
-            // Apply the new transaction
-            switch ($validatedData['transaction_type']) {
-                case 'deposit':
-                case 'loan_taken':
-                    $bankAccount->current_balance += $validatedData['amount'];
-                    break;
-                case 'withdrawal':
-                case 'loan_payment':
-                    $bankAccount->current_balance -= $validatedData['amount'];
-                    break;
-            }
-
-            $bankAccount->save();
-            $bankTransaction->update($validatedData);
-        });
-
-        return redirect()->route('admin.bank-transactions.index')
-            ->with('success', 'Bank transaction updated successfully.');
-    }
 
     public function destroy(BankTransaction $bankTransaction)
     {

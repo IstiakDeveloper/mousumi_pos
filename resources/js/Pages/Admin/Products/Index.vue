@@ -1,4 +1,5 @@
 <template>
+
     <Head title="Products" />
     <AdminLayout>
         <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -33,34 +34,24 @@
                         <div class="flex flex-shrink-0 gap-2">
                             <!-- View Toggle -->
                             <div class="flex rounded-md shadow-sm">
-                                <button
-                                    @click="viewMode = 'grid'"
-                                    :class="viewToggleClass('grid')"
-                                >
+                                <button @click="viewMode = 'grid'" :class="viewToggleClass('grid')">
                                     <Squares2X2Icon class="h-5 w-5" />
                                 </button>
-                                <button
-                                    @click="viewMode = 'table'"
-                                    :class="viewToggleClass('table')"
-                                >
+                                <button @click="viewMode = 'table'" :class="viewToggleClass('table')">
                                     <ListBulletIcon class="h-5 w-5" />
                                 </button>
                             </div>
 
                             <!-- Add Product Button -->
-                            <Link
-                                :href="route('admin.products.create')"
-                                class="inline-flex items-center gap-x-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-                            >
-                                <PlusIcon class="h-5 w-5" />
-                                Add Product
+                            <Link :href="route('admin.products.create')"
+                                class="inline-flex items-center gap-x-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400">
+                            <PlusIcon class="h-5 w-5" />
+                            Add Product
                             </Link>
 
                             <!-- Print Barcodes -->
-                            <button
-                                @click="printBarcodes"
-                                class="inline-flex items-center gap-x-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                            >
+                            <button @click="printBarcodes"
+                                class="inline-flex items-center gap-x-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                                 <QrCodeIcon class="h-5 w-5 text-gray-400" />
                                 Print Barcodes
                             </button>
@@ -74,21 +65,15 @@
                             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                                 <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" />
                             </div>
-                            <input
-                                v-model="search"
-                                type="text"
-                                placeholder="Search products..."
+                            <input v-model="search" type="text" placeholder="Search products..."
                                 class="block w-full rounded-md border-0 py-1.5 pl-10 pr-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-800 sm:text-sm sm:leading-6"
-                                @input="debouncedSearch"
-                            >
+                                @input="debouncedSearch">
                         </div>
 
                         <!-- Category Filter -->
-                        <select
-                            v-model="filters.category_id"
+                        <select v-model="filters.category_id"
                             class="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-800 sm:text-sm sm:leading-6"
-                            @change="filterChanged"
-                        >
+                            @change="filterChanged">
                             <option value="">All Categories</option>
                             <option v-for="category in categories" :key="category.id" :value="category.id">
                                 {{ category.name }}
@@ -96,11 +81,9 @@
                         </select>
 
                         <!-- Brand Filter -->
-                        <select
-                            v-model="filters.brand_id"
+                        <select v-model="filters.brand_id"
                             class="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-800 sm:text-sm sm:leading-6"
-                            @change="filterChanged"
-                        >
+                            @change="filterChanged">
                             <option value="">All Brands</option>
                             <option v-for="brand in brands" :key="brand.id" :value="brand.id">
                                 {{ brand.name }}
@@ -108,11 +91,9 @@
                         </select>
 
                         <!-- Status Filter -->
-                        <select
-                            v-model="filters.status"
+                        <select v-model="filters.status"
                             class="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-800 sm:text-sm sm:leading-6"
-                            @change="filterChanged"
-                        >
+                            @change="filterChanged">
                             <option value="">All Status</option>
                             <option :value="1">Active</option>
                             <option :value="0">Inactive</option>
@@ -125,16 +106,8 @@
             <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
                 <!-- Product Grid/Table Views -->
                 <div v-if="products.data.length > 0">
-                    <ProductGrid
-                        v-if="viewMode === 'grid'"
-                        :products="products.data"
-                        @delete="deleteProduct"
-                    />
-                    <ProductTable
-                        v-else
-                        :products="products.data"
-                        @delete="deleteProduct"
-                    />
+                    <ProductGrid v-if="viewMode === 'grid'" :products="products.data" @delete="deleteProduct" />
+                    <ProductTable v-else :products="products.data" @delete="deleteProduct" />
                 </div>
 
                 <!-- Empty State -->
@@ -145,12 +118,10 @@
                         Get started by creating a new product.
                     </p>
                     <div class="mt-6">
-                        <Link
-                            :href="route('admin.products.create')"
-                            class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-                        >
-                            <PlusIcon class="-ml-0.5 mr-1.5 h-5 w-5" />
-                            Add Product
+                        <Link :href="route('admin.products.create')"
+                            class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400">
+                        <PlusIcon class="-ml-0.5 mr-1.5 h-5 w-5" />
+                        Add Product
                         </Link>
                     </div>
                 </div>
@@ -161,12 +132,8 @@
                 </div>
 
                 <!-- Confirm Delete Dialog -->
-                <ConfirmDialog
-                    v-model:show="showConfirmDialog"
-                    title="Delete Product"
-                    :message="confirmMessage"
-                    @confirm="confirmDelete"
-                />
+                <ConfirmDialog v-model:show="showConfirmDialog" title="Delete Product" :message="confirmMessage"
+                    @confirm="confirmDelete" />
             </main>
         </div>
     </AdminLayout>
@@ -239,11 +206,12 @@ const totalValue = computed(() => {
     }, 0);
 
     // Format as BDT
-    return new Intl.NumberFormat('en-BD', {
-        style: 'currency',
-        currency: 'BDT',
-        minimumFractionDigits: 2
+    const number = new Intl.NumberFormat('en-BD', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
     }).format(total);
+    return `৳ ${number}`
+
 });
 
 // Methods

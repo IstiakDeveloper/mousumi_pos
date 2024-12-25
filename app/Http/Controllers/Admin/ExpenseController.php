@@ -61,7 +61,7 @@ class ExpenseController extends Controller
             // Create bank transaction
             BankTransaction::create([
                 'bank_account_id' => $validated['bank_account_id'],
-                'transaction_type' => 'withdrawal',
+                'transaction_type' => 'out',
                 'amount' => $validated['amount'],
                 'description' => "Expense: {$validated['description']}",
                 'date' => $validated['date'],
@@ -126,7 +126,7 @@ class ExpenseController extends Controller
                 // Create new transaction for new bank
                 BankTransaction::create([
                     'bank_account_id' => $validated['bank_account_id'],
-                    'transaction_type' => 'withdrawal',
+                    'transaction_type' => 'out',
                     'amount' => $validated['amount'],
                     'description' => "Expense: {$validated['description']}",
                     'date' => $validated['date'],

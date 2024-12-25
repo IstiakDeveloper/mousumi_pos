@@ -139,7 +139,7 @@ const emit = defineEmits(['process-sale', 'reset-cart'])
 
 // State
 const selectedCustomer = ref(null)
-const selectedBankAccount = ref(null)
+const selectedBankAccount = ref(1)
 const amountPaid = ref(0)
 const discount = ref(0)
 const note = ref('')
