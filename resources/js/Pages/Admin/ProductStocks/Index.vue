@@ -244,10 +244,6 @@ const props = defineProps({
 
 // State
 const stockToDelete = ref(null);
-// const filters = ref({
-//     search: props.filters.search || '',
-//     stock_status: props.filters.stock_status || ''
-// });
 
 // Methods
 const formatNumber = (value) => {

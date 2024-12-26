@@ -1,12 +1,11 @@
-<!-- resources/js/Pages/Admin/ExtraIncome/Create.vue -->
 <template>
     <AdminLayout>
         <template #header>
             <div class="flex justify-between items-center">
                 <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 leading-tight">
-                    Create Extra Income
+                    Add Fund Transaction
                 </h2>
-                <Link :href="route('admin.extra-incomes.index')"
+                <Link :href="route('admin.funds.index')"
                     class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800">
                 <div class="flex items-center space-x-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
@@ -24,22 +23,25 @@
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <form @submit.prevent="submit" class="p-6 space-y-6">
-                        <!-- Bank Account Selection -->
+                        <!-- Transaction Type and Date -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="col-span-1">
-                                <InputLabel for="bank_account_id" class="text-gray-700 dark:text-gray-300">
-                                    Bank Account <span class="text-red-500">*</span>
+                                <InputLabel for="type" class="text-gray-700 dark:text-gray-300">
+                                    Transaction Type <span class="text-red-500">*</span>
                                 </InputLabel>
-                                <select v-model="form.bank_account_id" id="bank_account_id"
-                                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                                    required>
-                                    <option value="" disabled>Select Bank Account</option>
-                                    <option v-for="account in bankAccounts" :key="account.id" :value="account.id">
-                                        {{ account.bank_name }} - {{ account.account_number }}
-                                        (Balance: {{ formatCurrency(account.current_balance) }})
-                                    </option>
-                                </select>
-                                <InputError :message="form.errors.bank_account_id" />
+                                <div class="mt-1 flex space-x-4">
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" v-model="form.type" value="in"
+                                            class="form-radio text-blue-600 dark:bg-gray-700">
+                                        <span class="ml-2 text-gray-700 dark:text-gray-300">Fund In</span>
+                                    </label>
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" v-model="form.type" value="out"
+                                            class="form-radio text-blue-600 dark:bg-gray-700">
+                                        <span class="ml-2 text-gray-700 dark:text-gray-300">Fund Out</span>
+                                    </label>
+                                </div>
+                                <InputError :message="form.errors.type" />
                             </div>
 
                             <div class="col-span-1">
@@ -53,18 +55,25 @@
                             </div>
                         </div>
 
-                        <!-- Amount and Title -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="col-span-1">
-                                <InputLabel for="title" class="text-gray-700 dark:text-gray-300">
-                                    Title <span class="text-red-500">*</span>
-                                </InputLabel>
-                                <TextInput v-model="form.title" type="text" id="title"
-                                    class="mt-1 block w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
-                                    required placeholder="Enter income title" />
-                                <InputError :message="form.errors.title" />
-                            </div>
+                        <!-- Bank Account Selection -->
+                        <div>
+                            <InputLabel for="bank_account_id" class="text-gray-700 dark:text-gray-300">
+                                Bank Account <span class="text-red-500">*</span>
+                            </InputLabel>
+                            <select v-model="form.bank_account_id" id="bank_account_id"
+                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                                required>
+                                <option value="">Select Bank Account</option>
+                                <option v-for="account in bankAccounts" :key="account.id" :value="account.id">
+                                    {{ account.bank_name }} - {{ account.account_number }}
+                                    (Balance: {{ formatCurrency(account.current_balance) }})
+                                </option>
+                            </select>
+                            <InputError :message="form.errors.bank_account_id" />
+                        </div>
 
+                        <!-- Amount and From Who -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="col-span-1">
                                 <InputLabel for="amount" class="text-gray-700 dark:text-gray-300">
                                     Amount <span class="text-red-500">*</span>
@@ -79,6 +88,16 @@
                                 </div>
                                 <InputError :message="form.errors.amount" />
                             </div>
+
+                            <div class="col-span-1">
+                                <InputLabel for="from_who" class="text-gray-700 dark:text-gray-300">
+                                    From/To <span class="text-red-500">*</span>
+                                </InputLabel>
+                                <TextInput v-model="form.from_who" type="text" id="from_who"
+                                    class="mt-1 block w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                                    required :placeholder="form.type === 'in' ? 'Received from...' : 'Paid to...'" />
+                                <InputError :message="form.errors.from_who" />
+                            </div>
                         </div>
 
                         <!-- Description -->
@@ -88,7 +107,7 @@
                             </InputLabel>
                             <TextArea v-model="form.description" id="description" rows="4"
                                 class="mt-1 block w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
-                                placeholder="Enter additional details about this income" />
+                                :placeholder="form.type === 'in' ? 'Enter details about this fund receipt...' : 'Enter details about this payment...'" />
                             <InputError :message="form.errors.description" />
                         </div>
 
@@ -112,7 +131,7 @@
                                 </div>
                                 <div class="flex justify-between border-t dark:border-gray-600 pt-2">
                                     <span class="text-gray-600 dark:text-gray-400">New Balance After Transaction:</span>
-                                    <span class="text-green-600 dark:text-green-400 font-medium">
+                                    <span :class="getBalanceClass">
                                         {{ formatCurrency(newBalance) }}
                                     </span>
                                 </div>
@@ -121,7 +140,7 @@
 
                         <!-- Form Actions -->
                         <div class="flex items-center justify-end space-x-3 pt-4 border-t dark:border-gray-600">
-                            <Link :href="route('admin.extra-incomes.index')"
+                            <Link :href="route('admin.funds.index')"
                                 class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">
                             Cancel
                             </Link>
@@ -136,7 +155,7 @@
                                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                                     </path>
                                 </svg>
-                                <span>{{ form.processing ? 'Saving...' : 'Save Income' }}</span>
+                                <span>{{ form.processing ? 'Saving...' : 'Save Transaction' }}</span>
                             </button>
                         </div>
                     </form>
@@ -163,9 +182,10 @@ const props = defineProps({
 })
 
 const form = useForm({
+    type: 'in',
     bank_account_id: '',
-    title: '',
     amount: '',
+    from_who: '',
     description: '',
     date: new Date().toISOString().split('T')[0]
 })
@@ -173,38 +193,43 @@ const form = useForm({
 const maxDate = new Date().toISOString().split('T')[0]
 
 const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-BD', {
-        style: 'currency',
-        currency: 'BDT',
-        minimumFractionDigits: 2
+    const number = new Intl.NumberFormat('en-BD', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
     }).format(amount || 0)
+    return `৳ ${number}`
 }
 
 const selectedBank = computed(() => {
     return props.bankAccounts.find(account => account.id === form.bank_account_id)
 })
 
-const newBalance = computed(() => {
-    if (!selectedBank.value || !form.amount) return 0
-    return Number(selectedBank.value.current_balance) + Number(form.amount)
-})
 onMounted(() => {
     if (props.bankAccounts.length > 0) {
         form.bank_account_id = props.bankAccounts[0].id
     }
 })
 
+const newBalance = computed(() => {
+    if (!selectedBank.value || !form.amount) return 0
+    return form.type === 'in'
+        ? Number(selectedBank.value.current_balance) + Number(form.amount)
+        : Number(selectedBank.value.current_balance) - Number(form.amount)
+})
+
+const getBalanceClass = computed(() => {
+    return {
+        'text-green-600 dark:text-green-400 font-medium': form.type === 'in',
+        'text-red-600 dark:text-red-400 font-medium': form.type === 'out'
+    }
+})
+
 const submit = () => {
-    form.post(route('admin.extra-incomes.store'), {
-        onSuccess: () => {
-            // You can add a toast notification here if you have a notification system
-        }
-    })
+    form.post(route('admin.funds.store'))
 }
 </script>
 
 <style scoped>
-/* Add any scoped styles here if needed */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;

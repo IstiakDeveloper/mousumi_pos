@@ -170,7 +170,6 @@ const currentExpense = ref(null)
 const filters = reactive({
     expense_category_id: props.categories.length > 0 ? props.categories[0].id : '',
         bank_id: props.bankAccounts.length > 0 ? props.bankAccounts[0].id : '',
-
     from_date: props.filters.from_date || '',
     to_date: props.filters.to_date || ''
 })

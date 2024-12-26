@@ -119,7 +119,35 @@ class BankTransactionController extends Controller
 
     public function destroy(BankTransaction $bankTransaction)
     {
-        $bankTransaction->delete();
-        return redirect()->route('admin.bank-transactions.index')->with('success', 'Bank transaction deleted successfully.');
+        try {
+            DB::beginTransaction();
+
+            // Get the associated bank account
+            $bankAccount = BankAccount::findOrFail($bankTransaction->bank_account_id);
+
+            // Reverse the transaction effect on bank balance
+            if ($bankTransaction->transaction_type === 'in') {
+                // If it was an 'in' transaction, subtract the amount
+                $bankAccount->current_balance -= $bankTransaction->amount;
+            } else {
+                // If it was an 'out' transaction, add the amount back
+                $bankAccount->current_balance += $bankTransaction->amount;
+            }
+
+            // Save the updated bank balance
+            $bankAccount->save();
+
+            // Delete the transaction
+            $bankTransaction->delete();
+
+            DB::commit();
+
+            return redirect()->route('admin.bank-transactions.index')
+                ->with('success', 'Bank transaction deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('admin.bank-transactions.index')
+                ->with('error', 'Error deleting transaction: ' . $e->getMessage());
+        }
     }
 }

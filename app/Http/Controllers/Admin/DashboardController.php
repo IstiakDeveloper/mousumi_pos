@@ -3,182 +3,142 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\BankAccount;
 use App\Models\Sale;
 use App\Models\Product;
-use App\Models\Customer;
 use App\Models\Expense;
-use Carbon\Carbon;
+use App\Models\BankTransaction;
+use App\Models\ExtraIncome;
+use App\Models\ProductStock;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $currentMonth = now()->startOfMonth();
-        $lastMonth = now()->subMonth()->startOfMonth();
+        // Parse dates, default to today if not provided
+        $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : Carbon::today();
+        $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::today();
+
+        // Ensure end date includes the full day
+        $endDate = $endDate->endOfDay();
+
+        // Get Sales Data with optimized relationships
+        $salesData = Sale::whereBetween('created_at', [$startDate, $endDate])
+            ->with(['saleItems.product:id,name,cost_price'])
+            ->select('id', 'invoice_no', 'created_at', 'total', 'paid', 'due', 'payment_status', 'customer_id')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $extraIncomeData = ExtraIncome::whereBetween('date', [$startDate, $endDate])
+            ->select('id', 'amount', 'title', 'date')
+            ->orderBy('date', 'desc')
+            ->get();
+
+        // Calculate Stock Value and Quantity with current stock
+        $stockData = ProductStock::select(
+            'product_id',
+            DB::raw('SUM(quantity) as total_quantity'),
+            DB::raw('SUM(quantity * unit_cost) as stock_value')  // Each entry's quantity * its unit_cost
+        )
+            ->with('product:id,name,selling_price,cost_price')
+            ->groupBy('product_id')
+            ->get();
+
+        // Get low stock alerts
+        $lowStockProducts = $stockData->filter(function ($stock) {
+            return $stock->total_quantity <= $stock->product->alert_quantity;
+        });
+
+        // Get Expenses with category
+        $expensesData = Expense::whereBetween('date', [$startDate, $endDate])
+            ->with('expenseCategory:id,name')
+            ->select('id', 'expense_category_id', 'amount', 'date', 'description')
+            ->orderBy('date', 'desc')
+            ->get();
+
+        // Get Bank Transactions
+        $bankTransactions = BankTransaction::whereBetween('date', [$startDate, $endDate])
+            ->with('bankAccount:id,account_name,current_balance')
+            ->select('id', 'bank_account_id', 'transaction_type', 'amount', 'date', 'description')
+            ->orderBy('date', 'desc')
+            ->get();
+
+        // Get Daily Sales Summary
+        $dailySalesSummary = Sale::whereBetween('created_at', [$startDate, $endDate])
+            ->select(
+                DB::raw('DATE(created_at) as date'),
+                DB::raw('COUNT(*) as total_sales'),
+                DB::raw('SUM(total) as total_amount'),
+                DB::raw('SUM(paid) as total_paid'),
+                DB::raw('SUM(due) as total_due')
+            )
+            ->groupBy(DB::raw('DATE(created_at)'))
+            ->orderBy('date')
+            ->get();
+
+        // Calculate Banking Summary
+        $bankingSummary = BankTransaction::whereBetween('date', [$startDate, $endDate])
+            ->select(
+                'bank_account_id',
+                DB::raw('SUM(CASE WHEN transaction_type = "in" THEN amount ELSE 0 END) as total_in'),
+                DB::raw('SUM(CASE WHEN transaction_type = "out" THEN amount ELSE 0 END) as total_out')
+            )
+            ->groupBy('bank_account_id')
+            ->with('bankAccount:id,account_name,current_balance')
+            ->get();
+
+
+        $salesProfit = $this->calculateTotalProfit($salesData);
+        $extraIncomeTotal = $extraIncomeData->sum('amount');
+
+        // Calculate Summary Statistics
+        $summary = [
+            'total_sales' => $salesData->sum('total'),
+            'total_profit' => $salesProfit + $extraIncomeTotal - $expensesData->sum('amount'),
+            'total_expenses' => $expensesData->sum('amount'),
+            'cash_received' => $salesData->sum('paid'),  // Updated to use paid column
+            'stock_value' => $stockData->sum('stock_value'),  // Sum of all (quantity * unit_cost)
+            'stock_worth' => $this->calculateStockWorth($stockData),
+            'total_due' => $salesData->sum('due'),
+            'total_transactions' => $salesData->count(),
+            'average_sale' => $salesData->count() > 0 ? $salesData->sum('total') / $salesData->count() : 0,
+        ];
 
         return Inertia::render('Admin/Dashboard/Index', [
-            'stats' => [
-                [
-                    'name' => 'Total Sales',
-                    'value' => '৳' . number_format(Sale::sum('total')),
-                    'icon' => 'CurrencyDollarIcon',
-                    'change' => $this->calculateGrowth(
-                        Sale::where('created_at', '>=', $currentMonth)->sum('total'),
-                        Sale::whereBetween('created_at', [$lastMonth, $currentMonth])->sum('total')
-                    ),
-                    'changeType' => 'increase'
-                ],
-                [
-                    'name' => 'Bank Balance',
-                    'value' => '৳' . number_format(BankAccount::sum('current_balance')),
-                    'icon' => 'BanknotesIcon',
-                    'change' => '0%',
-                    'changeType' => 'increase'
-                ],
-                [
-                    'name' => 'Monthly Expense',
-                    'value' => '৳' . number_format(Expense::where('date', '>=', $currentMonth)->sum('amount')),
-                    'icon' => 'CalculatorIcon',
-                    'change' => $this->calculateGrowth(
-                        Expense::where('date', '>=', $currentMonth)->sum('amount'),
-                        Expense::whereBetween('date', [$lastMonth, $currentMonth])->sum('amount')
-                    ),
-                    'changeType' => 'decrease'
-                ],
-                [
-                    'name' => 'Active Customers',
-                    'value' => number_format(Customer::where('status', true)->count()),
-                    'icon' => 'UsersIcon',
-                    'change' => $this->calculateGrowth(
-                        Customer::where('created_at', '>=', $currentMonth)->count(),
-                        Customer::whereBetween('created_at', [$lastMonth, $currentMonth])->count()
-                    ),
-                    'changeType' => 'increase'
-                ]
-            ],
-            'recentSales' => Sale::with('customer')
-                ->latest()
-                ->take(5)
-                ->get()
-                ->map(fn($sale) => [
-                    'id' => $sale->id,
-                    'invoice_no' => $sale->invoice_no,
-                    'customer_name' => $sale->customer?->name ?? 'Walk-in Customer',
-                    'total' => $sale->total,
-                    'status' => $sale->payment_status,
-                ]),
-            'lowStockProducts' => Product::whereRaw('alert_quantity >= (
-                    SELECT COALESCE(SUM(quantity), 0)
-                    FROM product_stocks
-                    WHERE product_stocks.product_id = products.id
-                )')
-                ->take(5)
-                ->get()
-                ->map(fn($product) => [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'sku' => $product->sku,
-                    'image' => $product->primary_image?->image ?? '/placeholder.png',
-                    'quantity' => $product->current_stock,
-                    'alert_quantity' => $product->alert_quantity,
-                ]),
-            'bankAccounts' => BankAccount::select([
-                'id',
-                'account_name',
-                'account_number',
-                'bank_name',
-                'current_balance'
-            ])
-                ->where('status', true)
-                ->orderByDesc('current_balance')
-                ->get(),
-            'recentExpenses' => Expense::with('expenseCategory')
-                ->select(['id', 'expense_category_id', 'amount', 'description', 'date'])
-                ->latest('date')
-                ->take(5)
-                ->get()
-                ->map(fn($expense) => [
-                    'id' => $expense->id,
-                    'category_name' => $expense->expenseCategory->name,
-                    'amount' => $expense->amount,
-                    'description' => $expense->description,
-                    'date' => $expense->date->format('M d, Y'),
-                ]),
-            'salesData' => [
-                'weekly' => $this->getSalesData('week'),
-                'monthly' => $this->getSalesData('month'),
-                'yearly' => $this->getSalesData('year'),
-            ],
-            'expenseData' => [
-                'weekly' => $this->getExpenseData('week'),
-                'monthly' => $this->getExpenseData('month'),
-                'yearly' => $this->getExpenseData('year'),
+            'salesData' => $salesData,
+            'stockData' => $stockData,
+            'expensesData' => $expensesData,
+            'bankTransactions' => $bankTransactions,
+            'summary' => $summary,
+            'dailySalesSummary' => $dailySalesSummary,
+            'bankingSummary' => $bankingSummary,
+            'lowStockAlerts' => $lowStockProducts,
+            'filters' => [
+                'startDate' => $startDate->toDateString(),
+                'endDate' => $endDate->toDateString()
             ]
         ]);
     }
 
-    private function getSalesData($period)
+    private function calculateTotalProfit($sales)
     {
-        $days = $period === 'week' ? 7 : ($period === 'month' ? 30 : 365);
-
-        $query = Sale::selectRaw(
-            $period === 'year'
-                ? "DATE_FORMAT(created_at, '%Y-%m') as date, SUM(total) as amount"
-                : "DATE(created_at) as date, SUM(total) as amount"
-        )
-            ->where('created_at', '>=', now()->subDays($days));
-
-        if ($period === 'year') {
-            $query->groupByRaw("DATE_FORMAT(created_at, '%Y-%m')");
-        } else {
-            $query->groupBy('date');
+        $totalProfit = 0;
+        foreach ($sales as $sale) {
+            foreach ($sale->saleItems as $item) {
+                $costPrice = $item->product->cost_price ?? 0;
+                $totalProfit += ($item->unit_price - $costPrice) * $item->quantity;
+            }
         }
-
-        return $query->orderBy('date')
-            ->get()
-            ->map(fn($sale) => [
-                'date' => $period === 'year'
-                    ? Carbon::parse($sale->date)->format('M Y')
-                    : Carbon::parse($sale->date)->format('M d'),
-                'amount' => (float)$sale->amount
-            ])
-            ->toArray();
+        return $totalProfit;
     }
 
-    private function getExpenseData($period)
+    private function calculateStockWorth($stockData)
     {
-        $days = $period === 'week' ? 7 : ($period === 'month' ? 30 : 365);
-
-        $query = Expense::selectRaw(
-            $period === 'year'
-                ? "DATE_FORMAT(date, '%Y-%m') as date, SUM(amount) as amount"
-                : "DATE(date) as date, SUM(amount) as amount"
-        )
-            ->where('date', '>=', now()->subDays($days));
-
-        if ($period === 'year') {
-            $query->groupByRaw("DATE_FORMAT(date, '%Y-%m')");
-        } else {
-            $query->groupBy('date');
-        }
-
-        return $query->orderBy('date')
-            ->get()
-            ->map(fn($expense) => [
-                'date' => $period === 'year'
-                    ? Carbon::parse($expense->date)->format('M Y')
-                    : Carbon::parse($expense->date)->format('M d'),
-                'amount' => (float)$expense->amount
-            ])
-            ->toArray();
-    }
-
-    private function calculateGrowth($current, $previous)
-    {
-        if ($previous == 0) return '0%';
-        $growth = (($current - $previous) / abs($previous)) * 100;
-        return number_format($growth, 1) . '%';
+        return $stockData->sum(function ($stock) {
+            return $stock->total_quantity * ($stock->product->selling_price ?? 0);
+        });
     }
 }

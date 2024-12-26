@@ -16,64 +16,36 @@ class ProductStockController extends Controller
     public function index(Request $request)
     {
         $query = ProductStock::with(['product', 'createdBy'])
-        ->selectRaw('
-            product_id,
-            MAX(created_at) as last_created_at,
-            SUM(quantity) as total_quantity,
-            SUM(product_stocks.total_cost) as total_stock_value,
-            (SUM(product_stocks.total_cost) / SUM(product_stocks.quantity)) as unit_cost
-        ')
-        ->groupBy('product_id')
-        ->orderBy('last_created_at', 'desc');
-
-        // Search functionality
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->whereHas('product', function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%");
-            });
-        }
-
-        // Filter by stock status
-        if ($request->filled('stock_status')) {
-            $query->whereHas('product', function ($q) use ($request) {
-                switch ($request->stock_status) {
-                    case 'low':
-                        $q->whereRaw('product_stocks.quantity <= products.alert_quantity');
-                        break;
-                    case 'out':
-                        $q->where('product_stocks.quantity', '<=', 0);
-                        break;
-                    case 'in':
-                        $q->whereRaw('product_stocks.quantity > products.alert_quantity');
-                        break;
-                }
-            });
-        }
+            ->select(
+                'product_stocks.*',  // Select all columns from product_stocks
+                DB::raw('SUM(quantity) as total_quantity'),
+                DB::raw('SUM(total_cost) as total_stock_value'),
+                DB::raw('(SUM(total_cost) / SUM(quantity)) as avg_unit_cost')
+            )
+            ->groupBy('product_stocks.id', 'product_stocks.product_id')  // Include id in groupBy
+            ->orderBy('created_at', 'desc');
 
         $stocks = $query->paginate(10)->through(function ($stock) {
             return [
-                'id' => $stock->id,
+                'id' => $stock->id,  // Now we'll have a proper id
                 'product' => [
                     'id' => $stock->product->id,
                     'name' => $stock->product->name,
                     'sku' => $stock->product->sku,
                     'alert_quantity' => $stock->product->alert_quantity
                 ],
-                'quantity' => $stock->total_quantity, // Use aggregated value
-                'total_cost' => $stock->total_stock_value, // Use aggregated value
-                'unit_cost' => $stock->unit_cost,
+                'quantity' => $stock->total_quantity,
+                'total_cost' => $stock->total_stock_value,
+                'unit_cost' => $stock->avg_unit_cost,
                 'created_by' => $stock->createdBy?->name ?? 'N/A',
-                'created_at' => $stock->last_created_at, // Use aggregated value
-                'stock_status' => $stock->total_quantity <= 0 ? 'out' : ($stock->total_quantity <= $stock->product->alert_quantity ? 'low' : 'in')
+                'created_at' => $stock->created_at,
+                'stock_status' => $stock->total_quantity <= 0 ? 'out' :
+                    ($stock->total_quantity <= $stock->product->alert_quantity ? 'low' : 'in')
             ];
         });
 
         return Inertia::render('Admin/ProductStocks/Index', [
             'stocks' => $stocks,
-
-            'filters' => $request->only(['search', 'stock_status']),
             'summary' => [
                 'total_products' => ProductStock::distinct('product_id')->count(),
                 'total_quantity' => ProductStock::sum('quantity'),
@@ -89,15 +61,17 @@ class ProductStockController extends Controller
     public function create()
     {
         return Inertia::render('Admin/ProductStocks/Create', [
-            'products' => Product::with(['productStocks' => function ($query) {
-                $query->latest();
-            }])->get()->map(fn($product) => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'sku' => $product->sku,
-                'current_stock' => $product->productStocks->sum('quantity'),
-                'last_unit_cost' => $product->productStocks->first()?->unit_cost ?? 0,
-            ]),
+            'products' => Product::with([
+                'productStocks' => function ($query) {
+                    $query->latest();
+                }
+            ])->get()->map(fn($product) => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'current_stock' => $product->productStocks->sum('quantity'),
+                    'last_unit_cost' => $product->productStocks->first()?->unit_cost ?? 0,
+                ]),
             'bankAccounts' => BankAccount::where('status', true)
                 ->select('id', 'account_name', 'bank_name', 'current_balance')
                 ->get()
@@ -139,7 +113,7 @@ class ProductStockController extends Controller
             // Create bank transaction
             BankTransaction::create([
                 'bank_account_id' => $validated['bank_account_id'],
-                'transaction_type' => 'withdrawal',
+                'transaction_type' => 'out',
                 'amount' => $validated['total_cost'],
                 'description' => "Stock purchase for product ID: {$validated['product_id']}",
                 'date' => now(),
@@ -167,6 +141,64 @@ class ProductStockController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Error: ' . $e->getMessage());
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Find the stock entry
+            $stock = ProductStock::with('product')->findOrFail($id);
+
+            // Find and delete the original bank transaction
+            $bankTransaction = BankTransaction::where([
+                ['description', 'like', "%Stock purchase for product ID: {$stock->product_id}%"],
+                ['amount', $stock->total_cost],
+                ['transaction_type', 'out']
+            ])->first();
+
+            if ($bankTransaction) {
+                // Update bank balance (add back the money)
+                $bankAccount = BankAccount::findOrFail($bankTransaction->bank_account_id);
+                $bankAccount->update([
+                    'current_balance' => $bankAccount->current_balance + $stock->total_cost
+                ]);
+
+                // Delete the bank transaction
+                $bankTransaction->delete();
+            }
+
+            // Delete the stock entry
+            $stock->delete();
+
+            // Update product's average cost
+            $product = $stock->product;
+            $remainingStocks = $product->productStocks()
+                ->select(DB::raw('SUM(quantity) as total_quantity, SUM(total_cost) as total_cost'))
+                ->first();
+
+            if ($remainingStocks->total_quantity > 0) {
+                $newAverageCost = $remainingStocks->total_cost / $remainingStocks->total_quantity;
+                $product->update(['cost_price' => $newAverageCost]);
+            } else {
+                $product->update(['cost_price' => 0]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stock entry deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 422);
         }
     }
 

@@ -13,7 +13,9 @@ class ProductStock extends Model
         'total_cost',
         'unit_cost',
         'note',
-        'created_by'
+        'created_by',
+        'bank_account_id'  // Add this
+
     ];
 
     public function product()

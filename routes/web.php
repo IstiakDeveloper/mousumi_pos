@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExpenseCategoryController;
 use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\ExtraIncomeController;
+use App\Http\Controllers\Admin\FundManagementController;
+use App\Http\Controllers\Admin\IncomeExpenditureController;
 use App\Http\Controllers\Admin\PosController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductStockController;
@@ -39,14 +41,18 @@ Route::get('/dashboard', function () {
 
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/data', [DashboardController::class, 'getDashboardData'])->name('admin.dashboard.data');
+
     Route::resource('categories', CategoryController::class);
     Route::resource('units', UnitController::class);
     Route::resource('brands', BrandController::class);
     Route::resource('products', ProductController::class);
     Route::post('/products/barcode/print', [ProductController::class, 'printBarcodes'])
         ->name('products.barcode.print');
+
     Route::resource('product-stocks', ProductStockController::class)
-        ->only(['index', 'create', 'store']);
+        ->only(['index', 'create', 'store', 'destroy']);
+
     Route::resource('customers', CustomerController::class);
     Route::post('customers/{customer}/toggle-status', [CustomerController::class, 'toggleStatus'])
         ->name('customers.toggle-status');
@@ -56,6 +62,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('bank-transactions', BankTransactionController::class);
     // Route::resource('sales', SaleController::class);
     Route::resource('extra-incomes', ExtraIncomeController::class);
+    Route::resource('funds', FundManagementController::class);
+
 
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
     Route::get('/pos/search-products', [PosController::class, 'searchProducts'])->name('pos.search-products');
@@ -96,6 +104,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     Route::get('/reports/customer-sales', [CustomerSalesReportController::class, 'index'])
         ->name('reports.customer-sales.index');
+        Route::get('/reports/income-expenditure', [IncomeExpenditureController::class, 'index'])
+        ->name('reports.income-expenditure');
 
     Route::resource('expenses', ExpenseController::class);
     Route::post('expenses/{expense}/restore', [ExpenseController::class, 'restore'])->name('expenses.restore');

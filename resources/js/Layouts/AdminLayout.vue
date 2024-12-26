@@ -399,6 +399,7 @@ const dropdownNavItems = [
         icon: 'fa-university',
         items: [
             { name: 'Bank Accounts', href: '/admin/bank-accounts', icon: 'fa-piggy-bank' },
+            { name: 'Funds', href: '/admin/funds', icon: 'fas fa-wallet' },
             { name: 'Transactions', href: '/admin/bank-transactions', icon: 'fa-exchange-alt' }
         ]
     },

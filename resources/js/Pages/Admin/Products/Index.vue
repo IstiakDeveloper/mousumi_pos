@@ -200,8 +200,11 @@ const lowStockProducts = computed(() =>
 
 const totalValue = computed(() => {
     const total = props.products.data.reduce((sum, product) => {
+        // Calculate total stock value for each product
         const stockValue = product.stocks.reduce((stockSum, stock) =>
-            stockSum + (stock.quantity * product.cost_price), 0);
+            // Use stock's unit_cost instead of product's cost_price
+            stockSum + (stock.quantity * stock.unit_cost), 0
+        );
         return sum + stockValue;
     }, 0);
 
@@ -210,8 +213,7 @@ const totalValue = computed(() => {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     }).format(total);
-    return `৳ ${number}`
-
+    return `৳ ${number}`;
 });
 
 // Methods
