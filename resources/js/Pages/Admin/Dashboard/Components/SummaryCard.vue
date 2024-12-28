@@ -1,16 +1,15 @@
-<!-- resources/js/Pages/Admin/Dashboard/Components/SummaryCard.vue -->
 <template>
-    <div class="p-6 bg-white rounded-lg shadow-sm">
+    <div class="p-6 bg-white rounded-lg shadow-sm dark:bg-gray-800">
         <div class="flex items-center">
-            <div class="p-3 bg-blue-100 rounded-full">
+            <div class="p-3 bg-blue-100 rounded-full dark:bg-blue-900">
                 <component
                     :is="iconComponent"
-                    class="w-6 h-6 text-blue-600"
+                    class="w-6 h-6 text-blue-600 dark:text-blue-400"
                 />
             </div>
             <div class="ml-4">
-                <h3 class="text-sm font-medium text-gray-500">{{ title }}</h3>
-                <p class="text-2xl font-semibold text-gray-900">
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-300">{{ title }}</h3>
+                <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                     {{ formattedValue }}
                 </p>
             </div>

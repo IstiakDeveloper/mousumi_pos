@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\BalanceSheetController;
 use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\BankReportController;
 use App\Http\Controllers\Admin\BankTransactionController;
@@ -104,14 +105,31 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     Route::get('/reports/customer-sales', [CustomerSalesReportController::class, 'index'])
         ->name('reports.customer-sales.index');
-        Route::get('/reports/income-expenditure', [IncomeExpenditureController::class, 'index'])
+
+    Route::get('/reports/income-expenditure', [IncomeExpenditureController::class, 'index'])
         ->name('reports.income-expenditure');
+    Route::get('/reports/income-expenditure/pdf', [IncomeExpenditureController::class, 'downloadPdf'])
+        ->name('reports.income-expenditure.pdf');
+    Route::get('/reports/balance-sheet', [BalanceSheetController::class, 'index'])
+        ->name('reports.balance-sheet');
+
+    Route::get('/reports/balance-sheet/pdf', [BalanceSheetController::class, 'downloadPdf'])
+        ->name('reports.balance-sheet.pdf');
+
 
     Route::resource('expenses', ExpenseController::class);
     Route::post('expenses/{expense}/restore', [ExpenseController::class, 'restore'])->name('expenses.restore');
     Route::resource('expense-categories', ExpenseCategoryController::class);
 
 });
+
+Route::get('/dashboard', function () {
+    return redirect('/admin/dashboard');
+})->name('dashboard');
+
+Route::get('/', function () {
+    return redirect('/login');
+})->name('welcome');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

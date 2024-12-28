@@ -52,4 +52,8 @@ class BankAccount extends Model
             : $this->current_balance - $amount;
         $this->save();
     }
+    public function bankAccount()
+    {
+        return $this->belongsTo(BankAccount::class);
+    }
 }

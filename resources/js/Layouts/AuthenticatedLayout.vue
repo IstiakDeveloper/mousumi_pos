@@ -2,125 +2,131 @@
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
         <!-- Sidebar -->
         <aside :class="[
-            'fixed inset-y-0 left-0 z-50 w-72 transition-transform duration-300 ease-in-out',
+            'fixed inset-y-0 left-0 z-50 w-72 transition-transform duration-300 ease-in-out flex flex-col',
             'bg-gradient-to-b from-indigo-700 via-indigo-800 to-indigo-900 dark:from-gray-800 dark:via-gray-900 dark:to-black',
             isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         ]">
-            <!-- Logo Section -->
-            <div
-                class="h-16 flex items-center justify-between px-6 bg-indigo-800/50 dark:bg-gray-800/50 backdrop-blur-sm">
-                <Link href="/admin/dashboard" class="flex items-center space-x-3">
-                <div class="p-2 bg-white/10 dark:bg-gray-700 rounded-lg backdrop-blur-sm">
-                    <img src="/logo.svg" alt="Logo" class="h-8 w-8" />
+            <!-- Fixed Header -->
+            <div class="flex-shrink-0">
+                <div
+                    class="h-16 flex items-center justify-between px-6 bg-indigo-800/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                    <Link href="/admin/dashboard" class="flex items-center space-x-3">
+                    <div class="p-2 bg-white/10 dark:bg-gray-700 rounded-lg backdrop-blur-sm">
+                        <img src="/logo.svg" alt="Logo" class="h-8 w-8" />
+                    </div>
+                    <span
+                        class="text-xl font-bold bg-gradient-to-r from-white to-indigo-200 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
+                        Admin Panel
+                    </span>
+                    </Link>
+                    <button
+                        class="lg:hidden p-2 rounded-lg hover:bg-white/10 dark:hover:bg-gray-700 text-white/80 dark:text-gray-400 hover:text-white transition-colors"
+                        @click="toggleSidebar">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
                 </div>
-                <span
-                    class="text-xl font-bold bg-gradient-to-r from-white to-indigo-200 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
-                    Admin Panel
-                </span>
-                </Link>
-                <button
-                    class="lg:hidden p-2 rounded-lg hover:bg-white/10 dark:hover:bg-gray-700 text-white/80 dark:text-gray-400 hover:text-white transition-colors"
-                    @click="toggleSidebar">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
             </div>
 
-            <!-- Navigation -->
-            <nav class="mt-6 px-4">
-                <div class="space-y-2">
-                    <!-- Single Items -->
-                    <Link v-for="item in singleNavItems" :key="item.name" :href="item.href" :class="[
-                        'flex items-center px-4 py-3 text-sm rounded-xl transition-all duration-200',
-                        'hover:bg-white/10 dark:hover:bg-gray-700 backdrop-blur-sm group',
-                        isActivePath(item.href)
-                            ? 'bg-white/15 dark:bg-gray-700 text-white shadow-lg shadow-indigo-900/20'
-                            : 'text-indigo-100 dark:text-gray-400 hover:text-white dark:hover:text-gray-100'
-                    ]">
-                    <div :class="[
-                        'p-2 rounded-lg mr-3 transition-all duration-200',
-                        isActivePath(item.href)
-                            ? 'bg-white/20 dark:bg-gray-600 text-white'
-                            : 'bg-white/10 dark:bg-gray-700 text-indigo-200 dark:text-gray-400 group-hover:bg-white/15 group-hover:dark:bg-gray-600 group-hover:text-white'
-                    ]">
-                        <i :class="['fas', item.icon, 'w-4 h-4']"></i>
-                    </div>
-                    <span class="font-medium">{{ item.name }}</span>
-                    </Link>
-
-                    <!-- Dropdown Items -->
-                    <div v-for="(group, index) in dropdownNavItems" :key="index" class="space-y-1">
-                        <button @click="toggleDropdown(group.name)" :class="[
-                            'w-full flex items-center justify-between px-4 py-3 text-sm rounded-xl transition-all duration-200',
+            <!-- Scrollable Navigation -->
+            <div class="flex-1 overflow-y-auto">
+                <nav class="mt-6 px-4">
+                    <div class="space-y-2">
+                        <!-- Single Items -->
+                        <Link v-for="item in singleNavItems" :key="item.name" :href="item.href" :class="[
+                            'flex items-center px-4 py-3 text-sm rounded-xl transition-all duration-200',
                             'hover:bg-white/10 dark:hover:bg-gray-700 backdrop-blur-sm group',
-                            isDropdownActive(group.name)
+                            isActivePath(item.href)
                                 ? 'bg-white/15 dark:bg-gray-700 text-white shadow-lg shadow-indigo-900/20'
                                 : 'text-indigo-100 dark:text-gray-400 hover:text-white dark:hover:text-gray-100'
                         ]">
-                            <div class="flex items-center">
-                                <div :class="[
-                                    'p-2 rounded-lg mr-3 transition-all duration-200',
-                                    isDropdownActive(group.name)
-                                        ? 'bg-white/20 dark:bg-gray-600 text-white'
-                                        : 'bg-white/10 dark:bg-gray-700 text-indigo-200 dark:text-gray-400 group-hover:bg-white/15 group-hover:dark:bg-gray-600 group-hover:text-white'
-                                ]">
-                                    <i :class="['fas', group.icon, 'w-4 h-4']"></i>
+                        <div :class="[
+                            'p-2 rounded-lg mr-3 transition-all duration-200',
+                            isActivePath(item.href)
+                                ? 'bg-white/20 dark:bg-gray-600 text-white'
+                                : 'bg-white/10 dark:bg-gray-700 text-indigo-200 dark:text-gray-400 group-hover:bg-white/15 group-hover:dark:bg-gray-600 group-hover:text-white'
+                        ]">
+                            <i :class="['fas', item.icon, 'w-4 h-4']"></i>
+                        </div>
+                        <span class="font-medium">{{ item.name }}</span>
+                        </Link>
+
+                        <!-- Dropdown Items -->
+                        <div v-for="(group, index) in dropdownNavItems" :key="index" class="space-y-1">
+                            <button @click="toggleDropdown(group.name)" :class="[
+                                'w-full flex items-center justify-between px-4 py-3 text-sm rounded-xl transition-all duration-200',
+                                'hover:bg-white/10 dark:hover:bg-gray-700 backdrop-blur-sm group',
+                                isDropdownActive(group.name)
+                                    ? 'bg-white/15 dark:bg-gray-700 text-white shadow-lg shadow-indigo-900/20'
+                                    : 'text-indigo-100 dark:text-gray-400 hover:text-white dark:hover:text-gray-100'
+                            ]">
+                                <div class="flex items-center">
+                                    <div :class="[
+                                        'p-2 rounded-lg mr-3 transition-all duration-200',
+                                        isDropdownActive(group.name)
+                                            ? 'bg-white/20 dark:bg-gray-600 text-white'
+                                            : 'bg-white/10 dark:bg-gray-700 text-indigo-200 dark:text-gray-400 group-hover:bg-white/15 group-hover:dark:bg-gray-600 group-hover:text-white'
+                                    ]">
+                                        <i :class="['fas', group.icon, 'w-4 h-4']"></i>
+                                    </div>
+                                    <span class="font-medium">{{ group.name }}</span>
                                 </div>
-                                <span class="font-medium">{{ group.name }}</span>
-                            </div>
-                            <i :class="[
-                                'fas fa-chevron-right transition-transform duration-200',
-                                activeDropdowns.includes(group.name) && 'rotate-90'
-                            ]"></i>
-                        </button>
-
-                        <!-- Dropdown Content -->
-                        <TransitionRoot :show="activeDropdowns.includes(group.name)"
-                            enter="transition-all duration-300 ease-in-out"
-                            enter-from="transform opacity-0 scale-95 -translate-y-2"
-                            enter-to="transform opacity-100 scale-100 translate-y-0"
-                            leave="transition-all duration-200 ease-in-out"
-                            leave-from="transform opacity-100 scale-100 translate-y-0"
-                            leave-to="transform opacity-0 scale-95 -translate-y-2">
-                            <div class="pl-4 ml-3 border-l-2 border-indigo-500/30 dark:border-gray-700 space-y-1">
-                                <Link v-for="subItem in group.items" :key="subItem.name" :href="subItem.href" :class="[
-                                    'flex items-center px-4 py-2.5 text-sm rounded-lg transition-all duration-200',
-                                    'hover:bg-white/10 dark:hover:bg-gray-700 group',
-                                    isActivePath(subItem.href)
-                                        ? 'bg-white/15 dark:bg-gray-700 text-white'
-                                        : 'text-indigo-200 dark:text-gray-400 hover:text-white dark:hover:text-gray-100'
-                                ]">
                                 <i :class="[
-                                    'fas',
-                                    subItem.icon,
-                                    'w-4 h-4 mr-3',
-                                    isActivePath(subItem.href) ? 'text-white' : 'text-indigo-300 dark:text-gray-400 group-hover:text-white'
+                                    'fas fa-chevron-right transition-transform duration-200',
+                                    activeDropdowns.includes(group.name) && 'rotate-90'
                                 ]"></i>
-                                <span class="font-medium">{{ subItem.name }}</span>
-                                </Link>
-                            </div>
-                        </TransitionRoot>
-                    </div>
-                </div>
+                            </button>
 
-                <!-- Quick Actions -->
-                <div class="mt-8 pt-6 border-t border-indigo-500/20">
-                    <h3 class="px-4 text-xs font-semibold text-indigo-200 uppercase tracking-wider">
-                        Quick Actions
-                    </h3>
-                    <div class="mt-4 space-y-2">
-                        <button v-for="action in quickActions" :key="action.name" @click="action.handler"
-                            class="w-full flex items-center px-4 py-2.5 text-sm text-indigo-100 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200 group">
-                            <div
-                                class="p-2 bg-white/10 rounded-lg mr-3 group-hover:bg-white/15 transition-all duration-200">
-                                <i :class="['fas', action.icon, 'w-4 h-4']"></i>
-                            </div>
-                            <span class="font-medium">{{ action.name }}</span>
-                        </button>
+                            <!-- Dropdown Content -->
+                            <TransitionRoot :show="activeDropdowns.includes(group.name)"
+                                enter="transition-all duration-300 ease-in-out"
+                                enter-from="transform opacity-0 scale-95 -translate-y-2"
+                                enter-to="transform opacity-100 scale-100 translate-y-0"
+                                leave="transition-all duration-200 ease-in-out"
+                                leave-from="transform opacity-100 scale-100 translate-y-0"
+                                leave-to="transform opacity-0 scale-95 -translate-y-2">
+                                <div class="pl-4 ml-3 border-l-2 border-indigo-500/30 dark:border-gray-700 space-y-1">
+                                    <Link v-for="subItem in group.items" :key="subItem.name" :href="subItem.href"
+                                        :class="[
+                                            'flex items-center px-4 py-2.5 text-sm rounded-lg transition-all duration-200',
+                                            'hover:bg-white/10 dark:hover:bg-gray-700 group',
+                                            isActivePath(subItem.href)
+                                                ? 'bg-white/15 dark:bg-gray-700 text-white'
+                                                : 'text-indigo-200 dark:text-gray-400 hover:text-white dark:hover:text-gray-100'
+                                        ]">
+                                    <i :class="[
+                                        'fas',
+                                        subItem.icon,
+                                        'w-4 h-4 mr-3',
+                                        isActivePath(subItem.href) ? 'text-white' : 'text-indigo-300 dark:text-gray-400 group-hover:text-white'
+                                    ]"></i>
+                                    <span class="font-medium">{{ subItem.name }}</span>
+                                    </Link>
+                                </div>
+                            </TransitionRoot>
+                        </div>
                     </div>
-                </div>
-            </nav>
-            <!-- User Profile -->
-            <div class="absolute bottom-0 left-0 right-0 p-4">
+
+                    <!-- Quick Actions -->
+                    <!-- <div class="mt-8 pt-6 border-t border-indigo-500/20 mb-20">
+                        <h3 class="px-4 text-xs font-semibold text-indigo-200 uppercase tracking-wider">
+                            Quick Actions
+                        </h3>
+                        <div class="mt-4 space-y-2">
+                            <button v-for="action in quickActions" :key="action.name" @click="action.handler"
+                                class="w-full flex items-center px-4 py-2.5 text-sm text-indigo-100 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200 group">
+                                <div
+                                    class="p-2 bg-white/10 rounded-lg mr-3 group-hover:bg-white/15 transition-all duration-200">
+                                    <i :class="['fas', action.icon, 'w-4 h-4']"></i>
+                                </div>
+                                <span class="font-medium">{{ action.name }}</span>
+                            </button>
+                        </div>
+                    </div> -->
+                </nav>
+            </div>
+
+            <!-- Fixed Footer with User Profile -->
+            <div class="flex-shrink-0 p-4 border-t border-indigo-500/20">
                 <Menu as="div" class="relative">
                     <MenuButton
                         class="w-full flex items-center p-3 rounded-xl hover:bg-white/10 transition-all duration-200">
@@ -151,7 +157,7 @@
                             </div>
                             <div class="p-1">
                                 <MenuItem v-slot="{ active }">
-                                <Link href="/admin/profile" :class="[
+                                <Link href="/profile" :class="[
                                     'flex items-center px-4 py-2.5 text-sm rounded-lg transition-colors',
                                     active ? 'bg-indigo-50 text-indigo-900' : 'text-gray-700 hover:bg-gray-50'
                                 ]">
@@ -160,13 +166,7 @@
                                 </Link>
                                 </MenuItem>
                                 <MenuItem v-slot="{ active }">
-                                <Link href="/admin/settings" :class="[
-                                    'flex items-center px-4 py-2.5 text-sm rounded-lg transition-colors',
-                                    active ? 'bg-indigo-50 text-indigo-900' : 'text-gray-700 hover:bg-gray-50'
-                                ]">
-                                <i class="fas fa-cog mr-3 text-indigo-500"></i>
-                                Settings
-                                </Link>
+
                                 </MenuItem>
                                 <div class="border-t border-gray-100 my-1"></div>
                                 <MenuItem v-slot="{ active }">
@@ -323,7 +323,7 @@
                 <div class="mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="py-4 text-center sm:text-left">
                         <p class="text-sm text-gray-500 dark:text-gray-400">
-                            © {{ new Date().getFullYear() }} Your Company. All rights reserved.
+                            © {{ new Date().getFullYear() }} Mousumi Prokashon. All rights reserved.
                         </p>
                     </div>
                 </div>
@@ -338,18 +338,22 @@
 </template>
 
 <script setup>
-import { ref, computed, } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import { ref, computed, onMounted, watch } from 'vue'
+import {usePage, Link, router } from '@inertiajs/vue3'
 import { Menu, MenuButton, MenuItems, MenuItem, TransitionRoot } from '@headlessui/vue'
 import { switchTheme } from '@/theme';
 
 
+const page = usePage();
+const { flash, auth } = page.props;
+const user = auth.user;
 const props = defineProps({
     user: {
         type: Object,
         required: true
     }
 })
+
 
 // Sidebar state
 const isOpen = ref(false)
@@ -377,6 +381,7 @@ const dropdownNavItems = [
         icon: 'fa-shopping-cart',
         items: [
             { name: 'Sales List', href: '/admin/sales', icon: 'fa-list' },
+            { name: 'Extra Income', href: '/admin/extra-incomes', icon: 'fa-coins' },
             { name: 'POS', href: '/admin/pos', icon: 'fa-cash-register' }
         ]
     },
@@ -392,6 +397,7 @@ const dropdownNavItems = [
         icon: 'fa-university',
         items: [
             { name: 'Bank Accounts', href: '/admin/bank-accounts', icon: 'fa-piggy-bank' },
+            { name: 'Funds', href: '/admin/funds', icon: 'fas fa-wallet' },
             { name: 'Transactions', href: '/admin/bank-transactions', icon: 'fa-exchange-alt' }
         ]
     },
@@ -409,33 +415,16 @@ const dropdownNavItems = [
         items: [
             { name: 'Bank Report', href: '/admin/reports/bank', icon: 'fa-university' },
             { name: 'Stock Report', href: '/admin/reports/stock', icon: 'fa-warehouse' },
-            { name: 'Sales Report', href: '/admin/reports/sales', icon: 'fa-chart-bar' }
+            { name: 'Sales Report', href: '/admin/reports/sales', icon: 'fa-chart-bar' },
+            { name: 'Income & Expenditure', href: '/admin/reports/income-expenditure', icon: 'fa-file-alt' },
+            { name: 'Balance Sheet', href: '/admin/reports/balance-sheet', icon: 'fas fa-balance-scale' }
         ]
     }
 ]
 
 // Quick actions for frequently used features
 const quickActions = [
-    {
-        name: 'My Profile',
-        icon: 'fa-user-circle',
-        handler: () => {
-            router.visit('/profile')
-            isOpen.value = false // Close sidebar on mobile after navigation
-        }
-    },
-    {
-        name: 'Logout',
-        icon: 'fa-sign-out-alt',
-        handler: () => {
-            router.post('/logout', {}, {
-                onSuccess: () => {
-                    // Optional: Add any logout success handling
-                    isOpen.value = false
-                }
-            })
-        }
-    }
+
 ]
 
 // Sample notifications

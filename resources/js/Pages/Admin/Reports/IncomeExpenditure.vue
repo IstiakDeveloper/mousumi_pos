@@ -1,137 +1,251 @@
-<!-- resources/js/Pages/Admin/Reports/IncomeExpenditure.vue -->
-<template>
-    <AdminLayout>
-        <template #header>
-            <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
-                    Income & Expenditure Report
-                </h2>
-                <div class="flex items-center space-x-4">
-                    <!-- Month Selector -->
-                    <select v-model="selectedMonth"
-                        class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option v-for="(month, index) in months" :key="index" :value="index + 1">
-                            {{ month }}
-                        </option>
-                    </select>
+    <template>
+        <AdminLayout>
+            <!-- Header Section -->
+            <div class="bg-white dark:bg-gray-800 shadow">
+                <div class="px-4 sm:px-6 lg:px-8 py-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                                Income & Expenditure Report
+                            </h2>
+                            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                Detailed financial analysis and reporting
+                            </p>
+                        </div>
 
-                    <!-- Year Selector -->
-                    <select v-model="selectedYear"
-                        class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option v-for="year in years" :key="year" :value="year">
-                            {{ year }}
-                        </option>
-                    </select>
+                        <div class="flex items-center space-x-4">
+                            <!-- Period Selector -->
+                            <div class="flex items-center space-x-3 bg-white dark:bg-gray-700 rounded-lg shadow p-2">
+                                <select v-model="selectedMonth"
+                                    class="rounded-md border-0 bg-transparent py-1.5 pl-3 pr-8 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                    <option v-for="(month, index) in months" :key="index" :value="index + 1">
+                                        {{ month }}
+                                    </option>
+                                </select>
+                                <select v-model="selectedYear"
+                                    class="rounded-md border-0 bg-transparent py-1.5 pl-3 pr-8 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                    <option v-for="year in years" :key="year" :value="year">
+                                        {{ year }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Download Button -->
+                            <button @click="downloadPdf"
+                                class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors duration-200">
+                                <ArrowDownTrayIcon class="w-5 h-5 mr-2" />
+                                Download Report
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </template>
 
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-6">
-            <SummaryCard
-                title="Sales Profit"
-                :value="summary.sales_profit"
-                icon="trending-up"
-                type="currency"
-            />
-            <SummaryCard
-                title="Extra Income"
-                :value="summary.extra_income"
-                icon="plus"
-                type="currency"
-            />
-            <SummaryCard
-                title="Total Profit"
-                :value="summary.total_profit"
-                icon="currency-dollar"
-                type="currency"
-                class="bg-green-50"
-            />
-            <SummaryCard
-                title="Total Expense"
-                :value="summary.total_expense"
-                icon="minus"
-                type="currency"
-                class="bg-red-50"
-            />
-            <SummaryCard
-                title="Net Profit"
-                :value="summary.net_profit"
-                icon="chart-bar"
-                type="currency"
-                :class="summary.net_profit >= 0 ? 'bg-green-50' : 'bg-red-50'"
-            />
-        </div>
+            <!-- Main Content -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Summary Overview -->
+                <div class="mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Monthly Summary -->
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                            <div class="p-6">
+                                <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                                    {{ filters.monthName }} {{ filters.year }}
+                                </h4>
+                                <dl class="space-y-4">
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-600">Sales Profit</dt>
+                                        <dd class="text-sm font-semibold text-gray-900">
+                                            {{ formatCurrency(summary.monthly.sales_profit) }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-600">Extra Income</dt>
+                                        <dd class="text-sm font-semibold text-gray-900">
+                                            {{ formatCurrency(summary.monthly.extra_income) }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex justify-between pt-4 border-t">
+                                        <dt class="text-sm font-medium text-gray-600">Total Income</dt>
+                                        <dd class="text-sm font-semibold text-emerald-600">
+                                            {{ formatCurrency(summary.monthly.total_income) }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-600">Total Expenses</dt>
+                                        <dd class="text-sm font-semibold text-red-600">
+                                            {{ formatCurrency(summary.monthly.expenses) }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex justify-between pt-4 border-t">
+                                        <dt class="text-base font-medium text-gray-900">Net Profit</dt>
+                                        <dd class="text-base font-bold"
+                                            :class="summary.monthly.net_profit >= 0 ? 'text-emerald-600' : 'text-red-600'">
+                                            {{ formatCurrency(summary.monthly.net_profit) }}
+                                        </dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Income Section -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
-                <div class="p-6">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Income Details</h3>
+                        <!-- Year to Date Summary -->
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                            <div class="p-6">
+                                <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                                    Year to Date (Jan - {{ filters.monthName }} {{ filters.year }})
+                                </h4>
+                                <dl class="space-y-4">
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-600">Sales Profit</dt>
+                                        <dd class="text-sm font-semibold text-gray-900">
+                                            {{ formatCurrency(summary.cumulative.sales_profit) }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-600">Extra Income</dt>
+                                        <dd class="text-sm font-semibold text-gray-900">
+                                            {{ formatCurrency(summary.cumulative.extra_income) }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex justify-between pt-4 border-t">
+                                        <dt class="text-sm font-medium text-gray-600">Total Income</dt>
+                                        <dd class="text-sm font-semibold text-emerald-600">
+                                            {{ formatCurrency(summary.cumulative.total_income) }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-600">Total Expenses</dt>
+                                        <dd class="text-sm font-semibold text-red-600">
+                                            {{ formatCurrency(summary.cumulative.expenses) }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex justify-between pt-4 border-t">
+                                        <dt class="text-base font-medium text-gray-900">Net Profit</dt>
+                                        <dd class="text-base font-bold"
+                                            :class="summary.cumulative.net_profit >= 0 ? 'text-emerald-600' : 'text-red-600'">
+                                            {{ formatCurrency(summary.cumulative.net_profit) }}
+                                        </dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                    <!-- Sales Profit -->
-                    <div class="mt-6">
-                        <h4 class="font-medium text-gray-700 dark:text-gray-300">Sales Profit</h4>
-                        <div class="mt-2 border-t border-gray-200 dark:border-gray-700">
-                            <dl class="divide-y divide-gray-200 dark:divide-gray-700">
-                                <div class="flex justify-between py-3">
-                                    <dt class="text-sm text-gray-500 dark:text-gray-400">Total Sales Profit</dt>
-                                    <dd class="text-sm font-medium text-gray-900 dark:text-white">
-                                        {{ formatCurrency(summary.sales_profit) }}
-                                    </dd>
+                <!-- Detailed Tables -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Income Details -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                        <div class="p-6">
+                            <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Income Details</h4>
+
+                            <!-- Extra Income Table -->
+                            <div class="mt-6">
+                                <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Extra Income</h5>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                        <thead class="bg-gray-50 dark:bg-gray-700">
+                                            <tr>
+                                                <th
+                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    Date
+                                                </th>
+                                                <th
+                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    Title
+                                                </th>
+                                                <th
+                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    Account
+                                                </th>
+                                                <th
+                                                    class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    Amount
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody
+                                            class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                            <tr v-for="income in extraIncome" :key="income.id">
+                                                <td
+                                                    class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                    {{ formatDate(income.date) }}
+                                                </td>
+                                                <td
+                                                    class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                    {{ income.title }}
+                                                </td>
+                                                <td
+                                                    class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                    {{ income.bank_account.account_name }}
+                                                </td>
+                                                <td
+                                                    class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-gray-900 dark:text-white">
+                                                    {{ formatCurrency(income.amount) }}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
-                            </dl>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Extra Income table remains the same -->
+                    <!-- Expense Details -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                        <div class="p-6">
+                            <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Expense Details</h4>
 
-                    <!-- Total Profit Summary -->
-                    <div class="mt-6 pt-4 border-t-2 border-gray-200">
-                        <div class="flex justify-between items-center font-medium">
-                            <span class="text-gray-700 dark:text-gray-300">Total Profit</span>
-                            <span class="text-lg text-green-600">
-                                {{ formatCurrency(summary.total_profit) }}
-                            </span>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead class="bg-gray-50 dark:bg-gray-700">
+                                        <tr>
+                                            <th
+                                                class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                Date
+                                            </th>
+                                            <th
+                                                class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                Category
+                                            </th>
+                                            <th
+                                                class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                Description
+                                            </th>
+                                            <th
+                                                class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                Amount
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody
+                                        class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                        <tr v-for="expense in expenses" :key="expense.id">
+                                            <td
+                                                class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {{ formatDate(expense.date) }}
+                                            </td>
+                                            <td
+                                                class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                {{ expense.expense_category.name }}
+                                            </td>
+                                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                                {{ expense.description }}
+                                            </td>
+                                            <td
+                                                class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-gray-900 dark:text-white">
+                                                {{ formatCurrency(expense.amount) }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Expenditure Section -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
-                <div class="p-6">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Expenditure Details</h3>
-
-                    <!-- Expenses table remains the same -->
-
-                    <!-- Total Expense Summary -->
-                    <div class="mt-6 pt-4 border-t-2 border-gray-200">
-                        <div class="flex justify-between items-center font-medium">
-                            <span class="text-gray-700 dark:text-gray-300">Total Expense</span>
-                            <span class="text-lg text-red-600">
-                                {{ formatCurrency(summary.total_expense) }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Net Profit Display -->
-        <div class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <div class="flex justify-between items-center">
-                <h3 class="text-xl font-medium text-gray-900 dark:text-white">Net Profit</h3>
-                <span :class="[
-                    'text-2xl font-bold',
-                    summary.net_profit >= 0 ? 'text-green-600' : 'text-red-600'
-                ]">
-                    {{ formatCurrency(summary.net_profit) }}
-                </span>
-            </div>
-        </div>
-    </AdminLayout>
-</template>
+        </AdminLayout>
+    </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue';
@@ -181,5 +295,15 @@ const formatCurrency = (amount) => {
 
 const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-BD');
+};
+
+const downloadPdf = () => {
+    window.open(
+        route('admin.reports.income-expenditure.pdf', {
+            month: selectedMonth.value,
+            year: selectedYear.value
+        }),
+        '_blank'
+    );
 };
 </script>

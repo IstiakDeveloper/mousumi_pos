@@ -1,6 +1,6 @@
 <template>
-    <div class="p-6 bg-white rounded-lg shadow-sm">
-        <h3 class="mb-4 text-lg font-medium">Stock Status</h3>
+    <div class="p-6 bg-white rounded-lg shadow-sm dark:bg-gray-800">
+        <h3 class="mb-4 text-lg font-medium dark:text-gray-300">Stock Status</h3>
         <div class="h-72">
             <BarChart
                 :data="chartData"

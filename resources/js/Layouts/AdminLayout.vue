@@ -107,7 +107,7 @@
                     </div>
 
                     <!-- Quick Actions -->
-                    <div class="mt-8 pt-6 border-t border-indigo-500/20 mb-20">
+                    <!-- <div class="mt-8 pt-6 border-t border-indigo-500/20 mb-20">
                         <h3 class="px-4 text-xs font-semibold text-indigo-200 uppercase tracking-wider">
                             Quick Actions
                         </h3>
@@ -121,7 +121,7 @@
                                 <span class="font-medium">{{ action.name }}</span>
                             </button>
                         </div>
-                    </div>
+                    </div> -->
                 </nav>
             </div>
 
@@ -157,7 +157,7 @@
                             </div>
                             <div class="p-1">
                                 <MenuItem v-slot="{ active }">
-                                <Link href="/admin/profile" :class="[
+                                <Link href="/profile" :class="[
                                     'flex items-center px-4 py-2.5 text-sm rounded-lg transition-colors',
                                     active ? 'bg-indigo-50 text-indigo-900' : 'text-gray-700 hover:bg-gray-50'
                                 ]">
@@ -166,13 +166,7 @@
                                 </Link>
                                 </MenuItem>
                                 <MenuItem v-slot="{ active }">
-                                <Link href="/admin/settings" :class="[
-                                    'flex items-center px-4 py-2.5 text-sm rounded-lg transition-colors',
-                                    active ? 'bg-indigo-50 text-indigo-900' : 'text-gray-700 hover:bg-gray-50'
-                                ]">
-                                <i class="fas fa-cog mr-3 text-indigo-500"></i>
-                                Settings
-                                </Link>
+
                                 </MenuItem>
                                 <div class="border-t border-gray-100 my-1"></div>
                                 <MenuItem v-slot="{ active }">
@@ -344,18 +338,22 @@
 </template>
 
 <script setup>
-import { ref, computed, } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import { ref, computed, onMounted, watch } from 'vue'
+import {usePage, Link, router } from '@inertiajs/vue3'
 import { Menu, MenuButton, MenuItems, MenuItem, TransitionRoot } from '@headlessui/vue'
 import { switchTheme } from '@/theme';
 
 
+const page = usePage();
+const { flash, auth } = page.props;
+const user = auth.user;
 const props = defineProps({
     user: {
         type: Object,
         required: true
     }
 })
+
 
 // Sidebar state
 const isOpen = ref(false)
@@ -417,33 +415,16 @@ const dropdownNavItems = [
         items: [
             { name: 'Bank Report', href: '/admin/reports/bank', icon: 'fa-university' },
             { name: 'Stock Report', href: '/admin/reports/stock', icon: 'fa-warehouse' },
-            { name: 'Sales Report', href: '/admin/reports/sales', icon: 'fa-chart-bar' }
+            { name: 'Sales Report', href: '/admin/reports/sales', icon: 'fa-chart-bar' },
+            { name: 'Income & Expenditure', href: '/admin/reports/income-expenditure', icon: 'fa-file-alt' },
+            { name: 'Balance Sheet', href: '/admin/reports/balance-sheet', icon: 'fas fa-balance-scale' }
         ]
     }
 ]
 
 // Quick actions for frequently used features
 const quickActions = [
-    {
-        name: 'My Profile',
-        icon: 'fa-user-circle',
-        handler: () => {
-            router.visit('/profile')
-            isOpen.value = false // Close sidebar on mobile after navigation
-        }
-    },
-    {
-        name: 'Logout',
-        icon: 'fa-sign-out-alt',
-        handler: () => {
-            router.post('/logout', {}, {
-                onSuccess: () => {
-                    // Optional: Add any logout success handling
-                    isOpen.value = false
-                }
-            })
-        }
-    }
+
 ]
 
 // Sample notifications
