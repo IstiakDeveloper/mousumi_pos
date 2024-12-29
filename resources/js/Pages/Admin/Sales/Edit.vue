@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import AdminLayout from '@/Layouts/AdminLayout'
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head } from '@inertiajs/vue3';
 
 export default {

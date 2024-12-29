@@ -24,17 +24,37 @@ use App\Http\Controllers\Admin\SaleReportController;
 use App\Http\Controllers\Admin\UnitController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+// Route::get('/', function () {
+//     return Inertia::render('Welcome', [
+//         'canLogin' => Route::has('login'),
+//         'canRegister' => Route::has('register'),
+//         'laravelVersion' => Application::VERSION,
+//         'phpVersion' => PHP_VERSION,
+//     ]);
+// });
+Route::get('/', fn () => Inertia::render('Welcome'))->name('home');
+Route::get('/about', fn () => Inertia::render('About'))->name('about');
+Route::get('/contact', fn () => Inertia::render('Contact'))->name('contact');
+Route::get('/privacy', fn () => Inertia::render('Privacy'))->name('privacy');
+Route::get('/terms', fn () => Inertia::render('Terms'))->name('terms');
+
+
+Route::get('/storage-link', function () {
+    Artisan::call('storage:link');
+
+    return response()->json(['message' => 'Storage link created successfully.']);
+})->name('storage.link');
+
+// Route for running migrations
+Route::get('/migrate', function () {
+    Artisan::call('migrate');
+
+    return response()->json(['message' => 'Migrations run successfully.']);
+})->name('migrate');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
@@ -129,7 +149,7 @@ Route::get('/dashboard', function () {
 
 Route::get('/', function () {
     return redirect('/login');
-})->name('welcome');
+})->name('home');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
