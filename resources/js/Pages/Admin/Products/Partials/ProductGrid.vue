@@ -90,7 +90,9 @@ const getProductImage = (product) => {
     return primaryImage ? primaryImage.image : product.images[0].image;
 };
 
-const getImageUrl = (path) => `/storage/${path}`;
+window.appUrl = "{{ config('app.url') }}";
+
+const getImageUrl = (path) => `${window.appUrl}/storage/${path}`;
 
 const formatPrice = (price) => {
     const number = new Intl.NumberFormat('en-BD', {

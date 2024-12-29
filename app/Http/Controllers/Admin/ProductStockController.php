@@ -16,14 +16,25 @@ class ProductStockController extends Controller
     public function index(Request $request)
     {
         $query = ProductStock::with(['product', 'createdBy'])
-            ->select(
-                'product_stocks.*',  // Select all columns from product_stocks
-                DB::raw('SUM(quantity) as total_quantity'),
-                DB::raw('SUM(total_cost) as total_stock_value'),
-                DB::raw('(SUM(total_cost) / SUM(quantity)) as avg_unit_cost')
-            )
-            ->groupBy('product_stocks.id', 'product_stocks.product_id')  // Include id in groupBy
-            ->orderBy('created_at', 'desc');
+        ->select(
+            'product_stocks.*',
+            DB::raw('SUM(quantity) as total_quantity'),
+            DB::raw('SUM(total_cost) as total_stock_value'),
+            DB::raw('(SUM(total_cost) / SUM(quantity)) as avg_unit_cost')
+        )
+        ->groupBy(
+            'product_stocks.id',
+            'product_stocks.product_id',
+            'product_stocks.product_variant_id',
+            'product_stocks.quantity',
+            'product_stocks.total_cost',
+            'product_stocks.unit_cost',
+            'product_stocks.note',
+            'product_stocks.created_by',
+            'product_stocks.created_at',
+            'product_stocks.updated_at'
+        )
+        ->orderBy('created_at', 'desc');
 
         $stocks = $query->paginate(10)->through(function ($stock) {
             return [
