@@ -45,7 +45,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { QrCode as QrCodeIcon } from 'lucide-vue-next'
 import axios from 'axios'
 

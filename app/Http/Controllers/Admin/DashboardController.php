@@ -41,7 +41,8 @@ class DashboardController extends Controller
         $stockData = ProductStock::select(
             'product_id',
             DB::raw('SUM(quantity) as total_quantity'),
-            DB::raw('SUM(quantity * unit_cost) as stock_value')  // Each entry's quantity * its unit_cost
+            DB::raw('SUM(total_cost) as stock_value'),  // Changed to use total_cost
+            DB::raw('(SUM(total_cost) / SUM(quantity)) as avg_unit_cost')  // Added average calculation
         )
             ->with('product:id,name,selling_price,cost_price')
             ->groupBy('product_id')

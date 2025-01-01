@@ -2,13 +2,21 @@
     <AdminLayout title="Point of Sale">
         <div class="flex h-[calc(100vh-64px)] dark:bg-gray-900">
             <!-- Left Side -->
-            <div class="w-[60%] flex flex-col p-4 border-r border-gray-200 dark:border-gray-700">
+            <div class="w-[60%] flex flex-col p-4 border-r border-gray-200 dark:border-gray-700 h-full">
+                <!-- Search Component -->
                 <PosSearch :categories="categories" :selected-category="selectedCategory" @search="handleSearch"
                     @filter="handleCategoryFilter" @add-scanned-product="handleScannedProduct" />
 
-                <PosProductGrid :products="displayProducts" :loading="loading" @add-to-cart="addToCart" />
+                <!-- Product Grid with 50% height and scrollable -->
+                <div class="h-2/3 flex-1 overflow-auto" ref="productGridContainer">
+                    <PosProductGrid :products="displayProducts" :loading="loading" @add-to-cart="addToCart" />
+                </div>
 
-                <PosCart :items="cartItems" @update-quantity="updateCartItemQuantity" @remove-item="removeCartItem" />
+                <!-- Cart with 50% height and scrollable -->
+                <div class="h-1/3 overflow-auto mt-4" ref="cartContainer">
+                    <PosCart :items="cartItems" @update-quantity="updateCartItemQuantity"
+                        @remove-item="removeCartItem" />
+                </div>
             </div>
 
             <!-- Right Side -->

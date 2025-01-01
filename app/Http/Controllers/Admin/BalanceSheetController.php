@@ -36,8 +36,8 @@ class BalanceSheetController extends Controller
             'fundsAndLiabilities' => $fundsAndLiabilities,
             'propertyAndAssets' => $propertyAndAssets,
             'filters' => [
-                'month' => (int)$month,
-                'year' => (int)$year,
+                'month' => (int) $month,
+                'year' => (int) $year,
                 'monthName' => Carbon::createFromDate($year, $month, 1)->format('F')
             ]
         ]);
@@ -100,7 +100,7 @@ class BalanceSheetController extends Controller
         $stockValue = ProductStock::select(
             'product_id',
             DB::raw('SUM(quantity) as total_quantity'),
-            DB::raw('SUM(quantity * unit_cost) as stock_value')
+            DB::raw('SUM(total_cost) as stock_value')  // Changed to use total_cost directly
         )
             ->groupBy('product_id')
             ->get()
@@ -143,8 +143,18 @@ class BalanceSheetController extends Controller
         $month = $request->input('month');
         $year = $request->input('year');
         $months = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
+            'January',
+            'February',
+            'March',
+            'April',
+            'May',
+            'June',
+            'July',
+            'August',
+            'September',
+            'October',
+            'November',
+            'December'
         ];
 
         $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
