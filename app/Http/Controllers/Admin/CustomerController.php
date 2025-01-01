@@ -228,7 +228,7 @@ class CustomerController extends Controller
 
             // Create bank transaction and update balance
             $transaction = $bankAccount->transactions()->create([
-                'transaction_type' => 'deposit',
+                'transaction_type' => 'in',
                 'amount' => $validatedData['amount'],
                 'description' => "Payment received for invoice {$sale->invoice_no} from customer {$customer->name}",
                 'date' => now(),

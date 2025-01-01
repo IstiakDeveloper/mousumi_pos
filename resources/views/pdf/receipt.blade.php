@@ -2,9 +2,14 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>POS Receipt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A4 Invoice Receipt</title>
     <style>
-        /* Reset and base styles */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,221 +17,244 @@
         }
 
         body {
-            font-family: 'Courier New', monospace;
-            font-size: 10px;
-            width: 80mm;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        .a4-container {
+            width: 210mm;
+            min-height: 297mm;
             margin: 0 auto;
-            padding: 5mm;
+            background: white;
+            position: relative;
+            overflow: hidden;
         }
 
-        /* Existing styles remain unchanged */
-        .receipt-header {
-            text-align: center;
-            border-bottom: 1px dashed #000;
-            padding-bottom: 5px;
-            margin-bottom: 10px;
+        .inner-content {
+            padding: 20mm;
+            width: 100%;
+            max-width: 170mm;
+            margin: 0 auto;
         }
 
-        .logo-name {
-            font-size: 14px;
+        /* Logo and Header */
+        .header {
+            margin-bottom: 15mm;
+        }
+
+        .company-name {
+            font-size: 20px;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 3mm;
         }
 
-        .store-info {
-            font-size: 9px;
-            margin-bottom: 3px;
+        .company-info {
+            font-size: 10px;
+            line-height: 1.4;
         }
 
-
-        .invoice-details {
-            margin: 10px 0;
-            border-bottom: 1px dashed #000;
-            padding-bottom: 5px;
+        /* Invoice Details */
+        .invoice-section {
+            margin-bottom: 10mm;
+            display: flex;
+            justify-content: space-between;
         }
 
-        .invoice-details p {
-            font-size: 9px;
-            margin-bottom: 2px;
+        .invoice-details, .customer-details {
+            font-size: 10px;
+            line-height: 1.5;
+        }
+
+        .invoice-title {
+            font-size: 14px;
+            margin-bottom: 3mm;
+            font-weight: bold;
         }
 
         /* Items Table */
-        .receipt-table {
+        .items-table {
             width: 100%;
-            margin: 10px 0;
+            border-collapse: collapse;
+            margin-bottom: 10mm;
+            font-size: 10px;
         }
 
-        .receipt-table th {
-            font-size: 9px;
+        .items-table th {
+            background: #f8f8f8;
+            padding: 2mm;
             text-align: left;
-            padding: 3px 0;
-            border-bottom: 1px dashed #000;
+            border-bottom: 1px solid #ddd;
         }
 
-        .receipt-table td {
-            font-size: 9px;
-            padding: 3px 0;
+        .items-table td {
+            padding: 2mm;
+            border-bottom: 1px solid #eee;
         }
 
-        .receipt-table .quantity {
-            width: 15%;
+        .items-table .amount {
+            text-align: right;
+        }
+
+        .items-table .quantity {
             text-align: center;
         }
 
-        .receipt-table .price {
-            width: 25%;
-            text-align: right;
-        }
-
-        .receipt-table .amount {
-            width: 25%;
-            text-align: right;
-        }
-
         /* Totals Section */
-        .receipt-totals {
-            margin-top: 10px;
-            border-top: 1px dashed #000;
-            padding-top: 5px;
+        .totals-section {
+            width: 60%;
+            margin-left: auto;
+            margin-bottom: 10mm;
         }
 
         .totals-table {
             width: 100%;
-            margin-top: 5px;
+            font-size: 10px;
         }
 
         .totals-table td {
-            font-size: 9px;
-            padding: 2px 0;
+            padding: 1mm 2mm;
         }
 
-        .totals-table td:last-child {
+        .totals-table .right-align {
             text-align: right;
         }
 
-        .total-amount {
-            font-size: 12px;
+        .total-row {
             font-weight: bold;
-            border-top: 1px dashed #000;
-            border-bottom: 1px dashed #000;
-            padding: 5px 0;
-            margin: 5px 0;
+            font-size: 12px;
+            border-top: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
         }
 
         /* Payment Info */
         .payment-info {
-            margin: 10px 0;
-            padding: 5px 0;
-            border-bottom: 1px dashed #000;
+            margin-bottom: 10mm;
+            font-size: 10px;
+        }
+
+        /* Barcode */
+        .barcode {
+            text-align: center;
+            margin: 5mm 0;
+            font-size: 16px;
         }
 
         /* Footer */
-        .receipt-footer {
+        .footer {
             text-align: center;
-            margin-top: 10px;
             font-size: 9px;
+            color: #666;
+            margin-top: 10mm;
+            padding-top: 5mm;
+            border-top: 1px solid #eee;
         }
 
-        .footer-message {
-            margin: 5px 0;
-        }
+        @media print {
+            body {
+                background: none;
+            }
 
-        .barcode {
-            text-align: center;
-            margin: 10px 0;
-            font-family: 'Libre Barcode 39', cursive;
-            font-size: 16px;
+            .a4-container {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                box-shadow: none;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="receipt-header">
-        <div class="logo-name">{{ $company['name'] }}</div>
-        <div class="store-info">{{ $company['address'] }}</div>
-        <div class="store-info">Tel: {{ $company['phone'] }}</div>
-        <div class="store-info">{{ $company['email'] }}</div>
-    </div>
+    <div class="a4-container">
+        <div class="inner-content">
+            <!-- Header Section -->
+            <div class="header">
+                <div class="company-name">{{ $company['name'] }}</div>
+                <div class="company-info">
+                    {{ $company['address'] }}<br>
+                    Tel: 01334766435<br>
+                    {{ $company['email'] }}
+                </div>
+            </div>
 
-    <div class="invoice-details">
-        <p><strong>Invoice:</strong> {{ $sale->invoice_no }}</p>
-        <p><strong>Date:</strong> {{ $sale->created_at->format('d/m/Y H:i') }}</p>
-        <p><strong>Customer:</strong> {{ $sale->customer ? $sale->customer->name : 'Walk-in Customer' }}</p>
-        <p><strong>Cashier:</strong> {{ $sale->created_by }}</p>
-    </div>
+            <!-- Invoice Details Section -->
+            <div class="invoice-section">
+                <div class="invoice-details">
+                    <div class="invoice-title">TAX INVOICE</div>
+                    <p><strong>Invoice No:</strong> {{ $sale->invoice_no }}</p>
+                    <p><strong>Date:</strong> {{ $sale->created_at->format('d/m/Y H:i') }}</p>
+                    <p><strong>Payment Method:</strong> {{ ucfirst($sale->payment_method) }}</p>
+                </div>
+                <div class="customer-details">
+                    <p><strong>Bill To:</strong></p>
+                    <p>{{ $sale->customer ? $sale->customer->name : 'Walk-in Customer' }}</p>
+                    <p><strong>Served by:</strong> {{ $sale->created_by }}</p>
+                </div>
+            </div>
 
-    <table class="receipt-table">
-        <thead>
-            <tr>
-                <th>Item</th>
-                <th class="quantity">Qty</th>
-                <th class="price">Price</th>
-                <th class="amount">Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($sale->saleItems as $item)
-            <tr>
-                <td>{{ $item->product->name }}</td>
-                <td class="quantity">{{ $item->quantity }}</td>
-                <td class="price">BDT {{ number_format($item->unit_price, 2) }}</td>
-                <td class="amount">BDT {{ number_format($item->subtotal, 2) }}</td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    <div class="receipt-totals">
-        <table class="totals-table">
-            <tr>
-                <td>Subtotal:</td>
-                <td>BDT {{ number_format($sale->subtotal, 2) }}</td>
-            </tr>
-            <tr>
-                <td>Tax:</td>
-                <td>BDT {{ number_format($sale->tax, 2) }}</td>
-            </tr>
-            <tr>
-                <td>Discount:</td>
-                <td>BDT {{ number_format($sale->discount, 2) }}</td>
-            </tr>
-        </table>
-
-        <div class="total-amount">
-            <table class="totals-table">
-                <tr>
-                    <td><strong>TOTAL:</strong></td>
-                    <td><strong>BDT {{ number_format($sale->total, 2) }}</strong></td>
-                </tr>
+            <!-- Items Table -->
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 45%">Description</th>
+                        <th style="width: 15%" class="quantity">Qty</th>
+                        <th style="width: 20%" class="amount">Price</th>
+                        <th style="width: 20%" class="amount">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($sale->saleItems as $item)
+                    <tr>
+                        <td>{{ $item->product->name }}</td>
+                        <td class="quantity">{{ $item->quantity }}</td>
+                        <td class="amount">{{ number_format($item->unit_price, 2) }}</td>
+                        <td class="amount">{{ number_format($item->subtotal, 2) }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
             </table>
+
+            <!-- Totals Section -->
+            <div class="totals-section">
+                <table class="totals-table">
+                    <tr>
+                        <td>Subtotal:</td>
+                        <td class="right-align">{{ number_format($sale->subtotal, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Tax:</td>
+                        <td class="right-align">{{ number_format($sale->tax, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Discount:</td>
+                        <td class="right-align">{{ number_format($sale->discount, 2) }}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td>Total Amount:</td>
+                        <td class="right-align">{{ number_format($sale->total, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Paid Amount:</td>
+                        <td class="right-align">{{ number_format($sale->paid, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Change:</td>
+                        <td class="right-align">{{ number_format(max(0, $sale->paid - $sale->total), 2) }}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Barcode -->
+            <div class="barcode">
+                *{{ $sale->invoice_no }}*
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>Thank you for your business!</p>
+                <p>Returns accepted within 7 days with original receipt</p>
+                <p>&copy; {{ date('Y') }} {{ $company['name'] }}</p>
+            </div>
         </div>
-
-        <div class="payment-info">
-            <table class="totals-table">
-                <tr>
-                    <td>Paid Amount:</td>
-                    <td>BDT {{ number_format($sale->paid, 2) }}</td>
-                </tr>
-                <tr>
-                    <td>Change:</td>
-                    <td>BDT {{ number_format(max(0, $sale->paid - $sale->total), 2) }}</td>
-                </tr>
-                <tr>
-                    <td>Payment Method:</td>
-                    <td>{{ ucfirst($sale->payment_method) }}</td>
-                </tr>
-            </table>
-        </div>
-    </div>
-
-    <div class="barcode">
-        *{{ $sale->invoice_no }}*
-    </div>
-
-    <div class="receipt-footer">
-        <div class="footer-message">Thank you for your purchase!</div>
-        <div class="footer-message">Please keep this receipt for any returns</div>
-        <div class="footer-message">Returns accepted within 7 days</div>
-        <div class="footer-message">with original receipt</div>
     </div>
 </body>
 </html>
