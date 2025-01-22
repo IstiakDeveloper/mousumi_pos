@@ -44,12 +44,17 @@
                         @change="applyFilters">
                 </div>
 
-                <!-- Export Button -->
-                <div class="flex items-end">
+                <!-- Action Buttons -->
+                <div class="flex items-end gap-2">
+                    <button @click="resetFilters"
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
+                        <ArrowPathIcon class="h-5 w-5 mr-2" />
+                        Reset
+                    </button>
                     <button @click="exportReport"
                         class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
                         <DocumentArrowDownIcon class="h-5 w-5 mr-2" />
-                        Export Report
+                        Export
                     </button>
                 </div>
             </div>
@@ -66,120 +71,122 @@
 
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Balance</div>
-                <div class="mt-1 text-2xl font-semibold text-green-600 dark:text-green-400">
+                <div class="mt-1 text-2xl font-semibold" :class="getBalanceColorClass(summary.total_balance)">
                     {{ formatPrice(summary.total_balance) }}
                 </div>
             </div>
 
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Deposits</div>
-                <div class="mt-1 text-2xl font-semibold text-indigo-600 dark:text-indigo-400">
-                    {{ formatPrice(summary.total_deposits) }}
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Inflows</div>
+                <div class="mt-1 text-2xl font-semibold text-green-600 dark:text-green-400">
+                    {{ formatPrice(summary.total_inflows) }}
                 </div>
             </div>
 
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Withdrawals</div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Outflows</div>
                 <div class="mt-1 text-2xl font-semibold text-red-600 dark:text-red-400">
-                    {{ formatPrice(summary.total_withdrawals) }}
+                    {{ formatPrice(summary.total_outflows) }}
                 </div>
             </div>
         </div>
 
         <!-- Account Reports -->
         <div class="space-y-6">
-            <div v-for="report in reports" :key="report.account.id"
-                class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                <!-- Account Header -->
-                <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">
-                                {{ report.account.bank }} - {{ report.account.name }}
-                            </h3>
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Account No: {{ report.account.number }}
-                            </p>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-sm text-gray-500 dark:text-gray-400">Previous Balance</div>
-                            <div class="text-lg font-medium" :class="getBalanceColorClass(report.previous_balance)">
-                                {{ formatPrice(report.previous_balance) }}
+            <TransitionGroup name="fade">
+                <div v-for="report in reports" :key="report.account.id"
+                    class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                    <!-- Account Header -->
+                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                                    {{ report.account.bank }} - {{ report.account.name }}
+                                </h3>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                    Account No: {{ report.account.number }}
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-gray-500 dark:text-gray-400">Current Balance</div>
+                                <div class="text-lg font-medium" :class="getBalanceColorClass(report.current_balance)">
+                                    {{ formatPrice(report.current_balance) }}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Monthly Summary -->
-                <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700">
-                    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Monthly Summary</h4>
+                    <!-- Monthly Summary -->
+                    <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700">
+                        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Monthly Summary</h4>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                                <thead>
+                                    <tr>
+                                        <th class="px-4 py-2 text-left">Month</th>
+                                        <th class="px-4 py-2 text-right">Inflows</th>
+                                        <th class="px-4 py-2 text-right">Outflows</th>
+                                        <th class="px-4 py-2 text-right">Net</th>
+                                        <th class="px-4 py-2 text-right">Transactions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="summary in report.monthly_summary" :key="summary.month"
+                                        class="hover:bg-gray-50 dark:hover:bg-gray-600">
+                                        <td class="px-4 py-2">{{ summary.month }}</td>
+                                        <td class="px-4 py-2 text-right text-green-600">
+                                            {{ formatPrice(summary.inflows) }}
+                                        </td>
+                                        <td class="px-4 py-2 text-right text-red-600">
+                                            {{ formatPrice(summary.outflows) }}
+                                        </td>
+                                        <td class="px-4 py-2 text-right" :class="getBalanceColorClass(summary.net)">
+                                            {{ formatPrice(summary.net) }}
+                                        </td>
+                                        <td class="px-4 py-2 text-right">{{ summary.transaction_count }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Transactions -->
                     <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
-                            <thead>
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
-                                    <th class="px-4 py-2 text-left">Month</th>
-                                    <th class="px-4 py-2 text-right">Deposits</th>
-                                    <th class="px-4 py-2 text-right">Withdrawals</th>
-                                    <th class="px-4 py-2 text-right">Net</th>
-                                    <th class="px-4 py-2 text-right">Transactions</th>
+                                    <th class="px-4 py-3 text-left">Date</th>
+                                    <th class="px-4 py-3 text-left">Description</th>
+                                    <th class="px-4 py-3 text-left">Type</th>
+                                    <th class="px-4 py-3 text-right">Amount</th>
+                                    <th class="px-4 py-3 text-right">Balance</th>
+                                    <th class="px-4 py-3 text-left">Created By</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr v-for="summary in report.monthly_summary" :key="summary.month">
-                                    <td class="px-4 py-2">{{ summary.month }}</td>
-                                    <td class="px-4 py-2 text-right text-green-600">{{ formatPrice(summary.deposits) }}
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                <tr v-for="transaction in report.transactions" :key="transaction.id"
+                                    class="hover:bg-gray-50 dark:hover:bg-gray-600">
+                                    <td class="px-4 py-3">{{ formatDate(transaction.date) }}</td>
+                                    <td class="px-4 py-3">{{ transaction.description }}</td>
+                                    <td class="px-4 py-3">
+                                        <span :class="getTransactionTypeClass(transaction.type)"
+                                            class="px-2 py-1 rounded-full text-xs font-medium">
+                                            {{ formatTransactionType(transaction.type) }}
+                                        </span>
                                     </td>
-                                    <td class="px-4 py-2 text-right text-red-600">{{ formatPrice(summary.withdrawals) }}
+                                    <td class="px-4 py-3 text-right" :class="getAmountColorClass(transaction.type)">
+                                        {{ formatPrice(transaction.amount) }}
                                     </td>
-                                    <td class="px-4 py-2 text-right" :class="getBalanceColorClass(summary.net)">
-                                        {{ formatPrice(summary.net) }}
+                                    <td class="px-4 py-3 text-right" :class="getBalanceColorClass(transaction.running_balance)">
+                                        {{ formatPrice(transaction.running_balance) }}
                                     </td>
-                                    <td class="px-4 py-2 text-right">{{ summary.transaction_count }}</td>
+                                    <td class="px-4 py-3">{{ transaction.created_by }}</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-
-                <!-- Detailed Transactions -->
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-700">
-                            <tr>
-                                <th class="px-4 py-3 text-left">Date</th>
-                                <th class="px-4 py-3 text-left">Description</th>
-                                <th class="px-4 py-3 text-left">Type</th>
-                                <th class="px-4 py-3 text-right">Amount</th>
-                                <th class="px-4 py-3 text-right">Balance</th>
-                                <th class="px-4 py-3 text-left">Created By</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                            <tr v-for="transaction in report.transactions" :key="transaction.id">
-                                <td class="px-4 py-3">{{ formatDate(transaction.date) }}</td>
-                                <td class="px-4 py-3">{{ transaction.description }}</td>
-                                <td class="px-4 py-3">
-                                    <span :class="getTransactionTypeClass(transaction.type)"
-                                        class="px-2 py-1 rounded-full text-xs">
-                                        {{ transaction.type }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3 text-right"
-                                    :class="transaction.type === 'deposit' ? 'text-green-600' : 'text-red-600'">
-                                    {{ formatPrice(transaction.amount) }}
-                                </td>
-                                <td class="px-4 py-3 text-right" :class="{
-                                    'text-green-600': transaction.type === 'deposit' || transaction.type === 'loan_taken',
-                                    'text-red-600': transaction.type === 'withdrawal' || transaction.type === 'loan_payment'
-                                }">
-                                    {{ formatPrice(transaction.amount) }}
-                                </td>
-                                <td class="px-4 py-3">{{ transaction.created_by }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            </TransitionGroup>
         </div>
     </AdminLayout>
 </template>
@@ -188,7 +195,7 @@
 import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import { DocumentArrowDownIcon } from '@heroicons/vue/24/outline'
+import { DocumentArrowDownIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
     accounts: {
@@ -215,7 +222,6 @@ const filters = ref({
     to_date: props.filters.to_date
 })
 
-// Format price in BDT
 const formatPrice = (amount) => {
     return new Intl.NumberFormat('en-BD', {
         style: 'currency',
@@ -232,14 +238,26 @@ const formatDate = (dateString) => {
     })
 }
 
-// Get color class based on balance amount
 const getBalanceColorClass = (amount) => {
     if (amount > 0) return 'text-green-600 dark:text-green-400'
     if (amount < 0) return 'text-red-600 dark:text-red-400'
     return 'text-gray-600 dark:text-gray-400'
 }
 
-// Apply filters and refresh report
+const getAmountColorClass = (type) => {
+    return type === 'in' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+}
+
+const formatTransactionType = (type) => {
+    return type === 'in' ? 'Inflow' : 'Outflow'
+}
+
+const getTransactionTypeClass = (type) => {
+    return type === 'in'
+        ? 'bg-green-100 text-green-800 dark:bg-green-200 dark:text-green-900'
+        : 'bg-red-100 text-red-800 dark:bg-red-200 dark:text-red-900'
+}
+
 const applyFilters = () => {
     router.get(route('admin.reports.bank'), {
         account_id: filters.value.account_id,
@@ -252,7 +270,6 @@ const applyFilters = () => {
     })
 }
 
-// Export report
 const exportReport = () => {
     const params = new URLSearchParams({
         account_id: filters.value.account_id || '',
@@ -263,35 +280,6 @@ const exportReport = () => {
     window.location.href = `${route('admin.reports.bank.download')}?${params}`
 }
 
-// Calculate summary totals for a report
-const calculateReportTotals = (report) => {
-    return report.monthly_data.reduce((totals, month) => ({
-        deposits: totals.deposits + (month.deposits || 0),
-        withdrawals: totals.withdrawals + (month.withdrawals || 0),
-        net: totals.net + (month.net || 0)
-    }), { deposits: 0, withdrawals: 0, net: 0 })
-}
-
-
-// Get transaction type badge class
-const getTransactionTypeClass = (type) => {
-    switch (type) {
-        case 'deposit':
-            return 'bg-green-100 text-green-800 dark:bg-green-200 dark:text-green-900'
-        case 'withdrawal':
-            return 'bg-red-100 text-red-800 dark:bg-red-200 dark:text-red-900'
-        case 'transfer':
-            return 'bg-blue-100 text-blue-800 dark:bg-blue-200 dark:text-blue-900'
-        case 'loan_taken':
-            return 'bg-purple-100 text-purple-800 dark:bg-purple-200 dark:text-purple-900'
-        case 'loan_payment':
-            return 'bg-orange-100 text-orange-800 dark:bg-orange-200 dark:text-orange-900'
-        default:
-            return 'bg-gray-100 text-gray-800 dark:bg-gray-200 dark:text-gray-900'
-    }
-}
-
-// Reset filters to default
 const resetFilters = () => {
     filters.value = {
         account_id: '',
@@ -311,10 +299,6 @@ const resetFilters = () => {
 .fade-enter-from,
 .fade-leave-to {
     opacity: 0;
-}
-
-.table-hover tr:hover {
-    @apply bg-gray-50 dark:bg-gray-700;
 }
 
 @media print {

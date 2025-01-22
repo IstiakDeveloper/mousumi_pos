@@ -8,7 +8,10 @@ use App\Models\Category;
 use App\Models\Brand;
 use App\Models\ProductImage;
 use App\Models\Unit;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -176,5 +179,35 @@ class ProductController extends Controller
         $image->delete();
 
         return response()->json(['success' => true]);
+    }
+    public function downloadPdf()
+    {
+        $products = Product::with(['category', 'brand', 'unit', 'stocks'])
+            ->get()
+            ->map(function ($product) {
+                // Calculate total stock
+                $totalStock = $product->stocks->sum('quantity');
+
+                // Calculate average cost price from stocks
+                $averageCost = $product->stocks->count() > 0
+                    ? $product->stocks->sum('total_cost') / $product->stocks->sum('quantity')
+                    : $product->cost_price ?? 0;
+
+                return [
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'category' => $product->category->name,
+                    'brand' => $product->brand ? $product->brand->name : '-',
+                    'unit' => $product->unit->short_name,
+                    'cost_price' => $product->cost_price,
+                    'selling_price' => number_format($product->selling_price, 2),
+                    'stock' => $totalStock,
+                    'alert_quantity' => $product->alert_quantity,
+                ];
+            });
+
+        return Inertia::render('Admin/Products/Report', [
+            'products' => $products
+        ]);
     }
 }

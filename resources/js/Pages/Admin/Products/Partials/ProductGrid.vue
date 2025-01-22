@@ -90,7 +90,7 @@ const getProductImage = (product) => {
     return primaryImage ? primaryImage.image : product.images[0].image;
 };
 
-window.appUrl = "{{ config('app.url') }}";
+window.appUrl = "";
 
 const getImageUrl = (path) => `${window.appUrl}/storage/${path}`;
 

@@ -16,11 +16,12 @@ class BankReportController extends Controller
     private function getTransactionEffect($type, $amount)
     {
         return match ($type) {
-            'deposit', 'loan_taken' => $amount,
-            'withdrawal', 'loan_payment' => -$amount,
+            'in' => $amount,
+            'out' => -$amount,
             default => 0,
         };
     }
+
     public function index(Request $request)
     {
         $request->validate([
@@ -44,10 +45,10 @@ class BankReportController extends Controller
             // Get previous balance (before from_date)
             $previousBalance = $account->opening_balance +
                 DB::table('bank_transactions')
-                ->where('bank_account_id', $account->id)
-                ->where('date', '<', $fromDate)
-                ->sum(DB::raw('CASE
-                        WHEN transaction_type IN ("deposit", "loan_taken") THEN amount
+                    ->where('bank_account_id', $account->id)
+                    ->where('date', '<', $fromDate)
+                    ->sum(DB::raw('CASE
+                        WHEN transaction_type = "in" THEN amount
                         ELSE -amount
                     END'));
 
@@ -79,14 +80,14 @@ class BankReportController extends Controller
             $monthlySummary = $transactions->groupBy(function ($transaction) {
                 return Carbon::parse($transaction['date'])->format('Y-m');
             })->map(function ($monthTransactions) {
-                $deposits = $monthTransactions->whereIn('type', ['deposit', 'loan_taken'])->sum('amount');
-                $withdrawals = $monthTransactions->whereIn('type', ['withdrawal', 'loan_payment'])->sum('amount');
+                $inflows = $monthTransactions->where('type', 'in')->sum('amount');
+                $outflows = $monthTransactions->where('type', 'out')->sum('amount');
 
                 return [
                     'month' => Carbon::parse($monthTransactions->first()['date'])->format('F Y'),
-                    'deposits' => $deposits,
-                    'withdrawals' => $withdrawals,
-                    'net' => $deposits - $withdrawals,
+                    'inflows' => $inflows,
+                    'outflows' => $outflows,
+                    'net' => $inflows - $outflows,
                     'transaction_count' => $monthTransactions->count()
                 ];
             })->values();
@@ -109,10 +110,10 @@ class BankReportController extends Controller
         $summary = [
             'total_accounts' => $accounts->count(),
             'total_balance' => $accounts->sum('current_balance'),
-            'total_deposits' => BankTransaction::whereIn('transaction_type', ['deposit', 'loan_taken'])
+            'total_inflows' => BankTransaction::where('transaction_type', 'in')
                 ->whereBetween('date', [$fromDate, $toDate])
                 ->sum('amount'),
-            'total_withdrawals' => BankTransaction::whereIn('transaction_type', ['withdrawal', 'loan_payment'])
+            'total_outflows' => BankTransaction::where('transaction_type', 'out')
                 ->whereBetween('date', [$fromDate, $toDate])
                 ->sum('amount'),
             'total_transactions' => BankTransaction::whereBetween('date', [$fromDate, $toDate])->count()
@@ -130,7 +131,6 @@ class BankReportController extends Controller
         ]);
     }
 
-    # BankReportController.php
     public function downloadPdf(Request $request)
     {
         $request->validate([
@@ -152,9 +152,9 @@ class BankReportController extends Controller
             // Get previous balance before from_date
             $previousBalance = $account->opening_balance +
                 DB::table('bank_transactions')
-                ->where('bank_account_id', $account->id)
-                ->where('date', '<', $fromDate)
-                ->sum(DB::raw('CASE WHEN transaction_type = "deposit" THEN amount ELSE -amount END'));
+                    ->where('bank_account_id', $account->id)
+                    ->where('date', '<', $fromDate)
+                    ->sum(DB::raw('CASE WHEN transaction_type = "in" THEN amount ELSE -amount END'));
 
             // Get all transactions with details
             $allTransactions = BankTransaction::where('bank_account_id', $account->id)
@@ -166,38 +166,36 @@ class BankReportController extends Controller
             $monthlyData = [];
             $runningBalance = $previousBalance;
 
-            foreach (
-                $allTransactions->groupBy(function ($transaction) {
-                    return Carbon::parse($transaction->date)->format('Y-m');
-                }) as $month => $transactions
-            ) {
+            foreach ($allTransactions->groupBy(function ($transaction) {
+                return Carbon::parse($transaction->date)->format('Y-m');
+            }) as $month => $transactions) {
                 $monthTransactions = [];
                 foreach ($transactions as $transaction) {
                     // Update running balance
-                    $amount = $transaction->transaction_type == 'deposit' ? $transaction->amount : -$transaction->amount;
+                    $amount = $transaction->transaction_type == 'in' ? $transaction->amount : -$transaction->amount;
                     $runningBalance += $amount;
 
                     $monthTransactions[] = [
                         'date' => Carbon::parse($transaction->date)->format('d M, Y'),
                         'description' => $transaction->description,
                         'type' => $transaction->transaction_type,
-                        'deposit' => $transaction->transaction_type == 'deposit' ? $transaction->amount : 0,
-                        'withdrawal' => $transaction->transaction_type == 'withdrawal' ? $transaction->amount : 0,
+                        'inflow' => $transaction->transaction_type == 'in' ? $transaction->amount : 0,
+                        'outflow' => $transaction->transaction_type == 'out' ? $transaction->amount : 0,
                         'balance' => $runningBalance
                     ];
                 }
 
                 // Calculate monthly summary
-                $monthlyDeposits = $transactions->where('transaction_type', 'deposit')->sum('amount');
-                $monthlyWithdrawals = $transactions->where('transaction_type', 'withdrawal')->sum('amount');
+                $monthlyInflows = $transactions->where('transaction_type', 'in')->sum('amount');
+                $monthlyOutflows = $transactions->where('transaction_type', 'out')->sum('amount');
 
                 $monthlyData[] = [
                     'month' => Carbon::createFromFormat('Y-m', $month)->format('F Y'),
                     'transactions' => $monthTransactions,
                     'summary' => [
-                        'deposits' => $monthlyDeposits,
-                        'withdrawals' => $monthlyWithdrawals,
-                        'net' => $monthlyDeposits - $monthlyWithdrawals,
+                        'inflows' => $monthlyInflows,
+                        'outflows' => $monthlyOutflows,
+                        'net' => $monthlyInflows - $monthlyOutflows,
                         'ending_balance' => $runningBalance
                     ]
                 ];
@@ -220,10 +218,10 @@ class BankReportController extends Controller
         $summary = [
             'total_accounts' => $accounts->count(),
             'total_balance' => $accounts->sum('current_balance'),
-            'total_deposits' => BankTransaction::where('transaction_type', 'deposit')
+            'total_inflows' => BankTransaction::where('transaction_type', 'in')
                 ->whereBetween('date', [$fromDate, $toDate])
                 ->sum('amount'),
-            'total_withdrawals' => BankTransaction::where('transaction_type', 'withdrawal')
+            'total_outflows' => BankTransaction::where('transaction_type', 'out')
                 ->whereBetween('date', [$fromDate, $toDate])
                 ->sum('amount'),
         ];

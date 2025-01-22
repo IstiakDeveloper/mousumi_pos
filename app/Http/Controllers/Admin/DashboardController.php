@@ -21,8 +21,6 @@ class DashboardController extends Controller
         // Parse dates, default to today if not provided
         $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : Carbon::today();
         $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::today();
-
-        // Ensure end date includes the full day
         $endDate = $endDate->endOfDay();
 
         // Get Sales Data with optimized relationships
@@ -37,46 +35,83 @@ class DashboardController extends Controller
             ->orderBy('date', 'desc')
             ->get();
 
-        // Calculate Stock Value and Quantity with current stock
-        $stockData = Product::select(
-            'products.id',
-            'products.name',
-            'products.selling_price',
-            'products.cost_price',
-            'products.alert_quantity',
-            DB::raw('COALESCE(SUM(product_stocks.quantity), 0) as total_quantity'),
-            DB::raw('COALESCE(products.cost_price * SUM(product_stocks.quantity), 0) as stock_value')
-        )
-            ->leftJoin('product_stocks', 'products.id', '=', 'product_stocks.product_id')
-            ->groupBy(
-                'products.id',
-                'products.name',
-                'products.selling_price',
-                'products.cost_price',
-                'products.alert_quantity'
-            )
-            ->get();
+        // Improved Stock Value Calculation - Matching the stock page exactly
+        $stockSummaryQuery = DB::table('product_stocks as ps1')
+            ->select([
+                DB::raw('COUNT(DISTINCT product_id) as total_products'),
+                DB::raw('SUM(CASE
+                WHEN ps1.id IN (
+                    SELECT MAX(ps2.id)
+                    FROM product_stocks ps2
+                    GROUP BY ps2.product_id
+                )
+                THEN quantity
+                ELSE 0
+            END) as total_quantity'),
+                DB::raw('SUM(CASE
+                WHEN ps1.id IN (
+                    SELECT MAX(ps2.id)
+                    FROM product_stocks ps2
+                    GROUP BY ps2.product_id
+                )
+                THEN quantity * unit_cost
+                ELSE 0
+            END) as total_value')
+            ])
+            ->first();
 
+        // Get individual stock data for the dashboard display
+        $stockData = ProductStock::with(['product'])
+            ->select(
+                'product_stocks.*',
+                DB::raw('(SELECT SUM(ps2.quantity)
+                     FROM product_stocks ps2
+                     WHERE ps2.product_id = product_stocks.product_id) as total_quantity')
+            )
+            ->whereIn('product_stocks.id', function ($query) {
+                $query->select(DB::raw('MAX(id)'))
+                    ->from('product_stocks')
+                    ->groupBy('product_id');
+            })
+            ->get()
+            ->map(function ($stock) {
+                $currentStockValue = $stock->total_quantity > 0 ?
+                    $stock->total_quantity * $stock->unit_cost : 0;
+
+                return [
+                    'id' => $stock->id,
+                    'product' => [
+                        'id' => $stock->product->id,
+                        'name' => $stock->product->name,
+                        'selling_price' => $stock->product->selling_price,
+                        'alert_quantity' => $stock->product->alert_quantity
+                    ],
+                    'quantity' => $stock->total_quantity,
+                    'stock_value' => $currentStockValue,
+                    'unit_cost' => $stock->unit_cost
+                ];
+            });
+
+        // Calculate Low Stock Products
         $lowStockProducts = $stockData->filter(function ($stock) {
-            return $stock && $stock->alert_quantity !== null &&
-                $stock->total_quantity <= $stock->alert_quantity;
+            return $stock['product']['alert_quantity'] !== null &&
+                $stock['quantity'] <= $stock['product']['alert_quantity'] &&
+                $stock['quantity'] > 0;
         })->values();
 
-        // Get Expenses with category
+        // Rest of your existing queries...
         $expensesData = Expense::whereBetween('date', [$startDate, $endDate])
             ->with('expenseCategory:id,name')
             ->select('id', 'expense_category_id', 'amount', 'date', 'description')
             ->orderBy('date', 'desc')
             ->get();
 
-        // Get Bank Transactions
         $bankTransactions = BankTransaction::whereBetween('date', [$startDate, $endDate])
             ->with('bankAccount:id,account_name,current_balance')
             ->select('id', 'bank_account_id', 'transaction_type', 'amount', 'date', 'description')
             ->orderBy('date', 'desc')
             ->get();
 
-        // Get Daily Sales Summary
         $dailySalesSummary = Sale::whereBetween('created_at', [$startDate, $endDate])
             ->select(
                 DB::raw('DATE(created_at) as date'),
@@ -89,7 +124,6 @@ class DashboardController extends Controller
             ->orderBy('date')
             ->get();
 
-        // Calculate Banking Summary
         $bankingSummary = BankTransaction::whereBetween('date', [$startDate, $endDate])
             ->select(
                 'bank_account_id',
@@ -100,23 +134,24 @@ class DashboardController extends Controller
             ->with('bankAccount:id,account_name,current_balance')
             ->get();
 
-
         $salesProfit = $this->calculateTotalProfit($salesData);
         $extraIncomeTotal = $extraIncomeData->sum('amount');
 
-        // Calculate Summary Statistics
+        // Calculate Summary Statistics with corrected stock value
         $summary = [
             'total_sales' => $salesData->sum('total'),
             'total_profit' => $salesProfit + $extraIncomeTotal - $expensesData->sum('amount'),
             'total_expenses' => $expensesData->sum('amount'),
-            'cash_received' => $salesData->sum('paid'),  // Updated to use paid column
-            'stock_value' => $stockData->sum('stock_value'),  // Sum of all (quantity * unit_cost)
-            'stock_worth' => $stockData->sum(function ($product) {
-                return $product ? ($product->total_quantity * ($product->selling_price ?? 0)) : 0;
+            'cash_received' => $salesData->sum('paid'),
+            'stock_value' => round($stockSummaryQuery->total_value, 2), // Using exact same calculation as stock page
+            'stock_worth' => $stockData->sum(function ($item) {
+                return $item['quantity'] > 0 ?
+                    $item['quantity'] * $item['product']['selling_price'] : 0;
             }),
             'total_due' => $salesData->sum('due'),
             'total_transactions' => $salesData->count(),
-            'average_sale' => $salesData->count() > 0 ? $salesData->sum('total') / $salesData->count() : 0,
+            'average_sale' => $salesData->count() > 0 ?
+                round($salesData->sum('total') / $salesData->count(), 2) : 0,
         ];
 
         return Inertia::render('Admin/Dashboard/Index', [
@@ -135,16 +170,14 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function calculateTotalProfit($sales)
+    protected function calculateTotalProfit($salesData)
     {
-        $totalProfit = 0;
-        foreach ($sales as $sale) {
-            foreach ($sale->saleItems as $item) {
+        return $salesData->sum(function ($sale) {
+            return $sale->saleItems->sum(function ($item) {
                 $costPrice = $item->product->cost_price ?? 0;
-                $totalProfit += ($item->unit_price - $costPrice) * $item->quantity;
-            }
-        }
-        return $totalProfit;
+                return ($item->selling_price - $costPrice) * $item->quantity;
+            });
+        });
     }
 
     private function calculateStockWorth($stockData)

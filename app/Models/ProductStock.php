@@ -10,6 +10,7 @@ class ProductStock extends Model
         'product_id',
         'product_variant_id',
         'quantity',
+        'total_quantity',
         'total_cost',
         'unit_cost',
         'note',

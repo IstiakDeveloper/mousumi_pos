@@ -67,7 +67,12 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('categories', CategoryController::class);
     Route::resource('units', UnitController::class);
     Route::resource('brands', BrandController::class);
+
+    Route::get('products/download-pdf', [ProductController::class, 'downloadPdf'])
+        ->name('products.download-pdf');
+    // Your existing routes
     Route::resource('products', ProductController::class);
+
     Route::post('/products/barcode/print', [ProductController::class, 'printBarcodes'])
         ->name('products.barcode.print');
 
@@ -142,8 +147,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('expenses', ExpenseController::class);
     Route::post('expenses/{expense}/restore', [ExpenseController::class, 'restore'])->name('expenses.restore');
     Route::resource('expense-categories', ExpenseCategoryController::class);
-
 });
+
 Route::get('products/search', [ProductController::class, 'search'])->name('api.products.search');
 
 Route::get('/dashboard', function () {

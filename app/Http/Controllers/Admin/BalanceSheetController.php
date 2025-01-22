@@ -96,19 +96,27 @@ class BalanceSheetController extends Controller
             ->where('created_at', '<=', $endDate)
             ->sum('due');
 
-        // Calculate Stock Value
-        $stockValue = Product::select(
-            DB::raw('SUM(product_stocks.quantity * products.cost_price) as stock_value')
-        )
-            ->leftJoin('product_stocks', 'products.id', '=', 'product_stocks.product_id')
-            ->value('stock_value');
+        // Calculate Stock Value using the accurate method
+        $stockValue = DB::table('product_stocks as ps1')
+            ->select([
+                DB::raw('SUM(CASE
+                WHEN ps1.id IN (
+                    SELECT MAX(ps2.id)
+                    FROM product_stocks ps2
+                    GROUP BY ps2.product_id
+                )
+                THEN quantity * unit_cost
+                ELSE 0
+            END) as total_value')
+            ])
+            ->value('total_value');
 
         return [
             'bank_accounts' => $bankBalances,
             'total_bank_balance' => $totalBankBalance,
             'customer_due' => $totalDue,
-            'stock_value' => $stockValue ?? 0, // Handle null case
-            'total' => $totalBankBalance + $totalDue + ($stockValue ?? 0)
+            'stock_value' => round($stockValue ?? 0, 2), // Handle null case and round to 2 decimals
+            'total' => round($totalBankBalance + $totalDue + ($stockValue ?? 0), 2)
         ];
     }
 
