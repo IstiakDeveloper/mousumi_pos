@@ -7,101 +7,146 @@ use App\Models\BankAccount;
 use App\Models\BankTransaction;
 use App\Models\Product;
 use App\Models\ProductStock;
+use App\Models\StockMovement;
+use App\Traits\ManagesStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class ProductStockController extends Controller
 {
-   public function index(Request $request)
-{
-    // First, get the latest stock entry for each product
-    $query = ProductStock::with(['product', 'createdBy'])
-        ->select(
-            'product_stocks.*',
-            DB::raw('(SELECT SUM(ps2.quantity)
-                     FROM product_stocks ps2
-                     WHERE ps2.product_id = product_stocks.product_id) as total_quantity'),
-            DB::raw('(SELECT SUM(ps2.total_cost)
-                     FROM product_stocks ps2
-                     WHERE ps2.product_id = product_stocks.product_id) as total_stock_value')
-        )
-        ->whereIn('product_stocks.id', function($query) {
-            $query->select(DB::raw('MAX(id)'))
-                ->from('product_stocks')
-                ->groupBy('product_id');
-        })
-        ->orderBy('created_at', 'desc');
+    use ManagesStock;
 
-    $stocks = $query->paginate(10)->through(function ($stock) {
-        // Calculate current stock value based on latest unit cost
-        $currentStockValue = $stock->total_quantity > 0 ?
-            $stock->total_quantity * $stock->unit_cost : 0;
-
-        return [
-            'id' => $stock->id,
-            'product' => [
-                'id' => $stock->product->id,
-                'name' => $stock->product->name,
-                'sku' => $stock->product->sku,
-                'alert_quantity' => $stock->product->alert_quantity
-            ],
-            'quantity' => $stock->total_quantity,
-            'total_cost' => $currentStockValue, // Using current value based on latest unit cost
-            'unit_cost' => $stock->unit_cost,
-            'created_by' => $stock->createdBy?->name ?? 'N/A',
-            'created_at' => $stock->created_at,
-            'stock_status' => $stock->total_quantity <= 0 ? 'out' :
-                ($stock->total_quantity <= $stock->product->alert_quantity ? 'low' : 'in')
-        ];
-    });
-
-    // Calculate summary with correct stock values
-    $summaryQuery = DB::table('product_stocks as ps1')
-        ->select([
-            DB::raw('COUNT(DISTINCT product_id) as total_products'),
-            DB::raw('SUM(CASE
-                WHEN ps1.id IN (
-                    SELECT MAX(ps2.id)
+    public function index(Request $request)
+    {
+        $query = ProductStock::with(['createdBy'])
+            ->select(
+                'product_stocks.*',
+                'products.name as product_name',
+                'products.sku',
+                'products.alert_quantity',
+                // Get latest available quantity from any type
+                DB::raw('(
+                    SELECT available_quantity
                     FROM product_stocks ps2
-                    GROUP BY ps2.product_id
-                )
-                THEN quantity
-                ELSE 0
-            END) as total_quantity'),
-            DB::raw('SUM(CASE
-                WHEN ps1.id IN (
-                    SELECT MAX(ps2.id)
+                    WHERE ps2.product_id = product_stocks.product_id
+                    ORDER BY id DESC LIMIT 1
+                ) as current_available'),
+                // Calculate total purchase quantity and value (only from purchase type)
+                DB::raw('(
+                    SELECT COALESCE(SUM(quantity), 0)
                     FROM product_stocks ps2
-                    GROUP BY ps2.product_id
-                )
-                THEN quantity * unit_cost
-                ELSE 0
-            END) as total_value')
-        ])
-        ->first();
+                    WHERE ps2.product_id = product_stocks.product_id
+                    AND ps2.type = "purchase"
+                ) as total_purchase_quantity'),
+                DB::raw('(
+                    SELECT COALESCE(SUM(quantity * unit_cost), 0)
+                    FROM product_stocks ps2
+                    WHERE ps2.product_id = product_stocks.product_id
+                    AND ps2.type = "purchase"
+                ) as total_purchase_cost')
+            )
+            ->join('products', 'products.id', '=', 'product_stocks.product_id')
+            ->whereIn('product_stocks.id', function ($query) {
+                $query->select(DB::raw('MAX(id)'))
+                    ->from('product_stocks')
+                    ->groupBy('product_id');
+            })
+            ->orderBy('product_stocks.product_id', 'asc');
 
-    // Calculate low stock items
-    $lowStockItems = DB::table('product_stocks as ps1')
-        ->join('products', 'products.id', '=', 'ps1.product_id')
-        ->where('ps1.id', function($query) {
-            $query->select(DB::raw('MAX(ps2.id)'))
-                ->from('product_stocks as ps2')
-                ->whereColumn('ps2.product_id', 'ps1.product_id');
-        })
-        ->whereRaw('ps1.quantity <= products.alert_quantity')
-        ->count();
+        $stocks = $query->paginate(10)->through(function ($stock) {
+            // Calculate weighted average unit cost from purchases only
+            $averageUnitCost = $stock->total_purchase_quantity > 0
+                ? bcdiv($stock->total_purchase_cost, $stock->total_purchase_quantity, 6)
+                : 0;
 
-    return Inertia::render('Admin/ProductStocks/Index', [
-        'stocks' => $stocks,
-        'summary' => [
-            'total_products' => $summaryQuery->total_products,
-            'total_quantity' => $summaryQuery->total_quantity,
-            'total_value' => round($summaryQuery->total_value, 2),
-            'low_stock_items' => $lowStockItems
-        ]
-    ]);
-}
+            // Calculate current stock value using weighted average
+            $currentStockValue = bcmul($stock->current_available, $averageUnitCost, 6);
+
+            return [
+                'id' => $stock->id,
+                'product' => [
+                    'id' => $stock->product_id,
+                    'name' => $stock->product_name,
+                    'sku' => $stock->sku,
+                    'alert_quantity' => $stock->alert_quantity
+                ],
+                'quantity' => $stock->current_available,
+                'total_purchased' => $stock->total_purchase_quantity,
+                'average_unit_cost' => round($averageUnitCost, 2),
+                'current_stock_value' => round($currentStockValue, 2),
+                'total_purchase_cost' => round($stock->total_purchase_cost, 2),
+                'created_by' => $stock->createdBy?->name ?? 'N/A',
+                'created_at' => $stock->created_at,
+                'stock_status' => $stock->current_available <= 0 ? 'out' : ($stock->current_available <= $stock->alert_quantity ? 'low' : 'in')
+            ];
+        });
+
+        // Summary query
+        $summaryQuery = DB::table('product_stocks as ps')
+            ->select([
+                DB::raw('COUNT(DISTINCT ps.product_id) as total_products'),
+                // Get total current quantity from latest entries
+                DB::raw('COALESCE(SUM(
+                    CASE WHEN ps.id IN (
+                        SELECT MAX(id)
+                        FROM product_stocks
+                        GROUP BY product_id
+                    )
+                    THEN ps.available_quantity
+                    ELSE 0
+                    END
+                ), 0) as total_quantity'),
+                // Calculate total stock value using weighted averages from purchases only
+                DB::raw('COALESCE(SUM(
+                    CASE WHEN ps.id IN (
+                        SELECT MAX(id)
+                        FROM product_stocks
+                        GROUP BY product_id
+                    )
+                    THEN (
+                        ps.available_quantity * (
+                            SELECT
+                                CASE
+                                    WHEN SUM(quantity) > 0
+                                    THEN SUM(quantity * unit_cost) / SUM(quantity)
+                                    ELSE 0
+                                END
+                            FROM product_stocks ps2
+                            WHERE ps2.product_id = ps.product_id
+                            AND ps2.type = "purchase"
+                        )
+                    )
+                    ELSE 0
+                    END
+                ), 0) as total_value')
+            ])
+            ->first();
+
+        // Low stock calculation
+        $lowStockItems = DB::table('product_stocks as ps')
+            ->join('products as p', 'p.id', '=', 'ps.product_id')
+            ->whereIn('ps.id', function ($query) {
+                $query->select(DB::raw('MAX(id)'))
+                    ->from('product_stocks')
+                    ->groupBy('product_id');
+            })
+            ->where('ps.available_quantity', '<=', DB::raw('p.alert_quantity'))
+            ->where('ps.available_quantity', '>', 0)
+            ->count();
+
+        return Inertia::render('Admin/ProductStocks/Index', [
+            'stocks' => $stocks,
+            'summary' => [
+                'total_products' => $summaryQuery->total_products,
+                'total_quantity' => round($summaryQuery->total_quantity, 2),
+                'total_value' => round($summaryQuery->total_value, 2),
+                'low_stock_items' => $lowStockItems
+            ]
+        ]);
+    }
+
+
 
 
     public function create()
@@ -128,8 +173,8 @@ class ProductStockController extends Controller
     {
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
-            'total_cost' => 'required|numeric|min:0',
+            'quantity' => 'required|numeric|min:0.01',
+            'total_cost' => 'required|numeric|min:0.01',
             'note' => 'nullable|string',
             'bank_account_id' => 'required|exists:bank_accounts,id'
         ]);
@@ -137,23 +182,44 @@ class ProductStockController extends Controller
         try {
             DB::beginTransaction();
 
-            // Check if bank has sufficient balance
+            // Check bank balance
             $bankAccount = BankAccount::findOrFail($validated['bank_account_id']);
-            if ($bankAccount->current_balance < $validated['total_cost']) {
+            if (bccomp($bankAccount->current_balance, $validated['total_cost'], 4) < 0) {
                 throw new \Exception('Insufficient bank balance');
             }
 
-            // Calculate unit cost for this entry
-            $unitCost = $validated['total_cost'] / $validated['quantity'];
+            // Calculate unit cost precisely
+            $unitCost = bcdiv($validated['total_cost'], $validated['quantity'], 6);
+
+            // Get current available quantity
+            $currentStock = ProductStock::where('product_id', $validated['product_id'])
+                ->orderBy('id', 'desc')
+                ->first();
+
+            $currentAvailableQuantity = $currentStock ? $currentStock->available_quantity : 0;
+            $newAvailableQuantity = bcadd($currentAvailableQuantity, $validated['quantity'], 6);
 
             // Create stock entry
             $stock = ProductStock::create([
                 'product_id' => $validated['product_id'],
                 'quantity' => $validated['quantity'],
-                'total_quantity' => $validated['total_cost'] / $unitCost,
+                'available_quantity' => $newAvailableQuantity,
                 'total_cost' => $validated['total_cost'],
                 'unit_cost' => $unitCost,
+                'type' => 'purchase',
                 'note' => $validated['note'],
+                'created_by' => auth()->id()
+            ]);
+
+            // Record stock movement
+            StockMovement::create([
+                'product_id' => $validated['product_id'],
+                'reference_type' => 'purchase',
+                'reference_id' => $stock->id,
+                'quantity' => $validated['quantity'],
+                'before_quantity' => $currentAvailableQuantity,
+                'after_quantity' => $newAvailableQuantity,
+                'type' => 'in',
                 'created_by' => auth()->id()
             ]);
 
@@ -168,27 +234,11 @@ class ProductStockController extends Controller
             ]);
 
             // Update bank balance
-            $bankAccount->update([
-                'current_balance' => $bankAccount->current_balance - $validated['total_cost']
-            ]);
+            $newBalance = bcsub($bankAccount->current_balance, $validated['total_cost'], 4);
+            $bankAccount->update(['current_balance' => $newBalance]);
 
-            // Calculate new weighted average cost
-            $product = Product::findOrFail($validated['product_id']);
-            $stocks = $product->productStocks()
-                ->select(
-                    DB::raw('SUM(quantity) as total_quantity'),
-                    DB::raw('SUM(quantity * unit_cost) as total_value')
-                )
-                ->first();
-
-            // Calculate weighted average only if there are stocks
-            if ($stocks->total_quantity > 0) {
-                $weightedAverageCost = $stocks->total_value / $stocks->total_quantity;
-
-                $product->update([
-                    'cost_price' => round($weightedAverageCost, 2)
-                ]);
-            }
+            // Update product's weighted average cost
+            $this->updateProductWeightedAverageCost($validated['product_id']);
 
             DB::commit();
 
@@ -200,15 +250,68 @@ class ProductStockController extends Controller
         }
     }
 
+    private function updateProductWeightedAverageCost($productId)
+    {
+        $product = Product::findOrFail($productId);
+
+        $stocks = $product->productStocks()
+            ->select(
+                DB::raw('COALESCE(SUM(CAST(quantity AS DECIMAL(15,6))), 0) as total_quantity'),
+                DB::raw('COALESCE(SUM(CAST(quantity AS DECIMAL(15,6)) * CAST(unit_cost AS DECIMAL(15,6))), 0) as total_value')
+            )
+            ->where('quantity', '>', 0)
+            ->first();
+
+        if ($stocks->total_quantity > 0) {
+            $weightedAverageCost = bcdiv($stocks->total_value, $stocks->total_quantity, 6);
+            $product->update(['cost_price' => $weightedAverageCost]);
+        }
+    }
+
     public function destroy($id)
     {
         try {
             DB::beginTransaction();
 
-            // Find the stock entry
             $stock = ProductStock::with('product')->findOrFail($id);
 
-            // Find and delete the original bank transaction
+            // Get current available quantity
+            $latestStock = ProductStock::where('product_id', $stock->product_id)
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if ($latestStock->available_quantity < $stock->quantity) {
+                throw new \Exception('Cannot delete this stock entry as it would result in negative stock.');
+            }
+
+            // Calculate new available quantity
+            $newAvailableQuantity = bcsub($latestStock->available_quantity, $stock->quantity, 6);
+
+            // Create a new stock entry to record the deletion
+            ProductStock::create([
+                'product_id' => $stock->product_id,
+                'quantity' => -$stock->quantity,
+                'available_quantity' => $newAvailableQuantity,
+                'unit_cost' => $stock->unit_cost,
+                'total_cost' => bcmul(-$stock->quantity, $stock->unit_cost, 6),
+                'type' => 'adjustment',
+                'note' => 'Stock entry deletion adjustment',
+                'created_by' => auth()->id()
+            ]);
+
+            // Record stock movement
+            StockMovement::create([
+                'product_id' => $stock->product_id,
+                'reference_type' => 'adjustment',
+                'reference_id' => $stock->id,
+                'quantity' => $stock->quantity,
+                'before_quantity' => $latestStock->available_quantity,
+                'after_quantity' => $newAvailableQuantity,
+                'type' => 'out',
+                'created_by' => auth()->id()
+            ]);
+
+            // Handle bank transaction reversal
             $bankTransaction = BankTransaction::where([
                 ['description', 'like', "%Stock purchase for product ID: {$stock->product_id}%"],
                 ['amount', $stock->total_cost],
@@ -216,31 +319,18 @@ class ProductStockController extends Controller
             ])->first();
 
             if ($bankTransaction) {
-                // Update bank balance (add back the money)
                 $bankAccount = BankAccount::findOrFail($bankTransaction->bank_account_id);
                 $bankAccount->update([
-                    'current_balance' => $bankAccount->current_balance + $stock->total_cost
+                    'current_balance' => bcadd($bankAccount->current_balance, $stock->total_cost, 4)
                 ]);
-
-                // Delete the bank transaction
                 $bankTransaction->delete();
             }
 
-            // Delete the stock entry
+            // Delete the original stock entry
             $stock->delete();
 
             // Update product's average cost
-            $product = $stock->product;
-            $remainingStocks = $product->productStocks()
-                ->select(DB::raw('SUM(quantity) as total_quantity, SUM(total_cost) as total_cost'))
-                ->first();
-
-            if ($remainingStocks->total_quantity > 0) {
-                $newAverageCost = $remainingStocks->total_cost / $remainingStocks->total_quantity;
-                $product->update(['cost_price' => $newAverageCost]);
-            } else {
-                $product->update(['cost_price' => 0]);
-            }
+            $this->updateProductWeightedAverageCost($stock->product_id);
 
             DB::commit();
 

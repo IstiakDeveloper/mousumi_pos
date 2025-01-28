@@ -23,11 +23,12 @@ class BankTransaction extends Model
         'date' => 'date'
     ];
 
+
+
     public function bankAccount()
     {
         return $this->belongsTo(BankAccount::class);
     }
-
 
     public function createdBy()
     {

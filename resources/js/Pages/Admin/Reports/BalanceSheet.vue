@@ -146,6 +146,28 @@
                             </div>
                         </div>
 
+                        <!-- Fixed Assets -->
+                        <div class="mb-6">
+                            <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
+                                Fixed Assets
+                            </h4>
+                            <div class="space-y-3">
+                                <div v-for="asset in propertyAndAssets.fixed_assets" :key="asset.category_name"
+                                    class="flex justify-between">
+                                    <span class="text-gray-600 dark:text-gray-300">{{ asset.category_name }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">
+                                        {{ formatCurrency(asset.amount) }}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+                                    <span class="font-medium text-gray-900 dark:text-white">Total Fixed Assets</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">
+                                        {{ formatCurrency(propertyAndAssets.total_fixed_assets) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Other Assets -->
                         <div class="space-y-3">
                             <div class="flex justify-between">

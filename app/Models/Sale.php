@@ -61,6 +61,11 @@ class Sale extends Model
         return $this->belongsTo(BankAccount::class); // Adjust the relationship type and model as necessary
     }
 
+    public function stockMovements()
+    {
+        return $this->morphMany(StockMovement::class, 'reference');
+    }
+
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');

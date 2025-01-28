@@ -15,6 +15,8 @@ class ProductStock extends Model
         'unit_cost',
         'note',
         'created_by',
+        'available_quantity',
+        'type',
         'bank_account_id'  // Add this
 
     ];
@@ -27,6 +29,11 @@ class ProductStock extends Model
     public function variant()
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+
+    public function stockMovements()
+    {
+        return $this->morphMany(StockMovement::class, 'reference');
     }
 
     // Add the createdBy relationship

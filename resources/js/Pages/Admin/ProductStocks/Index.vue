@@ -53,7 +53,7 @@
                                 <div class="ml-5 w-0 flex-1">
                                     <dl>
                                         <dt class="text-sm font-medium text-gray-500 truncate">
-                                            Total Stock Value
+                                            Current Stock Value
                                         </dt>
                                         <dd class="text-lg font-medium text-gray-900 dark:text-white">
                                             ৳{{ formatNumber(summary.total_value) }}
@@ -74,10 +74,10 @@
                                 <div class="ml-5 w-0 flex-1">
                                     <dl>
                                         <dt class="text-sm font-medium text-gray-500 truncate">
-                                            Total Quantity
+                                            Available Quantity
                                         </dt>
                                         <dd class="text-lg font-medium text-gray-900 dark:text-white">
-                                            {{ summary.total_quantity }}
+                                            {{ formatNumber(summary.total_quantity) }}
                                         </dd>
                                     </dl>
                                 </div>
@@ -107,24 +107,6 @@
                     </div>
                 </div>
 
-                <!-- Filters -->
-                <!-- <div class="mt-6 bg-white dark:bg-gray-800 shadow rounded-lg p-4">
-                    <div class="flex items-center space-x-4">
-                        <div class="flex-1">
-                            <input type="text"
-                                v-model="filters.search"
-                                placeholder="Search products..."
-                                class="w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                        </div>
-                        <select v-model="filters.stock_status"
-                            class="border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600">
-                            <option value="">All Stock Status</option>
-                            <option value="in">In Stock</option>
-                            <option value="low">Low Stock</option>
-                            <option value="out">Out of Stock</option>
-                        </select>
-                    </div>
-                </div> -->
 
                 <!-- Stock Table -->
                 <div class="mt-6 bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
@@ -137,15 +119,23 @@
                                 </th>
                                 <th scope="col"
                                     class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Quantity
+                                    Available Qty
                                 </th>
                                 <th scope="col"
                                     class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Unit Cost
+                                    Total Purchased
                                 </th>
                                 <th scope="col"
                                     class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Total Value
+                                    Avg. Unit Cost
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Current Value
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Total Purchase Cost
                                 </th>
                                 <th scope="col"
                                     class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -169,17 +159,30 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right">
                                     <div class="text-sm text-gray-900 dark:text-gray-100">
-                                        {{ stock.quantity }}
+                                        {{ formatNumber(stock.quantity) }}
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right">
                                     <div class="text-sm text-gray-900 dark:text-gray-100">
-                                        ৳{{ formatNumber(stock.unit_cost) }}
+                                        {{ formatNumber(stock.total_purchased) }}
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right">
                                     <div class="text-sm text-gray-900 dark:text-gray-100">
-                                        ৳{{ formatNumber(stock.total_cost) }}
+                                        ৳{{ formatNumber(stock.average_unit_cost) }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <div class="text-sm text-gray-900 dark:text-gray-100">
+                                        ৳{{ formatNumber(stock.current_stock_value) }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <div class="text-sm text-gray-900 dark:text-gray-100">
+                                        ৳{{ formatNumber(stock.total_purchase_cost) }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        All purchases
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
@@ -193,10 +196,6 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <!-- <Link :href="route('admin.product-stocks.edit', stock.id)"
-                                        class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3">
-                                        Edit
-                                    </Link> -->
                                     <button @click="confirmDelete(stock)"
                                         class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
                                         Delete

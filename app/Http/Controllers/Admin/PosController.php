@@ -10,6 +10,7 @@ use App\Models\SaleItem;
 use App\Models\BankAccount;
 use App\Models\ProductStock;
 use App\Models\Category;
+use App\Models\StockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -142,6 +143,7 @@ class PosController extends Controller
 
             // Create sale items and update stock
             foreach ($request->items as $item) {
+                // Create sale item
                 SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $item['product_id'],
@@ -150,11 +152,41 @@ class PosController extends Controller
                     'subtotal' => $item['quantity'] * $item['unit_price'],
                 ]);
 
-                // Update stock
-                $stock = ProductStock::firstOrCreate([
-                    'product_id' => $item['product_id']
+                // Get current stock
+                $currentStock = ProductStock::where('product_id', $item['product_id'])
+                    ->orderBy('id', 'desc')
+                    ->first();
+
+                $beforeQuantity = $currentStock ? $currentStock->available_quantity : 0;
+                $afterQuantity = $beforeQuantity - $item['quantity'];
+
+                // Check if stock is available
+                if ($afterQuantity < 0) {
+                    throw new \Exception("Insufficient stock for product ID: {$item['product_id']}");
+                }
+
+                // Create new stock record
+                ProductStock::create([
+                    'product_id' => $item['product_id'],
+                    'quantity' => -$item['quantity'], // negative for sales
+                    'available_quantity' => $afterQuantity,
+                    'type' => 'sale',
+                    'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
+                    'total_cost' => $currentStock ? ($currentStock->unit_cost * $item['quantity']) : 0,
+                    'created_by' => auth()->id(),
                 ]);
-                $stock->decrement('quantity', $item['quantity']);
+
+                // Record stock movement
+                StockMovement::create([
+                    'product_id' => $item['product_id'],
+                    'reference_type' => 'sale',
+                    'reference_id' => $sale->id,
+                    'quantity' => $item['quantity'],
+                    'before_quantity' => $beforeQuantity,
+                    'after_quantity' => $afterQuantity,
+                    'type' => 'out',
+                    'created_by' => auth()->id(),
+                ]);
             }
 
             // Update customer balance if customer exists and there is due amount

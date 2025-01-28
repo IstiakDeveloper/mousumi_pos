@@ -3,8 +3,12 @@ export const formatDate = (date) => {
 }
 
 export const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-BD', {
-        style: 'currency',
-        currency: 'BDT' // Change this to your preferred currency
-    }).format(amount)
+    // Format the number first
+    const formattedNumber = new Intl.NumberFormat('en-BD', {
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 2
+    }).format(amount || 0)
+
+    // Add the Taka symbol (৳)
+    return `৳${formattedNumber}`
 }
