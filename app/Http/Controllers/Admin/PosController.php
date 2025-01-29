@@ -39,13 +39,13 @@ class PosController extends Controller
             ->where('status', true)
             ->get()
             ->map(function ($product) {
-                $stock = $product->productStocks->sum('quantity');
+                $latestStock = $product->productStocks->sortByDesc('id')->first();
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
                     'sku' => $product->sku,
                     'selling_price' => $product->selling_price,
-                    'stock' => $stock,
+                    'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
                     'image' => $product->primaryImage ? $product->primaryImage->image : null,
                 ];
             });
@@ -61,13 +61,13 @@ class PosController extends Controller
         }
 
         return $query->get()->map(function ($product) {
-            $stock = $product->productStocks->sum('quantity');
+            $latestStock = $product->productStocks->sortByDesc('id')->first();
             return [
                 'id' => $product->id,
                 'name' => $product->name,
                 'sku' => $product->sku,
                 'selling_price' => $product->selling_price,
-                'stock' => $stock,
+                'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
                 'image' => $product->primaryImage ? $product->primaryImage->image : null,
             ];
         });
@@ -88,17 +88,18 @@ class PosController extends Controller
         }
 
         return $query->take(10)->get()->map(function ($product) {
-            $stock = $product->productStocks->sum('quantity');
+            $latestStock = $product->productStocks->sortByDesc('id')->first();
             return [
                 'id' => $product->id,
                 'name' => $product->name,
                 'sku' => $product->sku,
                 'selling_price' => $product->selling_price,
-                'stock' => $stock,
+                'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
                 'image' => $product->primaryImage ? $product->primaryImage->image : null,
             ];
         });
     }
+
     public function searchByBarcode(Request $request)
     {
         $barcode = $request->input('barcode');

@@ -28,6 +28,7 @@
                                     {{ totalValue }}
                                 </div>
                             </div>
+
                         </div>
 
                         <!-- Actions -->
@@ -193,29 +194,21 @@ const activeProducts = computed(() =>
 );
 
 const lowStockProducts = computed(() =>
-    props.products.data.filter(p =>
-        p.stocks.reduce((sum, stock) => sum + stock.quantity, 0) <= p.alert_quantity
-    ).length
+    props.products.data.filter(p => p.available_quantity <= p.alert_quantity && p.available_quantity > 0).length
 );
 
 const totalValue = computed(() => {
     const total = props.products.data.reduce((sum, product) => {
-        // Calculate total stock value for each product
-        const stockValue = product.stocks.reduce((stockSum, stock) =>
-            // Use stock's unit_cost instead of product's cost_price
-            stockSum + (stock.quantity * stock.unit_cost), 0
-        );
-        return sum + stockValue;
+        return sum + (product.current_stock_value || 0);
     }, 0);
 
-    // Format as BDT
-    const number = new Intl.NumberFormat('en-BD', {
+    return new Intl.NumberFormat('en-BD', {
+        style: 'currency',
+        currency: 'BDT',
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     }).format(total);
-    return `৳ ${number}`;
 });
-
 // Methods
 const viewToggleClass = (mode) => {
     const baseClass = 'relative inline-flex items-center px-3 py-2 text-sm font-medium ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-10';

@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\Brand;
 use App\Models\ProductImage;
+use App\Models\ProductStock;
 use App\Models\Unit;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -18,10 +19,58 @@ use Inertia\Inertia;
 
 class ProductController extends Controller
 {
+
     public function index(Request $request)
     {
         $products = Product::query()
-            ->with(['category', 'brand', 'unit', 'stocks', 'images']) // Include stocks relationship
+            ->with(['category', 'brand', 'unit', 'images'])
+            ->select('products.*')
+            ->selectRaw('(
+                SELECT ps.available_quantity
+                FROM product_stocks ps
+                WHERE ps.product_id = products.id
+                ORDER BY ps.id DESC
+                LIMIT 1
+            ) as available_quantity')
+            ->selectRaw('(
+                SELECT COALESCE(SUM(
+                    CASE WHEN ps.quantity > 0
+                    THEN ps.quantity
+                    ELSE 0
+                    END
+                ), 0)
+                FROM product_stocks ps
+                WHERE ps.product_id = products.id
+                AND ps.type = "purchase"
+            ) as total_purchased')
+            ->selectRaw('(
+                SELECT COALESCE(SUM(
+                    CASE WHEN ps.quantity > 0
+                    THEN (ps.quantity * ps.unit_cost)
+                    ELSE 0
+                    END
+                ), 0)
+                FROM product_stocks ps
+                WHERE ps.product_id = products.id
+                AND ps.type = "purchase"
+            ) as total_purchase_value')
+            ->selectRaw('CASE
+                WHEN (
+                    SELECT available_quantity
+                    FROM product_stocks
+                    WHERE product_id = products.id
+                    ORDER BY id DESC
+                    LIMIT 1
+                ) <= alert_quantity THEN "low"
+                WHEN (
+                    SELECT available_quantity
+                    FROM product_stocks
+                    WHERE product_id = products.id
+                    ORDER BY id DESC
+                    LIMIT 1
+                ) <= 0 THEN "out"
+                ELSE "in"
+            END as stock_status')
             ->when($request->search, function ($query, $search) {
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('sku', 'like', "%{$search}%")
@@ -38,6 +87,49 @@ class ProductController extends Controller
             })
             ->latest()
             ->paginate(10)
+            ->through(function ($product) {
+                // Calculate weighted average cost
+                $averageUnitCost = $product->total_purchased > 0
+                    ? bcdiv($product->total_purchase_value, $product->total_purchased, 6)
+                    : $product->cost_price;
+
+                // Calculate current stock value
+                $currentStockValue = bcmul($product->available_quantity ?? 0, $averageUnitCost, 6);
+
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'barcode' => $product->barcode,
+                    'category' => $product->category ? [
+                        'id' => $product->category->id,
+                        'name' => $product->category->name
+                    ] : null,
+                    'brand' => $product->brand ? [
+                        'id' => $product->brand->id,
+                        'name' => $product->brand->name
+                    ] : null,
+                    'unit' => $product->unit ? [
+                        'id' => $product->unit->id,
+                        'name' => $product->unit->name
+                    ] : null,
+                    'cost_price' => round($averageUnitCost, 2),
+                    'selling_price' => $product->selling_price,
+                    'alert_quantity' => $product->alert_quantity,
+                    'available_quantity' => $product->available_quantity ?? 0,
+                    'total_purchased' => $product->total_purchased,
+                    'current_stock_value' => round($currentStockValue, 2),
+                    'status' => $product->status,
+                    'stock_status' => $product->stock_status,
+                    'images' => $product->images->map(function ($image) {
+                        return [
+                            'image' => $image->image,
+                            'is_primary' => $image->is_primary
+                        ];
+                    }),
+                    'created_at' => $product->created_at
+                ];
+            })
             ->withQueryString();
 
         return Inertia::render('Admin/Products/Index', [
@@ -45,7 +137,6 @@ class ProductController extends Controller
             'filters' => $request->only(['search', 'category_id', 'brand_id', 'status'])
         ]);
     }
-
 
     public function search(Request $request)
     {
