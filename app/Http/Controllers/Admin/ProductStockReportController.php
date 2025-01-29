@@ -36,7 +36,7 @@ class ProductStockReportController extends Controller
             });
 
         $products = $query->get();
-        $reports = $this->generateStockReports($products, $fromDate, $toDate);
+        $reports = $this->generateReports($products, $fromDate, $toDate);
 
         return Inertia::render('Admin/Reports/StockReport', [
             'products' => Product::select('id', 'name', 'sku')->get(),
@@ -51,19 +51,82 @@ class ProductStockReportController extends Controller
         ]);
     }
 
+
+    private function getStockMovements($productId, $fromDate, $toDate)
+    {
+        // Get stock ins with purchase type only
+        $stockIns = ProductStock::where('product_id', $productId)
+            ->where('type', 'purchase')
+            ->whereBetween('created_at', [$fromDate, $toDate])
+            ->get()
+            ->map(function ($stock) {
+                return [
+                    'date' => $stock->created_at,
+                    'type' => 'in',
+                    'quantity' => $stock->quantity,
+                    'available_quantity' => $stock->available_quantity,
+                    'unit_cost' => $stock->unit_cost,
+                    'total_cost' => $stock->total_cost,
+                    'note' => $stock->note
+                ];
+            });
+
+        // Get stock outs
+        $stockOuts = ProductStock::where('product_id', $productId)
+            ->where('type', 'sale')
+            ->whereBetween('created_at', [$fromDate, $toDate])
+            ->get()
+            ->map(function ($stock) {
+                return [
+                    'date' => $stock->created_at,
+                    'type' => 'out',
+                    'quantity' => abs($stock->quantity), // Make positive for display
+                    'available_quantity' => $stock->available_quantity,
+                    'unit_cost' => $stock->unit_cost,
+                    'total_cost' => abs($stock->total_cost), // Make positive for display
+                    'invoice_no' => "Sale Entry" // You can add sale reference if needed
+                ];
+            });
+
+        return $stockIns->concat($stockOuts)->sortBy('date');
+    }
+
+    private function calculateInitialStock($productId, $fromDate)
+    {
+        return ProductStock::where('product_id', $productId)
+            ->where('created_at', '<', $fromDate)
+            ->orderBy('id', 'desc')
+            ->value('available_quantity') ?? 0;
+    }
+
     private function generateStockReports($products, $fromDate, $toDate)
     {
         return $products->map(function ($product) use ($fromDate, $toDate) {
-            // First, get initial stock before from_date
+            // Get initial stock (available_quantity) before from_date
             $initialStock = $this->calculateInitialStock($product->id, $fromDate);
 
             // Get all movements between dates
             $movements = $this->getStockMovements($product->id, $fromDate, $toDate);
 
-            $runningBalance = $initialStock;
             $monthlyData = [];
             $currentDate = Carbon::parse($fromDate)->startOfMonth();
             $endDate = Carbon::parse($toDate)->endOfMonth();
+
+            // Calculate total purchase stats for weighted average
+            $totalPurchaseQuantity = ProductStock::where('product_id', $product->id)
+                ->where('type', 'purchase')
+                ->where('created_at', '<=', $toDate)
+                ->sum('quantity');
+
+            $totalPurchaseValue = ProductStock::where('product_id', $product->id)
+                ->where('type', 'purchase')
+                ->where('created_at', '<=', $toDate)
+                ->sum(DB::raw('quantity * unit_cost'));
+
+            // Calculate weighted average cost
+            $weightedAverageCost = $totalPurchaseQuantity > 0
+                ? $totalPurchaseValue / $totalPurchaseQuantity
+                : $product->cost_price;
 
             while ($currentDate->lte($endDate)) {
                 $monthStart = $currentDate->copy()->startOfMonth();
@@ -75,51 +138,38 @@ class ProductStockReportController extends Controller
                     return $date->between($monthStart, $monthEnd);
                 });
 
-                // Calculate month's stock ins
-                $monthStockIns = $monthMovements->where('type', 'in')
-                    ->values()
-                    ->map(function ($movement) {
-                        return [
-                            'date' => $movement['date'],
-                            'quantity' => $movement['total_quantity'], // Using total_quantity
-                            'unit_cost' => $movement['unit_cost'],
-                            'total_cost' => $movement['total_cost'],
-                            'note' => $movement['note']
-                        ];
-                    });
+                // Get month's stock ins (purchases only)
+                $monthStockIns = $monthMovements->where('type', 'in')->values();
 
-                // Calculate month's stock outs
-                $monthStockOuts = $monthMovements->where('type', 'out')
-                    ->values()
-                    ->map(function ($movement) {
-                        return [
-                            'date' => $movement['date'],
-                            'quantity' => $movement['quantity'],
-                            'unit_price' => $movement['unit_price'],
-                            'total' => $movement['total'],
-                            'invoice_no' => $movement['invoice_no']
-                        ];
-                    });
+                // Get month's stock outs (sales only)
+                $monthStockOuts = $monthMovements->where('type', 'out')->values();
 
-                $totalIn = $monthStockIns->sum('quantity');
-                $totalOut = $monthStockOuts->sum('quantity');
-                $openingBalance = $runningBalance;
-                $runningBalance = $openingBalance + $totalIn - $totalOut;
+                // Get end of month available quantity
+                $monthEndStock = ProductStock::where('product_id', $product->id)
+                    ->where('created_at', '<=', $monthEnd)
+                    ->orderBy('id', 'desc')
+                    ->value('available_quantity') ?? 0;
 
                 $monthlyData[] = [
                     'month' => $currentDate->format('F Y'),
-                    'opening_stock' => $openingBalance,
+                    'opening_stock' => $initialStock,
                     'stock_ins' => $monthStockIns,
                     'stock_outs' => $monthStockOuts,
-                    'total_in' => $totalIn,
-                    'total_out' => $totalOut,
-                    'closing_stock' => $runningBalance,
+                    'total_in' => $monthStockIns->sum('quantity'),
+                    'total_out' => $monthStockOuts->sum('quantity'),
+                    'closing_stock' => $monthEndStock,
                     'in_value' => $monthStockIns->sum('total_cost'),
-                    'out_value' => $monthStockOuts->sum('total')
+                    'out_value' => $monthStockOuts->sum('total_cost')
                 ];
 
+                $initialStock = $monthEndStock;
                 $currentDate->addMonth();
             }
+
+            // Get current available quantity
+            $currentStock = ProductStock::where('product_id', $product->id)
+                ->orderBy('id', 'desc')
+                ->value('available_quantity') ?? 0;
 
             return [
                 'product' => [
@@ -128,74 +178,106 @@ class ProductStockReportController extends Controller
                     'sku' => $product->sku,
                     'category' => $product->category->name,
                     'unit' => $product->unit->name,
-                    'cost_price' => $product->cost_price,
+                    'cost_price' => round($weightedAverageCost, 2),
                 ],
                 'opening_stock' => $initialStock,
-                'current_stock' => $runningBalance,
+                'current_stock' => $currentStock,
                 'total_stock_in' => collect($monthlyData)->sum('total_in'),
                 'total_stock_out' => collect($monthlyData)->sum('total_out'),
-                'total_stock_value' => $runningBalance * $product->cost_price,
+                'total_stock_value' => round($currentStock * $weightedAverageCost, 2),
                 'monthly_data' => $monthlyData
             ];
         });
     }
 
-    private function calculateInitialStock($productId, $fromDate)
+    private function generateReports($products, $fromDate, $toDate)
     {
-        // Get all stock ins before from_date using total_quantity
-        $totalStockIn = ProductStock::where('product_id', $productId)
-            ->where('created_at', '<', $fromDate)
-            ->sum('total_quantity'); // Using total_quantity instead of quantity
+        return $products->map(function ($product) use ($fromDate, $toDate) {
+            // Get all purchases within date range
+            $purchases = ProductStock::where('product_id', $product->id)
+                ->where('type', 'purchase')
+                ->whereBetween('created_at', [$fromDate, $toDate])
+                ->orderBy('created_at')
+                ->get()
+                ->map(function ($stock) {
+                    return [
+                        'date' => $stock->created_at,
+                        'quantity' => round($stock->quantity),
+                        'unit_cost' => round($stock->unit_cost, 2),
+                        'total_cost' => round($stock->total_cost, 2),
+                        'available_quantity' => round($stock->available_quantity),
+                        'note' => $stock->note
+                    ];
+                });
 
-        // Get all stock outs before from_date
-        $totalStockOut = SaleItem::where('product_id', $productId)
-            ->whereHas('sale', function ($q) use ($fromDate) {
-                $q->where('created_at', '<', $fromDate);
-            })
-            ->sum('quantity');
+            // Get sales from SaleItem instead of ProductStock
+            $sales = SaleItem::with('sale')
+                ->where('product_id', $product->id)
+                ->whereHas('sale', function ($query) use ($fromDate, $toDate) {
+                    $query->whereBetween('created_at', [$fromDate, $toDate]);
+                })
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'date' => $item->sale->created_at,
+                        'quantity' => round($item->quantity),
+                        'invoice_no' => $item->sale->invoice_no,
+                        'unit_price' => round($item->unit_price, 2),
+                        'total' => round($item->subtotal, 2),
+                        'available_quantity' => round($this->getAvailableQuantityAtTime($item->product_id, $item->sale->created_at))
+                    ];
+                });
 
-        return $totalStockIn - $totalStockOut;
+            // Get the stock at start date
+            $openingStock = ProductStock::where('product_id', $product->id)
+                ->where('created_at', '<', $fromDate)
+                ->orderByDesc('id')
+                ->first();
+
+            // Get current stock
+            $currentStock = ProductStock::where('product_id', $product->id)
+                ->orderByDesc('id')
+                ->first();
+
+            // Calculate weighted average cost
+            $totalPurchaseQty = $purchases->sum('quantity');
+            $totalPurchaseCost = $purchases->sum('total_cost');
+            $avgCost = $totalPurchaseQty > 0 ? ($totalPurchaseCost / $totalPurchaseQty) : $product->cost_price;
+
+            return [
+                'product' => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'category' => $product->category->name,
+                    'unit' => $product->unit->name
+                ],
+                'summary' => [
+                    'opening_stock' => $openingStock ? round($openingStock->available_quantity) : 0,
+                    'current_stock' => $currentStock ? round($currentStock->available_quantity) : 0,
+                    'total_purchased' => round($totalPurchaseQty),
+                    'total_sold' => round($sales->sum('quantity')),
+                    'avg_cost' => round($avgCost, 2),
+                    'stock_value' => round(($currentStock ? $currentStock->available_quantity : 0) * $avgCost, 2),
+                    'sales_value' => round($sales->sum('total'), 2)
+                ],
+                'purchases' => $purchases,
+                'sales' => $sales->sortBy('date')->values()
+            ];
+        });
     }
 
-    private function getStockMovements($productId, $fromDate, $toDate)
+    // Helper function to get available quantity at a specific time
+    private function getAvailableQuantityAtTime($productId, $date)
     {
-        // Get stock ins with total_quantity
-        $stockIns = ProductStock::where('product_id', $productId)
-            ->whereBetween('created_at', [$fromDate, $toDate])
-            ->get()
-            ->map(function ($stock) {
-                return [
-                    'date' => $stock->created_at,
-                    'type' => 'in',
-                    'quantity' => $stock->quantity,
-                    'total_quantity' => $stock->total_quantity, // Added total_quantity
-                    'unit_cost' => $stock->unit_cost,
-                    'total_cost' => $stock->total_cost,
-                    'note' => $stock->note
-                ];
-            });
-
-        // Get stock outs (no change needed for sales)
-        $stockOuts = SaleItem::where('product_id', $productId)
-            ->whereHas('sale', function ($q) use ($fromDate, $toDate) {
-                $q->whereBetween('created_at', [$fromDate, $toDate]);
-            })
-            ->with('sale')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'date' => $item->sale->created_at,
-                    'type' => 'out',
-                    'quantity' => $item->quantity,
-                    'unit_price' => $item->unit_price,
-                    'total' => $item->subtotal,
-                    'invoice_no' => $item->sale->invoice_no
-                ];
-            });
-
-        // Combine and sort all movements by date
-        return $stockIns->concat($stockOuts)->sortBy('date');
+        return ProductStock::where('product_id', $productId)
+            ->where('created_at', '<=', $date)
+            ->orderByDesc('id')
+            ->first()
+                ?->available_quantity ?? 0;
     }
+
+
 
     public function downloadPdf(Request $request)
     {
@@ -218,10 +300,16 @@ class ProductStockReportController extends Controller
         }
 
         $products = $query->get();
-        $reports = $this->generateStockReports($products, $fromDate, $toDate);
+        $reports = $this->generateReports($products, $fromDate, $toDate); // Using the updated method
 
         $data = [
             'reports' => $reports,
+            'company' => [
+                'name' => config('app.name'),
+                'address' => config('app.address', 'Company Address'),
+                'phone' => config('app.phone', 'Company Phone'),
+                'email' => config('app.email', 'Company Email'),
+            ],
             'filters' => [
                 'from_date' => $fromDate->format('d M, Y'),
                 'to_date' => $toDate->format('d M, Y')

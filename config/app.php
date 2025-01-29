@@ -14,6 +14,10 @@ return [
     */
 
     'name' => env('APP_NAME', 'Mousumi Prokashon'),
+    'phone' => env('APP_PHONE', '543345636'),
+    'email' => env('APP_EMAIL', 'mousumiprokashon@gmail.com'),
+    'address' => env('APP_ADDRESS', 'Ukilpara, Naogaon Sadar, Naogaon'),
+
 
     /*
     |--------------------------------------------------------------------------
