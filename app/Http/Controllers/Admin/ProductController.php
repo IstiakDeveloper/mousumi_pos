@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\BankAccount;
+use App\Models\BankTransaction;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Brand;
 use App\Models\ProductImage;
 use App\Models\ProductStock;
+use App\Models\StockMovement;
 use App\Models\Unit;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -252,16 +255,87 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        // Delete product images
-        foreach ($product->images as $image) {
-            Storage::disk('public')->delete($image->image);
-            $image->delete();
+        try {
+            DB::beginTransaction();
+
+            // Get all stock purchases for this product
+            $stockPurchases = ProductStock::where('product_id', $product->id)
+                ->where('type', 'purchase')
+                ->get();
+
+            // Group total amount by bank account
+            $bankRefunds = [];
+
+            foreach ($stockPurchases as $stock) {
+                // Find the original bank transaction
+                $bankTransaction = BankTransaction::where([
+                    'transaction_type' => 'out',
+                    'amount' => $stock->total_cost
+                ])
+                    ->where('created_at', '>=', $stock->created_at->startOfDay())
+                    ->where('created_at', '<=', $stock->created_at->endOfDay())
+                    ->first();
+
+                if ($bankTransaction) {
+                    $bankAccountId = $bankTransaction->bank_account_id;
+                    if (!isset($bankRefunds[$bankAccountId])) {
+                        $bankRefunds[$bankAccountId] = 0;
+                    }
+                    $bankRefunds[$bankAccountId] = bcadd($bankRefunds[$bankAccountId], $stock->total_cost, 4);
+                }
+            }
+
+            // Process refunds for each bank account
+            foreach ($bankRefunds as $bankAccountId => $totalRefund) {
+                $bankAccount = BankAccount::find($bankAccountId);
+                if ($bankAccount) {
+                    // Create single refund transaction
+                    BankTransaction::create([
+                        'bank_account_id' => $bankAccountId,
+                        'transaction_type' => 'in',
+                        'amount' => $totalRefund,
+                        'description' => "Total refund for deleted product ID: {$product->id}",
+                        'date' => now(),
+                        'created_by' => auth()->id()
+                    ]);
+
+                    // Update bank balance
+                    $newBalance = bcadd($bankAccount->current_balance, $totalRefund, 4);
+                    $bankAccount->update(['current_balance' => $newBalance]);
+                }
+            }
+
+            // Delete stock movements
+            StockMovement::where('product_id', $product->id)->delete();
+
+            // Delete stocks
+            ProductStock::where('product_id', $product->id)->delete();
+
+            // Delete product images
+            foreach ($product->images as $image) {
+                Storage::disk('public')->delete($image->image);
+                $image->delete();
+            }
+
+            // Finally delete the product
+            $product->delete();
+
+            DB::commit();
+
+            return redirect()->back()
+                ->with('success', 'Product and all related transactions deleted successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            \Log::error('Product deletion error', [
+                'product_id' => $product->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Error deleting product: ' . $e->getMessage());
         }
-
-        $product->delete();
-
-        return redirect()->back()
-            ->with('success', 'Product deleted successfully.');
     }
 
     public function deleteImage(ProductImage $image)

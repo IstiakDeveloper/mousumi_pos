@@ -36,6 +36,7 @@ class ProductStock extends Model
         return $this->morphMany(StockMovement::class, 'reference');
     }
 
+
     // Add the createdBy relationship
     public function createdBy()
     {
