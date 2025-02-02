@@ -18,180 +18,255 @@
             border-bottom: 1px solid #ddd;
         }
 
-        .company-name { font-size: 18px; font-weight: bold; }
-        .report-title { font-size: 14px; margin: 5px 0; }
-        .date-range { font-size: 11px; color: #666; }
+        .company-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
 
-        .summary-table {
+        .report-title {
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .date-range {
+            font-size: 11px;
+            color: #666;
+        }
+
+        table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 15px;
         }
 
-        .summary-table th,
-        .summary-table td {
+        th, td {
             border: 1px solid #ddd;
             padding: 5px;
+            font-size: 8px;
         }
 
+        th {
+            background: #f8f8f8;
+            font-weight: bold;
+        }
+
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+
+        .paid { color: #0b4; }
+        .due { color: #d42; }
+        .partial { color: #f90; }
+
         .month-section {
-            margin-top: 15px;
-            page-break-inside: avoid;
+            margin-top: 20px;
+            page-break-before: avoid;
         }
 
         .month-header {
             background: #f4f4f4;
             padding: 8px;
             margin-bottom: 10px;
-            border: 1px solid #ddd;
-        }
-
-        .sales-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 8px;
-        }
-
-        .sales-table th,
-        .sales-table td {
-            border: 1px solid #ddd;
-            padding: 4px;
-            text-align: left;
-        }
-
-        .sales-table th { background: #f8f8f8; }
-
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-
-        .paid { color: #0b4; }
-        .due { color: #d42; }
-
-        .day-total {
-            background: #f4f4f4;
             font-weight: bold;
+            border: 1px solid #ddd;
         }
 
-        .payment-summary {
+        .payment-methods {
             margin: 10px 0;
-            padding: 5px;
+            padding: 8px;
             background: #f8f8f8;
             border: 1px solid #ddd;
         }
 
-        .page-break { page-break-after: always; }
+        .day-section {
+            margin-top: 15px;
+        }
+
+        .day-header {
+            background: #f8f8f8;
+            padding: 5px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .subtotal-row {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            padding: 10px;
+            font-size: 8px;
+            color: #666;
+        }
+
+        .payment-badge {
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 7px;
+        }
+
+        .status-paid { background: #d1fae5; }
+        .status-partial { background: #fef3c7; }
+        .status-due { background: #fee2e2; }
+
+        hr {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="company-name">{{ config('app.name') }}</div>
         <div class="report-title">Sales Report</div>
-        <div class="date-range">Period: {{ $filters['from_date'] }} to {{ $filters['to_date'] }}</div>
+        <div class="date-range">{{ $filters['from_date'] }} to {{ $filters['to_date'] }}</div>
     </div>
 
-    <!-- Summary -->
-    <table class="summary-table">
+    <!-- Overall Summary -->
+    <table>
         <tr>
             <th>Total Sales</th>
-            <th>Gross Total</th>
+            <th>Subtotal</th>
             <th>Discount</th>
             <th>Tax</th>
-            <th>Net Total</th>
+            <th>Total Amount</th>
             <th>Received</th>
             <th>Due</th>
         </tr>
         <tr>
             <td class="text-center">{{ $summary['total_sales'] }}</td>
-            <td class="text-right">{{ number_format($summary['gross_total'], 2) }} BDT</td>
-            <td class="text-right">{{ number_format($summary['discount'], 2) }} BDT</td>
-            <td class="text-right">{{ number_format($summary['tax'], 2) }} BDT</td>
-            <td class="text-right">{{ number_format($summary['net_total'], 2) }} BDT</td>
-            <td class="text-right paid">{{ number_format($summary['received'], 2) }} BDT</td>
-            <td class="text-right due">{{ number_format($summary['due'], 2) }} BDT</td>
+            <td class="text-right">{{ number_format($summary['subtotal'], 2) }}</td>
+            <td class="text-right">{{ number_format($summary['discount'], 2) }}</td>
+            <td class="text-right">{{ number_format($summary['tax'], 2) }}</td>
+            <td class="text-right">{{ number_format($summary['total_amount'], 2) }}</td>
+            <td class="text-right paid">{{ number_format($summary['received'], 2) }}</td>
+            <td class="text-right due">{{ number_format($summary['due'], 2) }}</td>
         </tr>
     </table>
 
+    <!-- Monthly Reports -->
     @foreach($monthly_reports as $report)
-        <div class="month-section">
-            <div class="month-header">
-                <div style="font-size: 12px; font-weight: bold;">{{ $report['month'] }}</div>
-                <div>
-                    Total Sales: {{ $report['summary']['total_sales'] }} |
-                    Items Sold: {{ $report['summary']['total_items'] }}
-                </div>
-            </div>
-
-            <!-- Payment Methods Summary -->
-            <div class="payment-summary">
-                <table style="width: 100%">
-                    <tr>
-                        @foreach($report['summary']['payment_methods'] as $method => $amount)
-                            <td style="text-align: center; padding: 5px;">
-                                <div style="color: #666; font-size: 8px;">{{ ucfirst($method) }}</div>
-                                <div>{{ number_format($amount, 2) }} BDT</div>
-                            </td>
-                        @endforeach
-                    </tr>
-                </table>
-            </div>
-
-            <!-- Daily Sales -->
-            @foreach($report['daily_sales'] as $day)
-                <div style="margin-top: 10px;">
-                    <div style="font-weight: bold; margin-bottom: 5px;">{{ $day['date'] }}</div>
-                    <table class="sales-table">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Invoice</th>
-                                <th>Customer</th>
-                                <th class="text-right">Items</th>
-                                <th class="text-right">Total</th>
-                                <th class="text-right">Paid</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($day['sales'] as $sale)
-                                <tr>
-                                    <td>{{ $sale['created_at'] }}</td>
-                                    <td>{{ $sale['invoice_no'] }}</td>
-                                    <td>{{ $sale['customer'] }}</td>
-                                    <td class="text-right">{{ count($sale['items']) }}</td>
-                                    <td class="text-right">{{ number_format($sale['total'], 2) }}</td>
-                                    <td class="text-right">{{ number_format($sale['paid'], 2) }}</td>
-                                    <td>{{ ucfirst($sale['payment_status']) }}</td>
-                                </tr>
-                            @endforeach
-                            <tr class="day-total">
-                                <td colspan="3">Day Total</td>
-                                <td class="text-right">{{ $day['summary']['total_items'] }}</td>
-                                <td class="text-right">{{ number_format($day['summary']['net_total'], 2) }}</td>
-                                <td class="text-right">{{ number_format($day['summary']['received'], 2) }}</td>
-                                <td class="text-right">{{ number_format($day['summary']['due'], 2) }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            @endforeach
-
-            <div style="margin-top: 15px; padding: 10px; background: #f8f8f8; border: 1px solid #ddd;">
-                <div>Monthly Summary</div>
-                <div>
-                    Net Total: {{ number_format($report['summary']['net_total'], 2) }} BDT |
-                    Received: {{ number_format($report['summary']['received'], 2) }} BDT |
-                    Due: {{ number_format($report['summary']['due'], 2) }} BDT
-                </div>
+    <div class="month-section">
+        <div class="month-header">
+            {{ $report['month'] }}
+            <div style="font-size: 8px; font-weight: normal; margin-top: 5px;">
+                Sales: {{ $report['summary']['total_sales'] }} |
+                Amount: {{ number_format($report['summary']['total_amount'], 2) }} |
+                Received: {{ number_format($report['summary']['received'], 2) }} |
+                Due: {{ number_format($report['summary']['due'], 2) }}
             </div>
         </div>
 
-        @if(!$loop->last)
-            <div class="page-break"></div>
-        @endif
+        <!-- Payment Methods Summary -->
+        <div class="payment-methods">
+            <div style="font-weight: bold; margin-bottom: 5px;">Payment Methods</div>
+            @foreach($report['summary']['payment_methods'] as $method => $details)
+                <span style="margin-right: 15px;">
+                    {{ ucfirst($method) }}: {{ number_format($details['amount'], 2) }}
+                </span>
+            @endforeach
+        </div>
+
+        <!-- Daily Sales -->
+        @foreach($report['daily_sales'] as $day)
+        <div class="day-section">
+            <div class="day-header">{{ $day['date'] }}</div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Invoice</th>
+                        <th>Customer</th>
+                        <th class="text-right">Total</th>
+                        <th class="text-right">Paid</th>
+                        <th class="text-right">Due</th>
+                        <th class="text-center">Status</th>
+                        <th>Payment Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($day['sales'] as $sale)
+                    <tr>
+                        <td>{{ $sale['created_at'] }}</td>
+                        <td>{{ $sale['invoice_no'] }}</td>
+                        <td>{{ $sale['customer'] }}</td>
+                        <td class="text-right">{{ number_format($sale['total'], 2) }}</td>
+                        <td class="text-right paid">{{ number_format($sale['paid'], 2) }}</td>
+                        <td class="text-right due">{{ number_format($sale['due'], 2) }}</td>
+                        <td class="text-center">
+                            <span class="payment-badge status-{{ $sale['payment_status'] }}">
+                                {{ ucfirst($sale['payment_status']) }}
+                            </span>
+                        </td>
+                        <td>
+                            @foreach($sale['payments'] as $payment)
+                                {{ ucfirst($payment['method']) }}: {{ number_format($payment['amount'], 2) }}
+                                @if(!empty($payment['bank_account']))
+                                    <br>
+                                    <small style="color: #666;">
+                                        {{ $payment['bank_account']['name'] }}
+                                        ({{ $payment['bank_account']['account'] }})
+                                        @if($payment['transaction_id'])
+                                            #{{ $payment['transaction_id'] }}
+                                        @endif
+                                    </small>
+                                @endif
+                                @if(!$loop->last)<br>@endif
+                            @endforeach
+                        </td>
+                    </tr>
+                    @endforeach
+                    <tr class="subtotal-row">
+                        <td colspan="3">Day Total</td>
+                        <td class="text-right">{{ number_format($day['summary']['total_amount'], 2) }}</td>
+                        <td class="text-right paid">{{ number_format($day['summary']['received'], 2) }}</td>
+                        <td class="text-right due">{{ number_format($day['summary']['due'], 2) }}</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Daily Payment Methods -->
+            <div class="payment-methods" style="margin-top: 5px;">
+                @foreach($day['summary']['payment_methods'] as $method => $details)
+                    <span style="margin-right: 15px;">
+                        {{ ucfirst($method) }}: {{ number_format($details['amount'], 2) }}
+                        @if(!empty($details['bank_details']))
+                            @foreach($details['bank_details'] as $bank)
+                                <br>
+                                <small style="color: #666;">
+                                    {{ $bank['bank_name'] }}: {{ number_format($bank['amount'], 2) }}
+                                </small>
+                            @endforeach
+                        @endif
+                    </span>
+                @endforeach
+            </div>
+        </div>
+        @endforeach
+
+        <!-- Monthly Summary -->
+        <div class="payment-methods" style="margin-top: 15px;">
+            <div style="font-weight: bold;">Monthly Summary</div>
+            <div style="margin-top: 5px;">
+                Total: {{ number_format($report['summary']['total_amount'], 2) }} |
+                Received: {{ number_format($report['summary']['received'], 2) }} |
+                Due: {{ number_format($report['summary']['due'], 2) }}
+            </div>
+        </div>
+    </div>
     @endforeach
 
-    <div style="text-align: center; margin-top: 20px; font-size: 8px; color: #666;">
+    <div class="footer">
         Generated on {{ now()->format('d M, Y h:i A') }}
     </div>
 </body>

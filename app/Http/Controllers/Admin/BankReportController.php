@@ -22,6 +22,84 @@ class BankReportController extends Controller
         };
     }
 
+    public function getProductPurchaseTotal($productId)
+    {
+        // Get purchases for this product
+        $purchases = BankTransaction::where('transaction_type', 'out')
+            ->where('description', 'LIKE', "Stock purchase for product ID: $productId%")
+            ->sum('amount');
+
+        // Get refunds for this product
+        $refunds = BankTransaction::where('transaction_type', 'in')
+            ->where('description', 'LIKE', "Total refund for deleted product ID: $productId%")
+            ->sum('amount');
+
+        // Calculate net amount
+        return $purchases - $refunds;
+    }
+
+    public function productTransactions(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|integer',
+            'from_date' => 'nullable|date',
+            'to_date' => 'nullable|date|after_or_equal:from_date',
+        ]);
+
+        $productId = $request->product_id;
+        $fromDate = $request->from_date ? Carbon::parse($request->from_date) : Carbon::now()->startOfMonth();
+        $toDate = $request->to_date ? Carbon::parse($request->to_date) : Carbon::now()->endOfMonth();
+
+        // Get transactions for the product
+        $transactions = BankTransaction::with('createdBy')
+            ->where(function ($query) use ($productId) {
+                $query->where('description', 'LIKE', "Stock purchase for product ID: $productId%")
+                    ->orWhere('description', 'LIKE', "Total refund for deleted product ID: $productId%");
+            })
+            ->whereBetween('date', [$fromDate, $toDate])
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get();
+
+        // Calculate running total
+        $runningTotal = 0;
+        $formattedTransactions = $transactions->map(function ($transaction) use (&$runningTotal) {
+            if ($transaction->transaction_type === 'out') {
+                $runningTotal += $transaction->amount;
+            } else {
+                $runningTotal -= $transaction->amount;
+            }
+
+            return [
+                'id' => $transaction->id,
+                'date' => $transaction->date,
+                'type' => $transaction->transaction_type,
+                'description' => $transaction->description,
+                'amount' => $transaction->amount,
+                'running_total' => $runningTotal,
+                'created_by' => $transaction->createdBy->name
+            ];
+        });
+
+        $summary = [
+            'total_purchases' => $transactions->where('transaction_type', 'out')->sum('amount'),
+            'total_refunds' => $transactions->where('transaction_type', 'in')->sum('amount'),
+            'net_amount' => $transactions->where('transaction_type', 'out')->sum('amount') -
+                $transactions->where('transaction_type', 'in')->sum('amount')
+        ];
+
+        return Inertia::render('Admin/Reports/ProductTransactions', [
+            'product_id' => $productId,
+            'filters' => [
+                'from_date' => $fromDate->format('Y-m-d'),
+                'to_date' => $toDate->format('Y-m-d'),
+            ],
+            'transactions' => $formattedTransactions,
+            'summary' => $summary
+        ]);
+    }
+
+
     public function index(Request $request)
     {
         $request->validate([
@@ -116,7 +194,25 @@ class BankReportController extends Controller
             'total_outflows' => BankTransaction::where('transaction_type', 'out')
                 ->whereBetween('date', [$fromDate, $toDate])
                 ->sum('amount'),
-            'total_transactions' => BankTransaction::whereBetween('date', [$fromDate, $toDate])->count()
+            'total_transactions' => BankTransaction::whereBetween('date', [$fromDate, $toDate])->count(),
+
+            // Add these new fields
+            'total_product_purchases' => BankTransaction::where('transaction_type', 'out')
+                ->where('description', 'LIKE', 'Stock purchase for product ID:%')
+                ->whereBetween('date', [$fromDate, $toDate])
+                ->sum('amount'),
+            'total_product_refunds' => BankTransaction::where('transaction_type', 'in')
+                ->where('description', 'LIKE', 'Total refund for deleted product ID:%')
+                ->whereBetween('date', [$fromDate, $toDate])
+                ->sum('amount'),
+            'net_product_amount' => BankTransaction::where('transaction_type', 'out')
+                ->where('description', 'LIKE', 'Stock purchase for product ID:%')
+                ->whereBetween('date', [$fromDate, $toDate])
+                ->sum('amount') -
+                BankTransaction::where('transaction_type', 'in')
+                    ->where('description', 'LIKE', 'Total refund for deleted product ID:%')
+                    ->whereBetween('date', [$fromDate, $toDate])
+                    ->sum('amount')
         ];
 
         return Inertia::render('Admin/Reports/BankReport', [

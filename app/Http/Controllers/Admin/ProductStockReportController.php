@@ -36,7 +36,8 @@ class ProductStockReportController extends Controller
             });
 
         $products = $query->get();
-        $reports = $this->generateReports($products, $fromDate, $toDate);
+
+        $reportData = $this->generateReports($products, $fromDate, $toDate);
 
         return Inertia::render('Admin/Reports/StockReport', [
             'products' => Product::select('id', 'name', 'sku')->get(),
@@ -47,7 +48,8 @@ class ProductStockReportController extends Controller
                 'from_date' => $fromDate->format('Y-m-d'),
                 'to_date' => $toDate->format('Y-m-d'),
             ],
-            'reports' => $reports
+            'reports' => $reportData['data'],
+            'summary' => $reportData['summary']
         ]);
     }
 
@@ -192,8 +194,7 @@ class ProductStockReportController extends Controller
 
     private function generateReports($products, $fromDate, $toDate)
     {
-        return $products->map(function ($product) use ($fromDate, $toDate) {
-            // Get all purchases within date range
+        $reports = $products->map(function ($product) use ($fromDate, $toDate) {
             $purchases = ProductStock::where('product_id', $product->id)
                 ->where('type', 'purchase')
                 ->whereBetween('created_at', [$fromDate, $toDate])
@@ -259,12 +260,27 @@ class ProductStockReportController extends Controller
                     'total_sold' => round($sales->sum('quantity')),
                     'avg_cost' => round($avgCost, 2),
                     'stock_value' => round(($currentStock ? $currentStock->available_quantity : 0) * $avgCost, 2),
-                    'sales_value' => round($sales->sum('total'), 2)
+                    'sales_value' => round($sales->sum('total'), 2),
+                    'purchase_value' => round($totalPurchaseCost, 2)
                 ],
                 'purchases' => $purchases,
                 'sales' => $sales->sortBy('date')->values()
             ];
         });
+
+        $totalSummary = [
+            'total_purchase_quantity' => $reports->sum('summary.total_purchased'),
+            'total_purchase_value' => $reports->sum('summary.purchase_value'),
+            'total_sales_quantity' => $reports->sum('summary.total_sold'),
+            'total_sales_value' => $reports->sum('summary.sales_value'),
+            'total_current_stock' => $reports->sum('summary.current_stock'),
+            'total_stock_value' => $reports->sum('summary.stock_value')
+        ];
+
+        return [
+            'data' => $reports,
+            'summary' => $totalSummary
+        ];
     }
 
     // Helper function to get available quantity at a specific time

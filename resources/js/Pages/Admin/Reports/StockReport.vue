@@ -63,6 +63,74 @@
                 </div>
             </div>
         </div>
+        <div v-if="reports.length > 0" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Overall Summary ({{ filters.from_date }}
+                    to {{
+                    filters.to_date }})</h3>
+            </div>
+
+            <div class="p-4">
+                <div class="grid grid-cols-3 gap-6">
+                    <!-- Purchase Summary -->
+                    <div class="p-4 bg-green-50 dark:bg-green-900/10 rounded-lg">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Total Purchases</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between border-b pb-2">
+                                <span class="text-gray-600 dark:text-gray-400">Quantity:</span>
+                                <span class="font-medium text-green-600">
+                                    {{ summary.total_purchase_quantity }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Value:</span>
+                                <span class="font-medium text-gray-900 dark:text-white">
+                                    {{ formatPrice(summary.total_purchase_value) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sales Summary -->
+                    <div class="p-4 bg-red-50 dark:bg-red-900/10 rounded-lg">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Total Sales</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between border-b pb-2">
+                                <span class="text-gray-600 dark:text-gray-400">Quantity:</span>
+                                <span class="font-medium text-red-600">
+                                    {{ summary.total_sales_quantity }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Value:</span>
+                                <span class="font-medium text-gray-900 dark:text-white">
+                                    {{ formatPrice(summary.total_sales_value) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stock Summary -->
+                    <div class="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Current Stock</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between border-b pb-2">
+                                <span class="text-gray-600 dark:text-gray-400">Quantity:</span>
+                                <span class="font-medium">
+                                    {{ summary.total_current_stock }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Value:</span>
+                                <span class="font-medium text-gray-900 dark:text-white">
+                                    {{ formatPrice(summary.total_stock_value) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div v-for="report in reports" :key="report.product.id"
             class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -231,8 +299,12 @@ const props = defineProps({
     reports: {
         type: Array,
         required: true
+    },
+    summary: {
+        type: Object,
+        required: true
     }
-})
+});
 
 const filters = ref({
     product_id: props.filters.product_id || '',

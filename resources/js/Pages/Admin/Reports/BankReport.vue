@@ -89,6 +89,28 @@
                     {{ formatPrice(summary.total_outflows) }}
                 </div>
             </div>
+
+            <!-- Add new cards for product transactions -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Product Purchases</div>
+                <div class="mt-1 text-2xl font-semibold text-red-600 dark:text-red-400">
+                    {{ formatPrice(summary.total_product_purchases) }}
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Product Refunds</div>
+                <div class="mt-1 text-2xl font-semibold text-green-600 dark:text-green-400">
+                    {{ formatPrice(summary.total_product_refunds) }}
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Net Product Amount</div>
+                <div class="mt-1 text-2xl font-semibold" :class="getBalanceColorClass(summary.net_product_amount)">
+                    {{ formatPrice(summary.net_product_amount) }}
+                </div>
+            </div>
         </div>
 
         <!-- Account Reports -->
@@ -177,7 +199,8 @@
                                     <td class="px-4 py-3 text-right" :class="getAmountColorClass(transaction.type)">
                                         {{ formatPrice(transaction.amount) }}
                                     </td>
-                                    <td class="px-4 py-3 text-right" :class="getBalanceColorClass(transaction.running_balance)">
+                                    <td class="px-4 py-3 text-right"
+                                        :class="getBalanceColorClass(transaction.running_balance)">
                                         {{ formatPrice(transaction.running_balance) }}
                                     </td>
                                     <td class="px-4 py-3">{{ transaction.created_by }}</td>
@@ -212,7 +235,16 @@ const props = defineProps({
     },
     summary: {
         type: Object,
-        required: true
+        required: true,
+        default: () => ({
+            total_accounts: 0,
+            total_balance: 0,
+            total_inflows: 0,
+            total_outflows: 0,
+            total_product_purchases: 0,  // Add this
+            total_product_refunds: 0,    // Add this
+            net_product_amount: 0        // Add this
+        })
     }
 })
 

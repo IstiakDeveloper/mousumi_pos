@@ -14,11 +14,9 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Customer
                     </label>
-                    <select
-                        v-model="filters.customer_id"
+                    <select v-model="filters.customer_id"
                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                        @change="applyFilters"
-                    >
+                        @change="applyFilters">
                         <option value="">All Customers</option>
                         <option v-for="customer in customers" :key="customer.id" :value="customer.id">
                             {{ customer.name }}
@@ -31,11 +29,9 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Bank Account
                     </label>
-                    <select
-                        v-model="filters.bank_account_id"
+                    <select v-model="filters.bank_account_id"
                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                        @change="applyFilters"
-                    >
+                        @change="applyFilters">
                         <option value="">All Bank Accounts</option>
                         <option v-for="bank in bank_accounts" :key="bank.id" :value="bank.id">
                             {{ bank.bank_name }} - {{ bank.account_number }}
@@ -48,11 +44,9 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Payment Status
                     </label>
-                    <select
-                        v-model="filters.payment_status"
+                    <select v-model="filters.payment_status"
                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                        @change="applyFilters"
-                    >
+                        @change="applyFilters">
                         <option value="">All Statuses</option>
                         <option value="paid">Paid</option>
                         <option value="partial">Partial</option>
@@ -65,32 +59,24 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         From Date
                     </label>
-                    <input
-                        type="date"
-                        v-model="filters.from_date"
+                    <input type="date" v-model="filters.from_date"
                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                        @change="applyFilters"
-                    >
+                        @change="applyFilters">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         To Date
                     </label>
-                    <input
-                        type="date"
-                        v-model="filters.to_date"
+                    <input type="date" v-model="filters.to_date"
                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                        @change="applyFilters"
-                    >
+                        @change="applyFilters">
                 </div>
 
                 <!-- Download Button -->
                 <div class="flex items-end">
-                    <button
-                        @click="downloadReport"
-                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-                    >
+                    <button @click="downloadReport"
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
                         <DocumentArrowDownIcon class="h-5 w-5 mr-2" />
                         Download Report
                     </button>
@@ -198,6 +184,8 @@
                         </div>
 
                         <!-- Sales Table -->
+                        # Update the Sales Table section in your Vue template:
+
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead>
                                 <tr class="text-xs font-medium text-gray-500 uppercase tracking-wider">
