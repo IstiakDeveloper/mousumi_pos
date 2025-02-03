@@ -99,6 +99,14 @@ class BankReportController extends Controller
         ]);
     }
 
+    public function getTotalSalesFromInvoices($fromDate, $toDate)
+    {
+        return BankTransaction::where('transaction_type', 'in')
+            ->where('description', 'like', 'Payment received for invoice%')
+            ->whereBetween('date', [$fromDate, $toDate])
+            ->sum('amount');
+    }
+
 
     public function index(Request $request)
     {
@@ -123,9 +131,9 @@ class BankReportController extends Controller
             // Get previous balance (before from_date)
             $previousBalance = $account->opening_balance +
                 DB::table('bank_transactions')
-                    ->where('bank_account_id', $account->id)
-                    ->where('date', '<', $fromDate)
-                    ->sum(DB::raw('CASE
+                ->where('bank_account_id', $account->id)
+                ->where('date', '<', $fromDate)
+                ->sum(DB::raw('CASE
                         WHEN transaction_type = "in" THEN amount
                         ELSE -amount
                     END'));
@@ -188,6 +196,7 @@ class BankReportController extends Controller
         $summary = [
             'total_accounts' => $accounts->count(),
             'total_balance' => $accounts->sum('current_balance'),
+            'total_sales_from_invoices' => $this->getTotalSalesFromInvoices($fromDate, $toDate),
             'total_inflows' => BankTransaction::where('transaction_type', 'in')
                 ->whereBetween('date', [$fromDate, $toDate])
                 ->sum('amount'),
@@ -210,9 +219,9 @@ class BankReportController extends Controller
                 ->whereBetween('date', [$fromDate, $toDate])
                 ->sum('amount') -
                 BankTransaction::where('transaction_type', 'in')
-                    ->where('description', 'LIKE', 'Total refund for deleted product ID:%')
-                    ->whereBetween('date', [$fromDate, $toDate])
-                    ->sum('amount')
+                ->where('description', 'LIKE', 'Total refund for deleted product ID:%')
+                ->whereBetween('date', [$fromDate, $toDate])
+                ->sum('amount')
         ];
 
         return Inertia::render('Admin/Reports/BankReport', [
@@ -248,9 +257,9 @@ class BankReportController extends Controller
             // Get previous balance before from_date
             $previousBalance = $account->opening_balance +
                 DB::table('bank_transactions')
-                    ->where('bank_account_id', $account->id)
-                    ->where('date', '<', $fromDate)
-                    ->sum(DB::raw('CASE WHEN transaction_type = "in" THEN amount ELSE -amount END'));
+                ->where('bank_account_id', $account->id)
+                ->where('date', '<', $fromDate)
+                ->sum(DB::raw('CASE WHEN transaction_type = "in" THEN amount ELSE -amount END'));
 
             // Get all transactions with details
             $allTransactions = BankTransaction::where('bank_account_id', $account->id)
@@ -262,9 +271,11 @@ class BankReportController extends Controller
             $monthlyData = [];
             $runningBalance = $previousBalance;
 
-            foreach ($allTransactions->groupBy(function ($transaction) {
-                return Carbon::parse($transaction->date)->format('Y-m');
-            }) as $month => $transactions) {
+            foreach (
+                $allTransactions->groupBy(function ($transaction) {
+                    return Carbon::parse($transaction->date)->format('Y-m');
+                }) as $month => $transactions
+            ) {
                 $monthTransactions = [];
                 foreach ($transactions as $transaction) {
                     // Update running balance

@@ -111,6 +111,14 @@
                     {{ formatPrice(summary.net_product_amount) }}
                 </div>
             </div>
+
+
+            <div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Sale Amount from Invoices</div>
+                <div class="mt-1 text-2xl font-semibold text-green-600 dark:text-green-400">
+                    {{ formatPrice(summary.total_sales_from_invoices) }}
+                </div>
+            </div>
         </div>
 
         <!-- Account Reports -->

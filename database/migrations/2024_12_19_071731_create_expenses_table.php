@@ -11,19 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('expenses', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('expense_category_id')->constrained();
-            $table->foreignId('bank_account_id')->constrained();
-            $table->decimal('amount', 10, 2);
-            $table->text('description')->nullable();
-            $table->string('reference_no')->nullable();
-            $table->date('date');
-            $table->string('attachment')->nullable();
-            $table->foreignId('created_by')->constrained('users');
-            $table->timestamps();
-            $table->softDeletes();
-        });
+            Schema::create('expenses', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('expense_category_id')->constrained();
+                $table->foreignId('bank_account_id')->constrained();
+                $table->decimal('amount', 10, 2);
+                $table->text('description')->nullable();
+                $table->string('reference_no')->nullable();
+                $table->date('date');
+                $table->string('attachment')->nullable();
+                $table->foreignId('created_by')->constrained('users');
+                $table->timestamps();
+                $table->softDeletes();
+            });
     }
 
     /**

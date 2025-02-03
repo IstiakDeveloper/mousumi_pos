@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\ProductAnalysisReportController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductStockController;
 use App\Http\Controllers\Admin\ProductStockReportController;
+use App\Http\Controllers\Admin\ReceiptPaymentController;
 use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\SaleReportController;
 use App\Http\Controllers\Admin\UnitController;
@@ -148,11 +149,14 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('expenses', ExpenseController::class);
     Route::post('expenses/{expense}/restore', [ExpenseController::class, 'restore'])->name('expenses.restore');
     Route::resource('expense-categories', ExpenseCategoryController::class);
-    
+
     Route::controller(ProductAnalysisReportController::class)->group(function () {
         Route::get('/reports/product-analysis', 'index')->name('reports.product-analysis');
         Route::get('/reports/product-analysis/data', 'getAnalysisData')->name('reports.product-analysis.data');
     });
+
+    Route::get('/reports/receipt-payment', [ReceiptPaymentController::class, 'index'])
+    ->name('reports.receipt-payment');
 
 });
 

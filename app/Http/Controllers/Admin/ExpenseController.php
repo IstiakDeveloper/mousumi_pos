@@ -16,20 +16,38 @@ class ExpenseController extends Controller
 {
     public function index(Request $request)
     {
-        $expenses = Expense::with(['category', 'bankAccount', 'createdBy'])
+        $query = Expense::with(['category', 'bankAccount', 'createdBy']);
+
+        // Apply filters
+        $filteredExpenses = $query
             ->when($request->category_id, fn($q) => $q->where('expense_category_id', $request->category_id))
             ->when($request->bank_id, fn($q) => $q->where('bank_account_id', $request->bank_id))
             ->when($request->from_date, fn($q) => $q->whereDate('date', '>=', $request->from_date))
-            ->when($request->to_date, fn($q) => $q->whereDate('date', '<=', $request->to_date))
+            ->when($request->to_date, fn($q) => $q->whereDate('date', '<=', $request->to_date));
+
+        // Pagination
+        $expenses = $filteredExpenses
             ->latest()
             ->paginate(10)
             ->withQueryString();
+
+        // Calculate summary
+        $totalExpenses = $filteredExpenses->sum('amount');
+        $fixedAssetExpenses = $filteredExpenses
+            ->whereHas('category', function ($q) {
+                $q->where('name', 'LIKE', '%Fixed Asset%');
+            })
+            ->sum('amount');
 
         return Inertia::render('Admin/Expenses/Index', [
             'expenses' => $expenses,
             'categories' => ExpenseCategory::where('status', true)->get(),
             'bankAccounts' => BankAccount::where('status', true)->get(),
-            'filters' => $request->only(['category_id', 'bank_id', 'from_date', 'to_date'])
+            'filters' => $request->only(['category_id', 'bank_id', 'from_date', 'to_date']),
+            'summary' => [
+                'totalExpenses' => $totalExpenses,
+                'fixedAssetExpenses' => $fixedAssetExpenses
+            ]
         ]);
     }
 

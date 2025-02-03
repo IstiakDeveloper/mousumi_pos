@@ -1,5 +1,26 @@
 <template>
     <AdminLayout>
+
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex items-center justify-between bg-blue-100 p-4 rounded-lg">
+                    <div>
+                        <h3 class="text-lg font-semibold text-blue-800">Total Expenses</h3>
+                        <p class="text-2xl font-bold text-blue-900">{{ formatAmount(summary.totalExpenses - summary.fixedAssetExpenses) }} </p>
+                    </div>
+                    <IconCurrencyDollar class="w-12 h-12 text-blue-600" />
+                </div>
+                <div class="flex items-center justify-between bg-green-100 p-4 rounded-lg">
+                    <div>
+                        <h3 class="text-lg font-semibold text-green-800">Fixed Asset Expenses</h3>
+                        <p class="text-2xl font-bold text-green-900">{{ formatAmount(summary.fixedAssetExpenses) }}</p>
+                    </div>
+                    <IconBuildingFactory2 class="w-12 h-12 text-green-600" />
+                </div>
+            </div>
+        </div>
+
         <template #header>
             <div class="flex justify-between items-center">
                 <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">
@@ -156,11 +177,19 @@ import Modal from '@/Components/Modal.vue'
 import Pagination from '@/Components/Pagination.vue'
 import { PlusIcon } from '@heroicons/vue/24/outline'
 
+
 const props = defineProps({
     expenses: Object,
     categories: Array,
     bankAccounts: Array,
-    filters: Object
+    filters: Object,
+    summary: {
+        type: Object,
+        default: () => ({
+            totalExpenses: 0,
+            fixedAssetExpenses: 0
+        })
+    }
 })
 
 const showModal = ref(false)
@@ -169,7 +198,7 @@ const currentExpense = ref(null)
 
 const filters = reactive({
     expense_category_id: props.categories.length > 0 ? props.categories[0].id : '',
-        bank_id: props.bankAccounts.length > 0 ? props.bankAccounts[0].id : '',
+    bank_id: props.bankAccounts.length > 0 ? props.bankAccounts[0].id : '',
     from_date: props.filters.from_date || '',
     to_date: props.filters.to_date || ''
 })
