@@ -148,8 +148,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('expenses', ExpenseController::class);
     Route::post('expenses/{expense}/restore', [ExpenseController::class, 'restore'])->name('expenses.restore');
     Route::resource('expense-categories', ExpenseCategoryController::class);
-
-
+    
     Route::controller(ProductAnalysisReportController::class)->group(function () {
         Route::get('/reports/product-analysis', 'index')->name('reports.product-analysis');
         Route::get('/reports/product-analysis/data', 'getAnalysisData')->name('reports.product-analysis.data');
