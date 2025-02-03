@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\ExtraIncomeController;
 use App\Http\Controllers\Admin\FundManagementController;
 use App\Http\Controllers\Admin\IncomeExpenditureController;
 use App\Http\Controllers\Admin\PosController;
+use App\Http\Controllers\Admin\ProductAnalysisReportController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductStockController;
 use App\Http\Controllers\Admin\ProductStockReportController;
@@ -147,6 +148,12 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('expenses', ExpenseController::class);
     Route::post('expenses/{expense}/restore', [ExpenseController::class, 'restore'])->name('expenses.restore');
     Route::resource('expense-categories', ExpenseCategoryController::class);
+    
+    Route::controller(ProductAnalysisReportController::class)->group(function () {
+        Route::get('/reports/product-analysis', 'index')->name('reports.product-analysis');
+        Route::get('/reports/product-analysis/data', 'getAnalysisData')->name('reports.product-analysis.data');
+    });
+
 });
 
 Route::get('products/search', [ProductController::class, 'search'])->name('api.products.search');

@@ -25,7 +25,7 @@
                         @change="applyFilters">
                         <option value="">All Products</option>
                         <option v-for="product in products" :key="product.id" :value="product.id">
-                            {{ product.name }} ({{ product.sku }})
+                            {{ product.id }} - {{ product.name }} ({{ product.sku }})
                         </option>
                     </select>
                 </div>
