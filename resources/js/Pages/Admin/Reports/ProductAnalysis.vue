@@ -5,28 +5,18 @@
                 <h2 class="text-xl font-semibold text-gray-800">Product Analysis Report</h2>
                 <div class="flex space-x-4">
                     <div class="flex items-center space-x-2">
-                        <input
-                            type="date"
-                            v-model="filters.start_date"
-                            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                        />
+                        <input type="date" v-model="filters.start_date"
+                            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
                         <span class="text-gray-500">to</span>
-                        <input
-                            type="date"
-                            v-model="filters.end_date"
-                            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                        />
-                        <button
-                            @click="filter"
-                            class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                        >
+                        <input type="date" v-model="filters.end_date"
+                            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+                        <button @click="filter"
+                            class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                             Filter
                         </button>
                     </div>
-                    <button
-                        @click="exportToExcel"
-                        class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                    >
+                    <button @click="exportToExcel"
+                        class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
                         Export to Excel
                     </button>
                 </div>
@@ -42,79 +32,152 @@
                                 <thead>
                                     <tr class="bg-gray-50">
                                         <!-- Product Info Section -->
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">SL</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Product Name</th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                                            SL</th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                                            Product Name</th>
 
                                         <!-- Buy Info Section -->
-                                        <th colspan="3" class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-blue-50">
+                                        <th colspan="3"
+                                            class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-blue-50">
                                             Buy Information
                                         </th>
 
                                         <!-- Sale Info Section -->
-                                        <th colspan="3" class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-green-50">
+                                        <th colspan="3"
+                                            class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-green-50">
                                             Sale Information
                                         </th>
 
                                         <!-- Available Info Section -->
-                                        <th colspan="2" class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50">
+                                        <th colspan="2"
+                                            class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50">
                                             Available Information
                                         </th>
                                     </tr>
                                     <tr class="bg-gray-50">
                                         <!-- Product Info Section -->
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r"></th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r"></th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                                        </th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                                        </th>
 
                                         <!-- Buy Info Section -->
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-blue-50">Quantity</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-blue-50">Price</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-blue-50">Total</th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-blue-50">
+                                            Quantity</th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-blue-50">
+                                            Price</th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-blue-50">
+                                            Total</th>
 
                                         <!-- Sale Info Section -->
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-green-50">Quantity</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-green-50">Price</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-green-50">Total</th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-green-50">
+                                            Quantity</th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-green-50">
+                                            Price</th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-green-50">
+                                            Total</th>
 
                                         <!-- Available Info Section -->
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-yellow-50">Stock</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50">Value</th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-yellow-50">
+                                            Stock</th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50">
+                                            Value</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     <tr v-for="product in products" :key="product.serial" class="hover:bg-gray-50">
                                         <!-- Product Info -->
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 border-r">{{ product.serial }}</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r">{{ product.product_name }}</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 border-r">{{
+                                            product.serial
+                                        }}</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r">{{
+                                            product.product_name }}</td>
 
                                         <!-- Buy Info -->
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-50/30">{{ formatNumber(product.buy_quantity) }}</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-50/30">{{ formatCurrency(product.buy_price) }}</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-50/30">{{ formatCurrency(product.total_buy_price) }}</td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-50/30">
+                                            {{
+                                                formatNumber(product.buy_quantity) }}</td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-50/30">
+                                            {{
+                                                formatCurrency(product.buy_price) }}</td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-50/30">
+                                            {{
+                                                formatCurrency(product.total_buy_price) }}</td>
 
                                         <!-- Sale Info -->
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-50/30">{{ formatNumber(product.sale_quantity) }}</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-50/30">{{ formatCurrency(product.sale_price) }}</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-50/30">{{ formatCurrency(product.total_sale_price) }}</td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-50/30">
+                                            {{
+                                                formatNumber(product.sale_quantity) }}</td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-50/30">
+                                            {{
+                                                formatCurrency(product.sale_price) }}</td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-50/30">
+                                            {{
+                                                formatCurrency(product.total_sale_price) }}</td>
 
                                         <!-- Available Info -->
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-yellow-50/30">{{ formatNumber(product.available_quantity) }}</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 bg-yellow-50/30">{{ formatCurrency(product.available_stock_value) }}</td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-yellow-50/30">
+                                            {{ formatNumber(product.available_quantity) }}</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 bg-yellow-50/30">{{
+                                            formatCurrency(product.available_stock_value) }}</td>
                                     </tr>
                                 </tbody>
                                 <tfoot>
                                     <tr class="bg-gray-50 font-semibold">
                                         <td colspan="2" class="px-4 py-4 text-sm text-gray-900 border-r">Totals</td>
                                         <!-- Buy Info Totals -->
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-100">{{ formatNumber(totalBuyQuantity) }}</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-100">-</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-100">{{ formatCurrency(totalBuyPrice) }}</td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-100">
+                                            {{
+                                                formatNumber(totalBuyQuantity) }}</td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-100">
+                                            -
+                                        </td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-100">
+                                            {{
+                                                formatCurrency(totalBuyPrice) }}</td>
                                         <!-- Sale Info Totals -->
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-100">{{ formatNumber(totalSaleQuantity) }}</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-100">-</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-100">{{ formatCurrency(totalSalePrice) }}</td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-100">
+                                            {{
+                                                formatNumber(totalSaleQuantity) }}</td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-100">
+                                            -
+                                        </td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-100">
+                                            {{
+                                                formatCurrency(totalSalePrice) }}</td>
                                         <!-- Available Info Totals -->
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-yellow-100">{{ formatNumber(totalAvailableQuantity) }}</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 bg-yellow-100">{{ formatCurrency(totalAvailableValue) }}</td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-yellow-100">
+                                            {{
+                                                formatNumber(totalAvailableQuantity) }}</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 bg-yellow-100">{{
+                                            formatCurrency(totalAvailableValue) }}</td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -146,6 +209,10 @@ export default defineComponent({
             type: Object,
             required: true,
         },
+        totals: {     // Add this prop
+            type: Object,
+            required: true,
+        },
     },
 
     data() {
@@ -159,22 +226,22 @@ export default defineComponent({
 
     computed: {
         totalBuyQuantity() {
-            return this.products.reduce((sum, product) => sum + product.buy_quantity, 0)
+            return this.totals.buy_quantity;
         },
         totalBuyPrice() {
-            return this.products.reduce((sum, product) => sum + product.total_buy_price, 0)
+            return this.totals.total_buy_price;
         },
         totalSaleQuantity() {
-            return this.products.reduce((sum, product) => sum + product.sale_quantity, 0)
+            return this.totals.sale_quantity;
         },
         totalSalePrice() {
-            return this.products.reduce((sum, product) => sum + product.total_sale_price, 0)
+            return this.totals.total_sale_price;
         },
         totalAvailableQuantity() {
-            return this.products.reduce((sum, product) => sum + product.available_quantity, 0)
+            return this.totals.available_quantity;
         },
         totalAvailableValue() {
-            return this.products.reduce((sum, product) => sum + product.available_stock_value, 0)
+            return this.totals.available_stock_value;
         },
     },
 
