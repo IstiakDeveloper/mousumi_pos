@@ -139,11 +139,16 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         ->name('reports.income-expenditure');
     Route::get('/reports/income-expenditure/pdf', [IncomeExpenditureController::class, 'downloadPdf'])
         ->name('reports.income-expenditure.pdf');
+    Route::get('/reports/income-expenditure/download', [BalanceSheetController::class, 'downloadPdf'])
+        ->name('reports.income-expenditure.download');
+
     Route::get('/reports/balance-sheet', [BalanceSheetController::class, 'index'])
         ->name('reports.balance-sheet');
 
     Route::get('/reports/balance-sheet/pdf', [BalanceSheetController::class, 'downloadPdf'])
         ->name('reports.balance-sheet.pdf');
+    Route::get('/reports/balance-sheet/download', [BalanceSheetController::class, 'downloadPdf'])
+        ->name('reports.balance-sheet.download');
 
 
     Route::resource('expenses', ExpenseController::class);
@@ -154,9 +159,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::get('/reports/product-analysis', 'index')->name('reports.product-analysis');
         Route::get('/reports/product-analysis/data', 'getAnalysisData')->name('reports.product-analysis.data');
     });
+    Route::get('/reports/product-analysis/pdf', [ProductAnalysisReportController::class, 'downloadPdf'])
+    ->name('reports.product-analysis.pdf');
 
     Route::get('/reports/receipt-payment', [ReceiptPaymentController::class, 'index'])
-    ->name('reports.receipt-payment');
+        ->name('reports.receipt-payment');
+    Route::get('/reports/receipt-payment/pdf', [ReceiptPaymentController::class, 'downloadPdf'])
+        ->name('reports.receipt-payment.pdf');
 
 });
 

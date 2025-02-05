@@ -11,6 +11,7 @@ use App\Models\ProductStock;
 use App\Models\BankAccount;
 use App\Models\ExtraIncome;
 use App\Models\ExpenseCategory;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,147 +21,30 @@ class BalanceSheetController extends Controller
 {
     public function index(Request $request)
     {
+        // Validate and set date range
         $request->validate([
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
 
-        $startDate = $request->start_date ? Carbon::parse($request->start_date)->startOfDay() : Carbon::now()->startOfMonth();
-        $endDate = $request->end_date ? Carbon::parse($request->end_date)->endOfDay() : Carbon::now()->endOfDay();
+        // Set default to current month if no dates provided
+        $startDate = $request->start_date
+            ? Carbon::parse($request->start_date)->startOfDay()
+            : Carbon::now()->startOfMonth();
+        $endDate = $request->end_date
+            ? Carbon::parse($request->end_date)->endOfDay()
+            : Carbon::now()->endOfDay();
 
-        // Get previous day for opening balance
-        $previousDay = Carbon::parse($startDate)->subDay()->endOfDay();
+        // Fund & Liabilities Section
+        $fundAndLiabilities = $this->calculateFundAndLiabilities($startDate, $endDate);
 
-        // 1. Fund & Liabilities Section
+        // Property & Assets Section
+        $propertyAndAssets = $this->calculatePropertyAndAssets($startDate, $endDate);
 
-        // 1.1 Fund Calculations
-        $fundBalances = [
-            'opening' => Fund::where('type', 'in')
-                ->where('date', '<', $startDate)
-                ->sum('amount'),
-            'period' => Fund::where('type', 'in')
-                ->whereBetween('date', [$startDate, $endDate])
-                ->sum('amount')
-        ];
-
-        $totalFund = $fundBalances['opening'] + $fundBalances['period'];
-
-        // 1.2 Net Profit Calculations
-
-        // a. Sales Calculations
-        $salesData = [
-            'opening' => Sale::where('created_at', '<', $startDate)->sum('total'),
-            'period' => Sale::whereBetween('created_at', [$startDate, $endDate])->sum('total')
-        ];
-
-        // b. Extra Income Calculations
-        $extraIncomeData = [
-            'opening' => ExtraIncome::where('date', '<', $startDate)->sum('amount'),
-            'period' => ExtraIncome::whereBetween('date', [$startDate, $endDate])->sum('amount')
-        ];
-
-        // c. Regular Expenses (Excluding Fixed Assets)
-        $fixedAssetsCategory = ExpenseCategory::where('name', 'Fixed Asset')->first();
-
-        $expensesData = [
-            'opening' => Expense::when($fixedAssetsCategory, function ($query) use ($fixedAssetsCategory) {
-                    return $query->where('expense_category_id', '!=', $fixedAssetsCategory->id);
-                })
-                ->where('date', '<', $startDate)
-                ->sum('amount'),
-            'period' => Expense::when($fixedAssetsCategory, function ($query) use ($fixedAssetsCategory) {
-                    return $query->where('expense_category_id', '!=', $fixedAssetsCategory->id);
-                })
-                ->whereBetween('date', [$startDate, $endDate])
-                ->sum('amount')
-        ];
-
-        // d. Cost of Goods Sold Calculations
-        $costOfGoodsSold = [
-            'opening' => $this->calculateCostOfGoodsSold(null, $previousDay),
-            'period' => $this->calculateCostOfGoodsSold($startDate, $endDate)
-        ];
-
-        // Calculate Net Profits
-        $openingNetProfit = $salesData['opening'] + $extraIncomeData['opening'] -
-                           $expensesData['opening'] - $costOfGoodsSold['opening'];
-
-        $periodNetProfit = $salesData['period'] + $extraIncomeData['period'] -
-                          $expensesData['period'] - $costOfGoodsSold['period'];
-
-        $totalNetProfit = $openingNetProfit + $periodNetProfit;
-
-        // 2. Property & Assets Section
-
-        // 2.1 Bank Balance Calculations
-        $bankBalances = [
-            'opening' => $this->calculateBankBalance(null, $previousDay),
-            'period' => $this->calculateBankBalance($startDate, $endDate)
-        ];
-
-        $totalBankBalance = $bankBalances['opening'] + $bankBalances['period'];
-
-        // 2.2 Fixed Assets
-        $fixedAssets = $fixedAssetsCategory ?
-            Expense::where('expense_category_id', $fixedAssetsCategory->id)
-            ->sum('amount') : 0;
-
-        // 2.3 Customer Due Calculations
-        $customerDueData = [
-            'opening' => Sale::where('created_at', '<', $startDate)->sum('due'),
-            'period' => Sale::whereBetween('created_at', [$startDate, $endDate])->sum('due')
-        ];
-
-        $totalCustomerDue = $customerDueData['opening'] + $customerDueData['period'];
-
-        // 2.4 Stock Value Calculations
-        $stockValueData = [
-            'opening' => $this->calculateStockValue($previousDay),
-            'period' => $this->calculateStockValue($endDate)
-        ];
-
-        // Calculate Section Totals
-        $fundAndLiabilitiesTotal = $totalFund + $totalNetProfit;
-        $propertyAndAssetsTotal = $totalBankBalance + $fixedAssets + $totalCustomerDue + $stockValueData['period'];
-
+        // Prepare data for Inertia render
         $data = [
-            'fund_and_liabilities' => [
-                'fund' => [
-                    'opening' => $fundBalances['opening'],
-                    'period' => $fundBalances['period'],
-                    'total' => $totalFund
-                ],
-                'net_profit' => [
-                    'opening' => $openingNetProfit,
-                    'period' => $periodNetProfit,
-                    'total' => $totalNetProfit,
-                    'details' => [
-                        'sales' => $salesData,
-                        'extra_income' => $extraIncomeData,
-                        'expenses' => $expensesData,
-                        'cost_of_goods_sold' => $costOfGoodsSold
-                    ]
-                ],
-                'total' => $fundAndLiabilitiesTotal
-            ],
-            'property_and_assets' => [
-                'bank_balance' => [
-                    'opening' => $bankBalances['opening'],
-                    'period' => $bankBalances['period'],
-                    'total' => $totalBankBalance
-                ],
-                'fixed_assets' => $fixedAssets,
-                'customer_due' => [
-                    'opening' => $customerDueData['opening'],
-                    'period' => $customerDueData['period'],
-                    'total' => $totalCustomerDue
-                ],
-                'stock_value' => [
-                    'opening' => $stockValueData['opening'],
-                    'period' => $stockValueData['period']
-                ],
-                'total' => $propertyAndAssetsTotal
-            ],
+            'fund_and_liabilities' => $fundAndLiabilities,
+            'property_and_assets' => $propertyAndAssets,
             'filters' => [
                 'start_date' => $startDate->format('Y-m-d'),
                 'end_date' => $endDate->format('Y-m-d'),
@@ -170,23 +54,105 @@ class BalanceSheetController extends Controller
         return Inertia::render('Admin/Reports/BalanceSheet', $data);
     }
 
-    private function calculateCostOfGoodsSold($startDate = null, $endDate = null)
+
+    private function calculateFundAndLiabilities(Carbon $startDate, Carbon $endDate)
+    {
+        // 1. Fund Calculation up to the end date
+        $fundAmount = Fund::where('type', 'in')
+            ->where('date', '<=', $endDate)
+            ->sum('amount');
+
+        // Sales up to the end date
+        $salesAmount = Sale::where('created_at', '<=', $endDate)
+            ->sum('total');
+
+        // Extra Income up to the end date
+        $extraIncomeAmount = ExtraIncome::where('date', '<=', $endDate)
+            ->sum('amount');
+
+        // Expenses up to the end date (excluding fixed assets)
+        $fixedAssetsCategory = ExpenseCategory::where('name', 'Fixed Asset')->first();
+        $expensesAmount = Expense::when($fixedAssetsCategory, function ($query) use ($fixedAssetsCategory) {
+            return $query->where('expense_category_id', '!=', $fixedAssetsCategory->id);
+        })
+            ->where('date', '<=', $endDate)
+            ->sum('amount');
+
+        // Cost of Goods Sold up to the end date
+        $costOfGoodsSold = $this->calculateCostOfGoodsSold(null, $endDate);
+
+        // Calculate Net Profit
+        $netProfit = $salesAmount + $extraIncomeAmount - $expensesAmount - $costOfGoodsSold;
+
+        // Total (Fund + Net Profit)
+        $total = $fundAmount + $netProfit;
+
+        return [
+            'fund' => [
+                'period' => (float) $fundAmount,
+            ],
+            'net_profit' => [
+                'period' => (float) $netProfit,
+            ],
+            'total' => (float) $total,
+        ];
+    }
+
+
+    private function calculatePropertyAndAssets(Carbon $startDate, Carbon $endDate)
+    {
+        // 1. Bank Balance up to the end date
+        $bankBalance = $this->calculateBankBalance(null, $endDate);
+
+        // 2. Customer Due up to the end date
+        $customerDue = Sale::where('created_at', '<=', $endDate)
+            ->sum('due');
+
+        // 3. Fixed Assets up to the end date
+        $fixedAssetsCategory = ExpenseCategory::where('name', 'Fixed Asset')->first();
+        $fixedAssets = $fixedAssetsCategory
+            ? Expense::where('expense_category_id', $fixedAssetsCategory->id)
+                ->where('date', '<=', $endDate)
+                ->sum('amount')
+            : 0;
+
+        // 4. Stock Value up to the end date
+        $stockValue = $this->calculateStockValue($endDate);
+
+        // Calculate Total
+        $total = $bankBalance + $customerDue + $fixedAssets + $stockValue;
+
+        return [
+            'bank_balance' => [
+                'period' => (float) $bankBalance,
+            ],
+            'customer_due' => [
+                'period' => (float) $customerDue,
+            ],
+            'fixed_assets' => (float) $fixedAssets,
+            'stock_value' => [
+                'period' => (float) $stockValue,
+            ],
+            'total' => (float) $total,
+        ];
+    }
+
+    private function calculateCostOfGoodsSold(?Carbon $startDate, Carbon $endDate)
     {
         $query = DB::table('sale_items as si')
             ->join('sales as s', 's.id', '=', 'si.sale_id')
-            ->select(
-                'si.product_id',
-                'si.quantity',
-                's.created_at'
-            );
+            ->where('s.created_at', '<=', $endDate);
 
-        if ($startDate && $endDate) {
-            $query->whereBetween('s.created_at', [$startDate, $endDate]);
-        } elseif ($endDate) {
-            $query->where('s.created_at', '<=', $endDate);
+        // If start date is provided, add the start date condition
+        if ($startDate) {
+            $query->where('s.created_at', '>=', $startDate);
         }
 
-        $soldProducts = $query->get();
+        $soldProducts = $query->select(
+            'si.product_id',
+            'si.quantity',
+            's.created_at'
+        )->get();
 
         $soldProductsCost = 0;
         foreach ($soldProducts as $sale) {
@@ -210,14 +176,14 @@ class BalanceSheetController extends Controller
         return $soldProductsCost;
     }
 
-    private function calculateBankBalance($startDate = null, $endDate = null)
+    private function calculateBankBalance(?Carbon $startDate, Carbon $endDate)
     {
-        $query = DB::table('bank_transactions');
+        $query = DB::table('bank_transactions')
+            ->where('date', '<=', $endDate);
 
-        if ($startDate && $endDate) {
-            $query->whereBetween('date', [$startDate, $endDate]);
-        } elseif ($endDate) {
-            $query->where('date', '<=', $endDate);
+        // If start date is provided, add the start date condition
+        if ($startDate) {
+            $query->where('date', '>=', $startDate);
         }
 
         return $query->select(DB::raw('CAST(
@@ -226,11 +192,11 @@ class BalanceSheetController extends Controller
                 ELSE -amount
             END) AS DECIMAL(15,6)
         ) as balance'))
-        ->first()
-        ->balance ?? 0;
+            ->first()
+            ->balance ?? 0;
     }
 
-    private function calculateStockValue($date)
+    private function calculateStockValue(Carbon $endDate)
     {
         $stockPositions = DB::table('product_stocks as ps')
             ->select('ps.product_id')
@@ -246,7 +212,7 @@ class BalanceSheetController extends Controller
                     THEN ps.available_quantity
                     ELSE 0
                 END as available_quantity
-            ', [$date])
+            ', [$endDate])
             ->selectRaw('
                 CASE
                     WHEN SUM(CASE WHEN ps2.quantity > 0 THEN ps2.quantity ELSE 0 END) > 0
@@ -258,16 +224,57 @@ class BalanceSheetController extends Controller
                     ELSE 0
                 END as weighted_avg_cost
             ')
-            ->join('product_stocks as ps2', function($join) use ($date) {
+            ->join('product_stocks as ps2', function ($join) use ($endDate) {
                 $join->on('ps2.product_id', '=', 'ps.product_id')
-                    ->where('ps2.created_at', '<=', $date);
+                    ->where('ps2.created_at', '<=', $endDate);
             })
             ->groupBy('ps.product_id', 'ps.id', 'ps.available_quantity')
             ->having('available_quantity', '>', 0)
             ->get();
 
-        return $stockPositions->sum(function($stock) {
+        return $stockPositions->sum(function ($stock) {
             return $stock->available_quantity * $stock->weighted_avg_cost;
         });
+    }
+
+
+    public function downloadPdf(Request $request)
+    {
+        // Validate and set date range (same as index method)
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+
+        // Set default to current month if no dates provided
+        $startDate = $request->start_date
+            ? Carbon::parse($request->start_date)->startOfDay()
+            : Carbon::now()->startOfMonth();
+        $endDate = $request->end_date
+            ? Carbon::parse($request->end_date)->endOfDay()
+            : Carbon::now()->endOfDay();
+
+        // Fund & Liabilities Section
+        $fundAndLiabilities = $this->calculateFundAndLiabilities($startDate, $endDate);
+
+        // Property & Assets Section
+        $propertyAndAssets = $this->calculatePropertyAndAssets($startDate, $endDate);
+
+        // Prepare data for PDF
+        $data = [
+            'fund_and_liabilities' => $fundAndLiabilities,
+            'property_and_assets' => $propertyAndAssets,
+            'start_date' => $startDate->format('Y-m-d'),
+            'end_date' => $endDate->format('Y-m-d'),
+        ];
+
+        // Generate PDF
+        $pdf = Pdf::loadView('pdf.balance-sheet', $data);
+
+        // Generate filename
+        $filename = 'balance-sheet-' . $startDate->format('Y-m-d') . '-to-' . $endDate->format('Y-m-d') . '.pdf';
+
+        // Download PDF
+        return $pdf->download($filename);
     }
 }

@@ -5,19 +5,29 @@
                 <h2 class="text-xl font-semibold text-gray-800">Product Analysis Report</h2>
                 <div class="flex space-x-4">
                     <div class="flex items-center space-x-2">
-                        <input type="date" v-model="filters.start_date"
+                        <input type="date" v-model="filters.start_date" @change="handleDateChange"
                             class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
                         <span class="text-gray-500">to</span>
-                        <input type="date" v-model="filters.end_date"
+                        <input type="date" v-model="filters.end_date" @change="handleDateChange"
                             class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-                        <button @click="filter"
-                            class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                            Filter
-                        </button>
                     </div>
                     <button @click="exportToExcel"
                         class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
                         Export to Excel
+                    </button>
+                    <button @click="downloadPDF" :disabled="isDownloadDisabled"
+                        class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 flex items-center">
+                        <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 animate-spin" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        {{ isDownloading ? 'Downloading...' : 'Download PDF' }}
                     </button>
                 </div>
             </div>
@@ -68,32 +78,32 @@
 
                                         <!-- Buy Info Section -->
                                         <th
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-blue-50">
+                                            class="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-r text-center bg-blue-50">
                                             Quantity</th>
                                         <th
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-blue-50">
+                                            class="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-r text-center bg-blue-50">
                                             Price</th>
                                         <th
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-blue-50">
+                                            class="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-r text-center bg-blue-50">
                                             Total</th>
 
                                         <!-- Sale Info Section -->
                                         <th
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-green-50">
+                                            class="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-r text-center bg-green-50">
                                             Quantity</th>
                                         <th
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-green-50">
+                                            class="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-r text-center bg-green-50">
                                             Price</th>
                                         <th
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-green-50">
+                                            class="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-r text-center bg-green-50">
                                             Total</th>
 
                                         <!-- Available Info Section -->
                                         <th
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r bg-yellow-50">
+                                            class="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-r text-center bg-yellow-50">
                                             Stock</th>
                                         <th
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50">
+                                            class="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center bg-yellow-50">
                                             Value</th>
                                     </tr>
                                 </thead>
@@ -102,44 +112,46 @@
                                         <!-- Product Info -->
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 border-r">{{
                                             product.serial
-                                        }}</td>
+                                            }}</td>
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r">{{
                                             product.product_name }}</td>
 
                                         <!-- Buy Info -->
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-50/30">
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r bg-blue-50/30">
                                             {{
                                                 formatNumber(product.buy_quantity) }}</td>
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-50/30">
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r bg-blue-50/30">
                                             {{
                                                 formatCurrency(product.buy_price) }}</td>
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-50/30">
+                                            class="px-4 py-4 whitespace-nowrap text-sm text-center text-gray-900 border-r bg-blue-50/30">
                                             {{
                                                 formatCurrency(product.total_buy_price) }}</td>
 
                                         <!-- Sale Info -->
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-50/30">
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r bg-green-50/30">
                                             {{
                                                 formatNumber(product.sale_quantity) }}</td>
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-50/30">
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r bg-green-50/30">
                                             {{
                                                 formatCurrency(product.sale_price) }}</td>
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-50/30">
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r bg-green-50/30">
                                             {{
                                                 formatCurrency(product.total_sale_price) }}</td>
 
                                         <!-- Available Info -->
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-yellow-50/30">
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r bg-yellow-50/30">
                                             {{ formatNumber(product.available_quantity) }}</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 bg-yellow-50/30">{{
-                                            formatCurrency(product.available_stock_value) }}</td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 bg-yellow-50/30">
+                                            {{
+                                                formatCurrency(product.available_stock_value) }}</td>
                                     </tr>
                                 </tbody>
                                 <tfoot>
@@ -147,37 +159,39 @@
                                         <td colspan="2" class="px-4 py-4 text-sm text-gray-900 border-r">Totals</td>
                                         <!-- Buy Info Totals -->
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-100">
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r bg-blue-100">
                                             {{
                                                 formatNumber(totalBuyQuantity) }}</td>
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-100">
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r bg-blue-100">
                                             -
                                         </td>
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-blue-100">
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r bg-blue-100">
                                             {{
                                                 formatCurrency(totalBuyPrice) }}</td>
                                         <!-- Sale Info Totals -->
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-100">
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r bg-green-100">
                                             {{
                                                 formatNumber(totalSaleQuantity) }}</td>
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-100">
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r bg-green-100">
                                             -
                                         </td>
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-green-100">
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r bg-green-100">
                                             {{
                                                 formatCurrency(totalSalePrice) }}</td>
                                         <!-- Available Info Totals -->
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-r bg-yellow-100">
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 border-r bg-yellow-100">
                                             {{
                                                 formatNumber(totalAvailableQuantity) }}</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 bg-yellow-100">{{
-                                            formatCurrency(totalAvailableValue) }}</td>
+                                        <td
+                                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 bg-yellow-100">
+                                            {{
+                                                formatCurrency(totalAvailableValue) }}</td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -221,6 +235,8 @@ export default defineComponent({
                 start_date: this.filters.start_date || format(startOfMonth(new Date()), 'yyyy-MM-dd'),
                 end_date: this.filters.end_date || format(new Date(), 'yyyy-MM-dd'),
             },
+            isDownloading: false,
+            isDownloadDisabled: false,
         }
     },
 
@@ -246,7 +262,7 @@ export default defineComponent({
     },
 
     methods: {
-        filter() {
+        handleDateChange() {
             router.get(route('admin.reports.product-analysis'), {
                 start_date: this.filters.start_date,
                 end_date: this.filters.end_date,
@@ -262,11 +278,36 @@ export default defineComponent({
 
         formatCurrency(amount) {
             return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'BDT',
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
-            }).format(amount || 0)
+            }).format(amount || 0);
+        },
+        async downloadPDF() {
+            this.isDownloading = true;
+            this.isDownloadDisabled = true;
+
+            try {
+                const response = await axios.get(route('admin.reports.product-analysis.pdf'), {
+                    params: {
+                        start_date: this.filters.start_date,
+                        end_date: this.filters.end_date,
+                    },
+                    responseType: 'blob'
+                });
+
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `product-analysis-${this.filters.start_date}-to-${this.filters.end_date}.pdf`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error('Error downloading PDF:', error);
+            } finally {
+                this.isDownloading = false;
+                this.isDownloadDisabled = false;
+            }
         },
 
         exportToExcel() {
@@ -283,9 +324,26 @@ export default defineComponent({
                 'Stock Value': product.available_stock_value,
             }))
 
-            console.log('Export data:', data)
-            // Implement actual Excel export here
-        },
+            // Convert data to CSV format
+            const headers = Object.keys(data[0]).join(',')
+            const rows = data.map(item => Object.values(item).join(','))
+            const csvContent = [headers, ...rows].join('\n')
+
+            // Create blob and download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+            const link = document.createElement('a')
+
+            // Create download URL
+            const url = window.URL.createObjectURL(blob)
+            link.setAttribute('href', url)
+            link.setAttribute('download', 'products_export.csv')
+
+            // Append link, trigger download, and cleanup
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+        }
     },
 })
 </script>

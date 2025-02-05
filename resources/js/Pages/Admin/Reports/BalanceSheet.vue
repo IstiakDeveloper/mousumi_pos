@@ -3,131 +3,150 @@
         <template #header>
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-semibold text-gray-800">Balance Sheet</h2>
-                <div class="flex items-center space-x-2">
-                    <input
-                        type="date"
-                        v-model="filters.start_date"
-                        @change="filter"
-                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                    />
-                    <span class="text-gray-500">to</span>
-                    <input
-                        type="date"
-                        v-model="filters.end_date"
-                        @change="filter"
-                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                    />
-                    <button
-                        @click="printReport"
-                        class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ml-4"
-                    >
-                        Print
+                <div class="flex items-center space-x-4">
+                    <!-- Year Selection -->
+                    <select v-model="selectedYear" @change="handleDateChange"
+                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option v-for="year in years" :key="year" :value="year">
+                            {{ year }}
+                        </option>
+                    </select>
+
+                    <!-- Month Selection -->
+                    <select v-model="selectedMonth" @change="handleDateChange"
+                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option v-for="month in months" :key="month.value" :value="month.value">
+                            {{ month.label }}
+                        </option>
+                    </select>
+
+                    <button @click="downloadPDF" :disabled="isDownloadDisabled"
+                        class="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">
+                        <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 animate-spin" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        {{ isDownloading ? 'Downloading...' : 'Download PDF' }}
                     </button>
                 </div>
             </div>
         </template>
 
         <div class="py-6">
-            <div class="max-w-7xl mx-auto">
+            <div id="balance-sheet-content" class="max-w-7xl mx-auto">
+
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <!-- Fund & Liabilities -->
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
                         <div class="py-3 px-4 bg-gray-50 border-b">
                             <h3 class="text-lg font-semibold text-gray-800">Fund & Liabilities</h3>
                         </div>
                         <table class="w-full">
                             <thead>
                                 <tr class="border-b bg-gray-50">
-                                    <th class="text-left py-2 px-4">Description</th>
-                                    <th class="text-right py-2 px-4">Period</th>
-                                    <th class="text-right py-2 px-4">Cumulative</th>
+                                    <th class="text-left py-2 px-4 border-r">Description</th>
+                                    <th class="text-right py-2 px-4">Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                <!-- Fund Row -->
                                 <tr class="border-b">
-                                    <td class="py-3 px-4">Fund</td>
-                                    <td class="py-3 px-4 text-right">{{ formatCurrency(fund_and_liabilities.fund.period) }}</td>
-                                    <td class="py-3 px-4 text-right">{{ formatCurrency(fund_and_liabilities.fund.total) }}</td>
+                                    <td class="py-2 px-4 border-r">Fund</td>
+                                    <td class="py-2 px-4 text-right text-green-600">
+                                        {{ formatCurrency(fund_and_liabilities.fund.period) }}
+                                    </td>
                                 </tr>
-                                <tr class="border-b bg-gray-50">
-                                    <td class="py-2 px-4 font-medium" colspan="3">Net Profit</td>
-                                </tr>
+
+                                <!-- Net Profit Row -->
                                 <tr class="border-b">
-                                    <td class="py-2 px-4 pl-8">Sales</td>
-                                    <td class="py-2 px-4 text-right">{{ formatCurrency(fund_and_liabilities.net_profit.details.sales.period) }}</td>
-                                    <td class="py-2 px-4 text-right">{{ formatCurrency(fund_and_liabilities.net_profit.details.sales.opening + fund_and_liabilities.net_profit.details.sales.period) }}</td>
-                                </tr>
-                                <tr class="border-b">
-                                    <td class="py-2 px-4 pl-8">Extra Income</td>
-                                    <td class="py-2 px-4 text-right">{{ formatCurrency(fund_and_liabilities.net_profit.details.extra_income.period) }}</td>
-                                    <td class="py-2 px-4 text-right">{{ formatCurrency(fund_and_liabilities.net_profit.details.extra_income.opening + fund_and_liabilities.net_profit.details.extra_income.period) }}</td>
-                                </tr>
-                                <tr class="border-b">
-                                    <td class="py-2 px-4 pl-8">Less: Expenses</td>
-                                    <td class="py-2 px-4 text-right text-red-600">-{{ formatCurrency(fund_and_liabilities.net_profit.details.expenses.period) }}</td>
-                                    <td class="py-2 px-4 text-right text-red-600">-{{ formatCurrency(fund_and_liabilities.net_profit.details.expenses.opening + fund_and_liabilities.net_profit.details.expenses.period) }}</td>
-                                </tr>
-                                <tr class="border-b">
-                                    <td class="py-2 px-4 pl-8">Less: Cost of Goods</td>
-                                    <td class="py-2 px-4 text-right text-red-600">-{{ formatCurrency(fund_and_liabilities.net_profit.details.cost_of_goods_sold.period) }}</td>
-                                    <td class="py-2 px-4 text-right text-red-600">-{{ formatCurrency(fund_and_liabilities.net_profit.details.cost_of_goods_sold.opening + fund_and_liabilities.net_profit.details.cost_of_goods_sold.period) }}</td>
-                                </tr>
-                                <tr class="font-semibold border-b">
-                                    <td class="py-3 px-4">Net Profit</td>
-                                    <td class="py-3 px-4 text-right" :class="{'text-green-600': fund_and_liabilities.net_profit.period > 0, 'text-red-600': fund_and_liabilities.net_profit.period < 0}">
+                                    <td class="py-2 px-4 border-r font-semibold">Net Profit</td>
+                                    <td class="py-2 px-4 text-right" :class="{
+                                        'text-green-600': fund_and_liabilities.net_profit.period > 0,
+                                        'text-red-600': fund_and_liabilities.net_profit.period < 0
+                                    }">
                                         {{ formatCurrency(fund_and_liabilities.net_profit.period) }}
                                     </td>
-                                    <td class="py-3 px-4 text-right" :class="{'text-green-600': fund_and_liabilities.net_profit.total > 0, 'text-red-600': fund_and_liabilities.net_profit.total < 0}">
-                                        {{ formatCurrency(fund_and_liabilities.net_profit.total) }}
-                                    </td>
                                 </tr>
-                                <tr class="font-semibold bg-gray-50">
-                                    <td class="py-3 px-4">Total</td>
-                                    <td class="py-3 px-4 text-right">{{ formatCurrency(fund_and_liabilities.fund.period + fund_and_liabilities.net_profit.period) }}</td>
-                                    <td class="py-3 px-4 text-right">{{ formatCurrency(fund_and_liabilities.total) }}</td>
+
+                                <!-- Empty Rows for Spacing -->
+                                <tr class="border-b">
+                                    <td class="py-5 px-4 border-r"></td>
+                                    <td class="py-5 px-4 text-right"></td>
+                                </tr>
+                                <tr class="border-b">
+                                    <td class="py-5 px-4 border-r"></td>
+                                    <td class="py-5 px-4 text-right"></td>
+                                </tr>
+
+                                <!-- Total Row -->
+                                <tr class="bg-gray-50 font-bold">
+                                    <td class="py-2 px-4 border-r">Total</td>
+                                    <td class="py-2 px-4 text-right">
+                                        {{ formatCurrency(fund_and_liabilities.total) }}
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
                     <!-- Property & Assets -->
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
                         <div class="py-3 px-4 bg-gray-50 border-b">
                             <h3 class="text-lg font-semibold text-gray-800">Property & Assets</h3>
                         </div>
                         <table class="w-full">
                             <thead>
                                 <tr class="border-b bg-gray-50">
-                                    <th class="text-left py-2 px-4">Description</th>
-                                    <th class="text-right py-2 px-4">Period</th>
-                                    <th class="text-right py-2 px-4">Cumulative</th>
+                                    <th class="text-left py-2 px-4 border-r">Description</th>
+                                    <th class="text-right py-2 px-4">Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                <!-- Bank Balance Row -->
                                 <tr class="border-b">
-                                    <td class="py-3 px-4">Bank Balance</td>
-                                    <td class="py-3 px-4 text-right">{{ formatCurrency(property_and_assets.bank_balance.period) }}</td>
-                                    <td class="py-3 px-4 text-right">{{ formatCurrency(property_and_assets.bank_balance.total) }}</td>
+                                    <td class="py-2 px-4 border-r">Bank Balance</td>
+                                    <td class="py-2 px-4 text-right">
+                                        {{ formatCurrency(property_and_assets.bank_balance.period) }}
+                                    </td>
                                 </tr>
+
+                                <!-- Customer Due Row -->
                                 <tr class="border-b">
-                                    <td class="py-3 px-4">Fixed Assets</td>
-                                    <td class="py-3 px-4 text-right">-</td>
-                                    <td class="py-3 px-4 text-right">{{ formatCurrency(property_and_assets.fixed_assets) }}</td>
+                                    <td class="py-2 px-4 border-r">Customer Due</td>
+                                    <td class="py-2 px-4 text-right">
+                                        {{ formatCurrency(property_and_assets.customer_due.period) }}
+                                    </td>
                                 </tr>
+
+                                <!-- Fixed Assets Row -->
                                 <tr class="border-b">
-                                    <td class="py-3 px-4">Customer Due</td>
-                                    <td class="py-3 px-4 text-right">{{ formatCurrency(property_and_assets.customer_due.period) }}</td>
-                                    <td class="py-3 px-4 text-right">{{ formatCurrency(property_and_assets.customer_due.total) }}</td>
+                                    <td class="py-2 px-4 border-r">Fixed Assets</td>
+                                    <td class="py-2 px-4 text-right">
+                                        {{ formatCurrency(property_and_assets.fixed_assets) }}
+                                    </td>
                                 </tr>
+
+                                <!-- Stock Value Row -->
                                 <tr class="border-b">
-                                    <td class="py-3 px-4">Stock Value</td>
-                                    <td class="py-3 px-4 text-right">{{ formatCurrency(property_and_assets.stock_value.period - property_and_assets.stock_value.opening) }}</td>
-                                    <td class="py-3 px-4 text-right">{{ formatCurrency(property_and_assets.stock_value.period) }}</td>
+                                    <td class="py-2 px-4 border-r">Stock Value</td>
+                                    <td class="py-2 px-4 text-right">
+                                        {{ formatCurrency(property_and_assets.stock_value.period) }}
+                                    </td>
                                 </tr>
-                                <tr class="font-semibold bg-gray-50">
-                                    <td class="py-3 px-4">Total</td>
-                                    <td class="py-3 px-4 text-right">{{ calculatePeriodTotal }}</td>
-                                    <td class="py-3 px-4 text-right">{{ formatCurrency(property_and_assets.total) }}</td>
+
+
+                                <!-- Total Row -->
+                                <tr class="bg-gray-50 font-bold">
+                                    <td class="py-2 px-4 border-r">Total</td>
+                                    <td class="py-2 px-4 text-right">
+                                        {{ formatCurrency(property_and_assets.total) }}
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -142,7 +161,8 @@
 import { defineComponent } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { router } from '@inertiajs/vue3';
-import { formatDate, formatCurrency } from '@/Utils';
+import { formatCurrency } from '@/Utils';
+import axios from 'axios'; // Ensure axios is imported
 
 export default defineComponent({
     components: { AdminLayout },
@@ -151,46 +171,136 @@ export default defineComponent({
         fund_and_liabilities: { type: Object, required: true },
         property_and_assets: { type: Object, required: true },
     },
-    computed: {
-        calculatePeriodTotal() {
-            const total = this.property_and_assets.bank_balance.period +
-                this.property_and_assets.customer_due.period +
-                (this.property_and_assets.stock_value.period - this.property_and_assets.stock_value.opening);
-            return formatCurrency(total);
+    data() {
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+
+        return {
+            months: [
+                { value: 1, label: 'January' },
+                { value: 2, label: 'February' },
+                { value: 3, label: 'March' },
+                { value: 4, label: 'April' },
+                { value: 5, label: 'May' },
+                { value: 6, label: 'June' },
+                { value: 7, label: 'July' },
+                { value: 8, label: 'August' },
+                { value: 9, label: 'September' },
+                { value: 10, label: 'October' },
+                { value: 11, label: 'November' },
+                { value: 12, label: 'December' }
+            ],
+            years: [currentYear - 1, currentYear, currentYear + 1],
+            selectedYear: this.extractYear(this.filters.start_date) || currentYear,
+            selectedMonth: this.extractMonth(this.filters.start_date) || currentMonth,
+            isDownloading: false // Add a loading state for download
         }
     },
     methods: {
         formatCurrency,
-        formatDate,
-        filter() {
+        getMonthName(monthNumber) {
+            return this.months.find(m => m.value === monthNumber)?.label || '';
+        },
+        extractYear(dateString) {
+            if (!dateString) return null;
+            return new Date(dateString).getFullYear();
+        },
+        extractMonth(dateString) {
+            if (!dateString) return null;
+            return new Date(dateString).getMonth() + 1;
+        },
+        handleDateChange() {
+            // Get first and last day of selected month
+            const startDate = new Date(this.selectedYear, this.selectedMonth - 1, 1);
+            const endDate = new Date(this.selectedYear, this.selectedMonth, 0);
+
             router.get(route('admin.reports.balance-sheet'), {
-                start_date: this.filters.start_date,
-                end_date: this.filters.end_date,
+                start_date: startDate.toISOString().split('T')[0],
+                end_date: endDate.toISOString().split('T')[0],
             }, {
                 preserveState: true,
                 preserveScroll: true,
             });
         },
-        printReport() {
-            window.print();
+        async downloadPDF() {
+            try {
+                // Set downloading state
+                this.isDownloading = true;
+
+                // Prepare the download URL
+                const url = route('admin.reports.balance-sheet.download', {
+                    start_date: this.filters.start_date,
+                    end_date: this.filters.end_date,
+                });
+
+                // Fetch the PDF
+                const response = await axios({
+                    url: url,
+                    method: 'GET',
+                    responseType: 'blob', // Important
+                });
+
+                // Create a link element to trigger download
+                const link = document.createElement('a');
+                const blob = new Blob([response.data], { type: 'application/pdf' });
+
+                // Generate filename
+                const startDate = new Date(this.filters.start_date);
+                const endDate = new Date(this.filters.end_date);
+                const filename = `balance-sheet-${startDate.toISOString().split('T')[0]}-to-${endDate.toISOString().split('T')[0]}.pdf`;
+
+                // Create download link
+                link.href = window.URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+
+                // Clean up
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(link.href);
+            } catch (error) {
+                console.error('PDF Download Error:', error);
+                // Optionally show an error toast/notification
+                this.$toast.error('Failed to download PDF');
+            } finally {
+                // Reset downloading state
+                this.isDownloading = false;
+            }
         },
     },
-    watch: {
-        'filters.start_date'() { this.filter(); },
-        'filters.end_date'() { this.filter(); }
+    computed: {
+        // Optional: Disable download button while downloading
+        isDownloadDisabled() {
+            return this.isDownloading;
+        }
     }
 })
 </script>
 
 <style>
 @media print {
-    body * { visibility: hidden; }
-    #app {
+    body * {
+        visibility: hidden;
+    }
+
+    #balance-sheet-content,
+    #balance-sheet-content * {
         visibility: visible;
+    }
+
+    #balance-sheet-content {
         position: absolute;
         left: 0;
         top: 0;
+        width: 100%;
     }
-    .shadow-sm { box-shadow: none !important; }
+
+    .print\:hidden {
+        display: none;
+    }
+
+    .print\:block {
+        display: block !important;
+    }
 }
 </style>

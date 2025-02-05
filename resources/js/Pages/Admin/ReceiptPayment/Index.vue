@@ -5,16 +5,37 @@
                 <h2 class="text-2xl font-bold text-gray-900">Receipt & Payment Statement</h2>
                 <div class="flex items-center space-x-4">
                     <div class="flex items-center space-x-2">
-                        <input type="date" v-model="filters.start_date" @change="filter"
-                            class="form-input rounded-md border-gray-300 shadow-sm" />
-                        <span class="text-gray-500">to</span>
-                        <input type="date" v-model="filters.end_date" @change="filter"
-                            class="form-input rounded-md border-gray-300 shadow-sm" />
+                        <!-- Year Dropdown -->
+                        <select v-model="selectedYear" @change="handleDateChange"
+                            class="form-select rounded-md border-gray-300 shadow-sm w-32">
+                            <option v-for="year in years" :key="year" :value="year">
+                                {{ year }}
+                            </option>
+                        </select>
+
+                        <!-- Month Dropdown -->
+                        <select v-model="selectedMonth" @change="handleDateChange"
+                            class="form-select rounded-md border-gray-300 shadow-sm w-40">
+                            <option v-for="month in months" :key="month.value" :value="month.value">
+                                {{ month.label }}
+                            </option>
+                        </select>
+
+                        <button @click="downloadPDF" :disabled="isDownloadDisabled"
+                            class="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">
+                            <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 animate-spin" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            {{ isDownloading ? 'Downloading...' : 'Download PDF' }}
+                        </button>
                     </div>
-                    <button @click="printReport"
-                        class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
-                        Print
-                    </button>
                 </div>
             </div>
         </template>
@@ -152,20 +173,82 @@ export default defineComponent({
             })
         },
     },
+    data() {
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+
+        return {
+            years: [currentYear - 1, currentYear, currentYear + 1],
+            months: [
+                { value: 1, label: 'January' },
+                { value: 2, label: 'February' },
+                { value: 3, label: 'March' },
+                { value: 4, label: 'April' },
+                { value: 5, label: 'May' },
+                { value: 6, label: 'June' },
+                { value: 7, label: 'July' },
+                { value: 8, label: 'August' },
+                { value: 9, label: 'September' },
+                { value: 10, label: 'October' },
+                { value: 11, label: 'November' },
+                { value: 12, label: 'December' }
+            ],
+            selectedYear: currentYear,
+            selectedMonth: currentMonth,
+            isDownloading: false,
+            isDownloadDisabled: false,
+        }
+    },
     methods: {
         formatCurrency,
-        filter() {
+        handleDateChange() {
+            // Calculate first and last day of selected month
+            const startDate = new Date(this.selectedYear, this.selectedMonth - 1, 1);
+            const endDate = new Date(this.selectedYear, this.selectedMonth, 0);
+
             router.get(route('admin.reports.receipt-payment'), {
-                start_date: this.filters.start_date,
-                end_date: this.filters.end_date,
+                start_date: startDate.toISOString().split('T')[0],
+                end_date: endDate.toISOString().split('T')[0],
             }, {
                 preserveState: true,
                 preserveScroll: true,
             });
         },
-        printReport() {
-            window.print();
+        async downloadPDF() {
+            this.isDownloading = true;
+            this.isDownloadDisabled = true;
+
+            try {
+                const response = await axios.get(route('admin.reports.receipt-payment.pdf'), {
+                    params: {
+                        start_date: new Date(this.selectedYear, this.selectedMonth - 1, 1).toISOString().split('T')[0],
+                        end_date: new Date(this.selectedYear, this.selectedMonth, 0).toISOString().split('T')[0],
+                    },
+                    responseType: 'blob'
+                });
+
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `receipt-payment-${this.selectedYear}-${this.selectedMonth}.pdf`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error('Error downloading PDF:', error);
+            } finally {
+                this.isDownloading = false;
+                this.isDownloadDisabled = false;
+            }
         },
+    },
+    mounted() {
+        // If there are dates in filters, set the year and month accordingly
+        if (this.filters.start_date) {
+            const date = new Date(this.filters.start_date);
+            this.selectedYear = date.getFullYear();
+            this.selectedMonth = date.getMonth() + 1;
+        }
     }
 })
 </script>

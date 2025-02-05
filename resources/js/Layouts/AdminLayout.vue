@@ -339,7 +339,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import {usePage, Link, router } from '@inertiajs/vue3'
+import { usePage, Link, router } from '@inertiajs/vue3'
 import { Menu, MenuButton, MenuItems, MenuItem, TransitionRoot } from '@headlessui/vue'
 import { switchTheme } from '@/theme';
 
@@ -416,6 +416,8 @@ const dropdownNavItems = [
             { name: 'Bank Report', href: '/admin/reports/bank', icon: 'fa-university' },
             { name: 'Stock Report', href: '/admin/reports/stock', icon: 'fa-warehouse' },
             { name: 'Sales Report', href: '/admin/reports/sales', icon: 'fa-chart-bar' },
+            { name: 'Product', href: '/admin/reports/product-analysis', icon: 'fa-box' },
+            { name: 'Receipt & Payment', href: '/admin/reports/receipt-payment', icon: 'fa-credit-card' },
             { name: 'Income & Expenditure', href: '/admin/reports/income-expenditure', icon: 'fa-file-alt' },
             { name: 'Balance Sheet', href: '/admin/reports/balance-sheet', icon: 'fas fa-balance-scale' }
         ]

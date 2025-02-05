@@ -1,137 +1,185 @@
 <template>
     <AdminLayout>
         <template #header>
-            <div class="flex justify-between items-center border-b border-gray-200 pb-4">
-                <h2 class="text-2xl font-bold text-gray-900">Income & Expenditure Statement</h2>
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-800">Income & Expenditure Statement</h2>
                 <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-2">
-                        <input type="date" v-model="filters.start_date" @change="filter"
-                            class="form-input rounded-md border-gray-300 shadow-sm" />
-                        <span class="text-gray-500">to</span>
-                        <input type="date" v-model="filters.end_date" @change="filter"
-                            class="form-input rounded-md border-gray-300 shadow-sm" />
-                    </div>
-                    <button @click="printReport"
-                        class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
-                        Print
+                    <!-- Year Selection -->
+                    <select v-model="selectedYear" @change="handleDateChange"
+                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option v-for="year in years" :key="year" :value="year">
+                            {{ year }}
+                        </option>
+                    </select>
+
+                    <!-- Month Selection -->
+                    <select v-model="selectedMonth" @change="handleDateChange"
+                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option v-for="month in months" :key="month.value" :value="month.value">
+                            {{ month.label }}
+                        </option>
+                    </select>
+
+                    <button @click="downloadPDF" :disabled="isDownloadDisabled"
+                        class="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">
+                        <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 animate-spin" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        {{ isDownloading ? 'Downloading...' : 'Download PDF' }}
                     </button>
+
                 </div>
             </div>
         </template>
 
-        <div class="py-6 px-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                    <div class="bg-gray-100 px-4 py-3 border-b">
-                        <h3 class="text-lg font-semibold text-gray-800">Expenses</h3>
-                    </div>
-                    <table class="w-full">
-                        <thead>
-                            <tr class="bg-gray-50 border-b">
-                                <th class="text-left px-4 py-2">Description</th>
-                                <th class="text-right px-4 py-2">Period</th>
-                                <th class="text-right px-4 py-2">Cumulative</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="px-4 py-2 font-medium">Expenses</td>
-                                <td class="px-4 py-2 text-right text-red-600 font-semibold">
-                                    {{ formatCurrency(expenditure.total.period) }}
-                                </td>
-                                <td class="px-4 py-2 text-right text-red-600 font-semibold">
-                                    {{ formatCurrency(expenditure.total.cumulative) }}
-                                </td>
-                            </tr>
-                            <tr class="bg-gray-50 font-bold">
-                                <td class="px-4 py-2">Total Expenses</td>
-                                <td class="px-4 py-2 text-right text-red-600">
-                                    {{ formatCurrency(expenditure.total.period) }}
-                                </td>
-                                <td class="px-4 py-2 text-right text-red-600">
-                                    {{ formatCurrency(expenditure.total.cumulative) }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+        <div class="py-6">
+            <div id="income-expenditure-content" class="max-w-7xl mx-auto">
 
 
-                <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                    <div class="bg-gray-100 px-4 py-3 border-b">
-                        <h3 class="text-lg font-semibold text-gray-800">Sales Profit</h3>
-                    </div>
-                    <table class="w-full">
-                        <thead>
-                            <tr class="bg-gray-50 border-b">
-                                <th class="text-left px-4 py-2">Description</th>
-                                <th class="text-right px-4 py-2">Period</th>
-                                <th class="text-right px-4 py-2">Cumulative</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="px-4 py-2 font-medium">Sales Profit</td>
-                                <td class="px-4 py-2 text-right text-green-600 font-semibold">
-                                    {{ formatCurrency(income.sales_profit.profit.period) }}
-                                </td>
-                                <td class="px-4 py-2 text-right text-green-600 font-semibold">
-                                    {{ formatCurrency(income.sales_profit.profit.cumulative) }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="px-4 py-2 font-medium">Extra Income</td>
-                                <td class="px-4 py-2 text-right text-green-600 font-semibold">
-                                    {{ formatCurrency(income.extra_income.period) }}
-                                </td>
-                                <td class="px-4 py-2 text-right text-green-600 font-semibold">
-                                    {{ formatCurrency(income.extra_income.cumulative) }}
-                                </td>
-                            </tr>
-                            <tr class="bg-gray-50 font-bold">
-                                <td class="px-4 py-2">Total Profit</td>
-                                <td class="px-4 py-2 text-right text-green-600">
-                                    {{ formatCurrency(income.total.period) }}
-                                </td>
-                                <td class="px-4 py-2 text-right text-green-600">
-                                    {{ formatCurrency(income.total.cumulative) }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-
-            <div class="mt-6 bg-white shadow-md rounded-lg p-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="border-r pr-4">
-                        <div class="flex justify-between items-center">
-                            <span class="font-semibold text-gray-700">Net Income Period</span>
-                            <span
-                                :class="{
-                                    'font-bold': true,
-                                    'text-green-600': netPeriodResult > 0,
-                                    'text-red-600': netPeriodResult < 0
-                                }"
-                            >
-                                {{ formatCurrency(netPeriodResult) }}
-                            </span>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Income Section -->
+                    <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                        <div class="py-3 px-4 bg-gray-50 border-b">
+                            <h3 class="text-lg font-semibold text-gray-800">Income</h3>
                         </div>
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b bg-gray-50">
+                                    <th class="text-left py-2 px-4 border-r">Description</th>
+                                    <th class="text-right py-2 px-4 border-r">Month</th>
+                                    <th class="text-right py-2 px-4">Cumulative</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Sales Profit Row -->
+                                <tr class="border-b">
+                                    <td class="py-2 px-4 border-r font-semibold">Sales Profit</td>
+                                    <td class="py-2 px-4 text-right border-r" :class="{
+                                        'text-green-600': income.sales_profit.period > 0,
+                                        'text-red-600': income.sales_profit.period < 0
+                                    }">
+                                        {{ formatCurrency(income.sales_profit.period) }}
+                                    </td>
+                                    <td class="py-2 px-4 text-right" :class="{
+                                        'text-green-600': income.sales_profit.cumulative > 0,
+                                        'text-red-600': income.sales_profit.cumulative < 0
+                                    }">
+                                        {{ formatCurrency(income.sales_profit.cumulative) }}
+                                    </td>
+                                </tr>
+
+                                <!-- Extra Income Row -->
+                                <tr class="border-b">
+                                    <td class="py-2 px-4 border-r">Extra Income</td>
+                                    <td class="py-2 px-4 text-right border-r text-green-600">
+                                        {{ formatCurrency(income.extra_income.period) }}
+                                    </td>
+                                    <td class="py-2 px-4 text-right text-green-600">
+                                        {{ formatCurrency(income.extra_income.cumulative) }}
+                                    </td>
+                                </tr>
+
+                                <!-- Total Row -->
+                                <tr class="bg-gray-50 font-bold">
+                                    <td class="py-2 px-4 border-r">Total Income</td>
+                                    <td class="py-2 px-4 text-right border-r" :class="{
+                                        'text-green-600': income.total.period > 0,
+                                        'text-red-600': income.total.period < 0
+                                    }">
+                                        {{ formatCurrency(income.total.period) }}
+                                    </td>
+                                    <td class="py-2 px-4 text-right" :class="{
+                                        'text-green-600': income.total.cumulative > 0,
+                                        'text-red-600': income.total.cumulative < 0
+                                    }">
+                                        {{ formatCurrency(income.total.cumulative) }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <div>
-                        <div class="flex justify-between items-center">
-                            <span class="font-semibold text-gray-700">Net Income Cumulative</span>
-                            <span
-                                :class="{
-                                    'font-bold': true,
-                                    'text-green-600': netCumulativeResult > 0,
-                                    'text-red-600': netCumulativeResult < 0
-                                }"
-                            >
-                                {{ formatCurrency(netCumulativeResult) }}
-                            </span>
+
+                    <!-- Expenditure Section -->
+                    <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                        <div class="py-3 px-4 bg-gray-50 border-b">
+                            <h3 class="text-lg font-semibold text-gray-800">Expenditure</h3>
+                        </div>
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b bg-gray-50">
+                                    <th class="text-left py-2 px-4 border-r">Description</th>
+                                    <th class="text-right py-2 px-4 border-r">Month</th>
+                                    <th class="text-right py-2 px-4">Cumulative</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Expense Categories -->
+                                <tr class="border-b">
+                                    <td class="py-2 px-4 border-r">Total Expense</td>
+                                    <td class="py-2 px-4 text-right border-r text-red-600">
+                                        {{ formatCurrency(expenditure.total.period) }}
+                                    </td>
+                                    <td class="py-2 px-4 text-right text-red-600">
+                                        {{ formatCurrency(expenditure.total.cumulative) }}
+                                    </td>
+                                </tr>
+
+                                <tr class="border-b">
+                                    <td class="py-5 px-4 border-r"></td>
+                                    <td class="py-5 px-4 text-right border-r text-red-600">
+
+                                    </td>
+                                    <td class="py-5 px-4 text-right text-red-600">
+
+                                    </td>
+                                </tr>
+
+                                <!-- Total Expenses Row -->
+                                <tr class="border-b bg-gray-50 font-bold">
+                                    <td class="py-2 px-4 border-r">Total Expenditure</td>
+                                    <td class="py-2 px-4 text-right border-r text-red-600">
+                                        {{ formatCurrency(expenditure.total.period) }}
+                                    </td>
+                                    <td class="py-2 px-4 text-right text-red-600">
+                                        {{ formatCurrency(expenditure.total.cumulative) }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Net Result Section -->
+                <div class="mt-6 bg-white rounded-lg shadow-sm border p-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="border-r pr-4">
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-gray-700">Net Result (Month)</span>
+                                <span class="font-bold" :class="{
+                                    'text-green-600': netResultPeriod > 0,
+                                    'text-red-600': netResultPeriod < 0
+                                }">
+                                    {{ formatCurrency(netResultPeriod) }}
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-gray-700">Net Result (Cumulative)</span>
+                                <span class="font-bold" :class="{
+                                    'text-green-600': netResultCumulative > 0,
+                                    'text-red-600': netResultCumulative < 0
+                                }">
+                                    {{ formatCurrency(netResultCumulative) }}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -144,42 +192,109 @@
 import { defineComponent } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { router } from '@inertiajs/vue3';
-import { formatDate, formatCurrency } from '@/Utils';
+import { formatCurrency } from '@/Utils';
+import html2pdf from 'html2pdf.js';
 
 export default defineComponent({
     components: { AdminLayout },
     props: {
         filters: { type: Object, required: true },
-        expenditure: { type: Object, required: true },
         income: { type: Object, required: true },
+        expenditure: { type: Object, required: true },
+    },
+    data() {
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+
+        return {
+            months: [
+                { value: 1, label: 'January' },
+                { value: 2, label: 'February' },
+                { value: 3, label: 'March' },
+                { value: 4, label: 'April' },
+                { value: 5, label: 'May' },
+                { value: 6, label: 'June' },
+                { value: 7, label: 'July' },
+                { value: 8, label: 'August' },
+                { value: 9, label: 'September' },
+                { value: 10, label: 'October' },
+                { value: 11, label: 'November' },
+                { value: 12, label: 'December' }
+            ],
+            years: [currentYear - 1, currentYear, currentYear + 1],
+            selectedYear: this.extractYear(this.filters.start_date) || currentYear,
+            selectedMonth: this.extractMonth(this.filters.start_date) || currentMonth,
+            isDownloading: false,
+            isDownloadDisabled: false,
+        }
     },
     computed: {
-        netPeriodResult() {
+        netResultPeriod() {
             return this.income.total.period - this.expenditure.total.period;
         },
-        netCumulativeResult() {
+        netResultCumulative() {
             return this.income.total.cumulative - this.expenditure.total.cumulative;
         }
     },
     methods: {
         formatCurrency,
-        formatDate,
-        filter() {
+        extractYear(dateString) {
+            if (!dateString) return null;
+            return new Date(dateString).getFullYear();
+        },
+        extractMonth(dateString) {
+            if (!dateString) return null;
+            return new Date(dateString).getMonth() + 1;
+        },
+        getMonthName(monthNumber) {
+            return this.months.find(m => m.value === monthNumber)?.label || '';
+        },
+        formatDateRange(startDate, endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+        },
+        handleDateChange() {
+            // Get first and last day of selected month
+            const startDate = new Date(this.selectedYear, this.selectedMonth - 1, 1);
+            const endDate = new Date(this.selectedYear, this.selectedMonth, 0);
+
             router.get(route('admin.reports.income-expenditure'), {
-                start_date: this.filters.start_date,
-                end_date: this.filters.end_date,
+                start_date: startDate.toISOString().split('T')[0],
+                end_date: endDate.toISOString().split('T')[0],
             }, {
                 preserveState: true,
                 preserveScroll: true,
             });
         },
-        printReport() {
-            window.print();
+        async downloadPDF() {
+            this.isDownloading = true;
+            this.isDownloadDisabled = true;
+
+            try {
+                const response = await axios.get(route('admin.reports.income-expenditure.pdf'), {
+                    params: {
+                        start_date: new Date(this.selectedYear, this.selectedMonth - 1, 1).toISOString().split('T')[0],
+                        end_date: new Date(this.selectedYear, this.selectedMonth, 0).toISOString().split('T')[0],
+                    },
+                    responseType: 'blob'
+                });
+
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `income-expenditure-${this.selectedYear}-${this.selectedMonth}.pdf`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error('Error downloading PDF:', error);
+            } finally {
+                this.isDownloading = false;
+                this.isDownloadDisabled = false;
+            }
         },
-    },
-    watch: {
-        'filters.start_date'() { this.filter(); },
-        'filters.end_date'() { this.filter(); }
+
     }
 })
 </script>
@@ -190,11 +305,18 @@ export default defineComponent({
         visibility: hidden;
     }
 
-    #app {
+    #income-expenditure-content,
+    #income-expenditure-content * {
         visibility: visible;
+    }
+
+    #income-expenditure-content {
         position: absolute;
         left: 0;
         top: 0;
+        width: 100%;
     }
+
+
 }
 </style>
