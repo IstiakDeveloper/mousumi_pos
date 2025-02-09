@@ -25,12 +25,35 @@ class ProductAnalysisReportController extends Controller
         $startDate = $request->start_date ? Carbon::parse($request->start_date)->startOfDay() : Carbon::now()->startOfMonth();
         $endDate = $request->end_date ? Carbon::parse($request->end_date)->endOfDay() : Carbon::now()->endOfDay();
 
-
+        // Get total sale amount
         $totalSaleAmount = Sale::whereBetween('created_at', [$startDate, $endDate])
             ->whereNull('deleted_at')
             ->sum('total');
 
-        // Get latest stock positions and weighted average costs
+        // Get before stock positions (modified query)
+        $beforeStockPositions = DB::table(function ($query) use ($startDate) {
+            $query->from('product_stocks')
+                ->select('product_id')
+                ->selectRaw('
+                    FIRST_VALUE(available_quantity) OVER (
+                        PARTITION BY product_id
+                        ORDER BY created_at DESC, id DESC
+                    ) as before_quantity
+                ')
+                ->selectRaw('
+                    FIRST_VALUE(unit_cost) OVER (
+                        PARTITION BY product_id
+                        ORDER BY created_at DESC, id DESC
+                    ) as before_avg_cost
+                ')
+                ->where('created_at', '<', $startDate);
+        }, 'before_stocks')
+            ->select('product_id', 'before_quantity', 'before_avg_cost')
+            ->distinct()
+            ->get()
+            ->keyBy('product_id');
+
+        // Get current stock positions
         $stockPositions = DB::table('product_stocks as ps')
             ->select('ps.product_id')
             ->selectRaw('
@@ -66,10 +89,20 @@ class ProductAnalysisReportController extends Controller
             ->get()
             ->keyBy('product_id');
 
+        // Add debug logging
+        \Log::info('Date Range:', [
+            'start_date' => $startDate->toDateTimeString(),
+            'end_date' => $endDate->toDateTimeString()
+        ]);
+
+        \Log::info('Before Stock Positions:', [
+            'count' => $beforeStockPositions->count(),
+            'sample' => $beforeStockPositions->take(3)
+        ]);
+
         $products = Product::with(['category', 'unit'])
             ->select('products.*')
             ->addSelect([
-                // Buy Information
                 'buy_quantity' => ProductStock::selectRaw('CAST(COALESCE(SUM(quantity), 0) AS DECIMAL(15,6))')
                     ->whereColumn('product_id', 'products.id')
                     ->whereBetween('created_at', [$startDate, $endDate])
@@ -80,7 +113,6 @@ class ProductAnalysisReportController extends Controller
                     ->whereBetween('created_at', [$startDate, $endDate])
                     ->where('type', 'purchase'),
 
-                // Sale Information
                 'sale_quantity' => SaleItem::selectRaw('CAST(COALESCE(SUM(quantity), 0) AS DECIMAL(15,6))')
                     ->whereColumn('product_id', 'products.id')
                     ->whereHas('sale', function ($query) use ($startDate, $endDate) {
@@ -95,23 +127,34 @@ class ProductAnalysisReportController extends Controller
                     })
             ])
             ->get()
-            ->map(function ($product, $index) use ($stockPositions) {
-                // Get stock position for this product
+            ->map(function ($product, $index) use ($stockPositions, $beforeStockPositions) {
                 $stockPosition = $stockPositions[$product->id] ?? null;
+                $beforeStockPosition = $beforeStockPositions[$product->id] ?? null;
 
-                // Calculate buy price (average cost per unit)
+                // Log individual product details for debugging
+                \Log::info("Processing Product: {$product->id}", [
+                    'before_stock_position' => $beforeStockPosition,
+                    'current_stock_position' => $stockPosition
+                ]);
+
+                $beforeQuantity = $beforeStockPosition ? (float) $beforeStockPosition->before_quantity : 0;
+                $beforeAvgCost = $beforeStockPosition ? (float) $beforeStockPosition->before_avg_cost : 0;
+                $beforeStockValue = $beforeQuantity * $beforeAvgCost;
+
                 $buyPrice = $product->buy_quantity > 0
                     ? (float) ($product->total_buy_cost / $product->buy_quantity)
                     : 0;
 
-                // Calculate sale price (average sale price per unit)
                 $salePrice = $product->sale_quantity > 0
                     ? (float) ($product->total_sale_amount / $product->sale_quantity)
                     : 0;
 
-                // Get available quantity and weighted average cost from stock positions
                 $availableQuantity = $stockPosition ? (float) $stockPosition->available_quantity : 0;
                 $weightedAvgCost = $stockPosition ? (float) $stockPosition->weighted_avg_cost : 0;
+
+                // Calculate profits
+                $profitPerUnit = $salePrice - $buyPrice;
+                $totalProfit = $product->sale_quantity * $profitPerUnit;
 
                 return [
                     'serial' => $index + 1,
@@ -119,6 +162,11 @@ class ProductAnalysisReportController extends Controller
                     'product_model' => $product->sku,
                     'category' => $product->category->name,
                     'unit' => $product->unit->name,
+
+                    // Before Stock Info
+                    'before_quantity' => $beforeQuantity,
+                    'before_price' => $beforeAvgCost,
+                    'before_value' => $beforeStockValue,
 
                     // Buy Info
                     'buy_quantity' => (float) $product->buy_quantity,
@@ -130,17 +178,24 @@ class ProductAnalysisReportController extends Controller
                     'sale_price' => $salePrice,
                     'total_sale_price' => (float) $product->total_sale_amount,
 
-                    // Available Info - using weighted average cost
+                    // Profit Info
+                    'profit_per_unit' => $profitPerUnit,
+                    'total_profit' => $totalProfit,
+
+                    // Available Info
                     'available_quantity' => $availableQuantity,
                     'available_stock_value' => $availableQuantity * $weightedAvgCost
                 ];
             });
 
         $calculatedTotals = [
+            'before_quantity' => (float) $products->sum('before_quantity'),
+            'before_value' => (float) $products->sum('before_value'),
             'buy_quantity' => (float) $products->sum('buy_quantity'),
             'total_buy_price' => (float) $products->sum('total_buy_price'),
             'sale_quantity' => (float) $products->sum('sale_quantity'),
             'total_sale_price' => $totalSaleAmount,
+            'total_profit' => (float) $products->sum('total_profit'),
             'available_quantity' => (float) $products->sum('available_quantity'),
             'available_stock_value' => (float) $products->sum('available_stock_value'),
         ];
@@ -158,7 +213,6 @@ class ProductAnalysisReportController extends Controller
     public function downloadPdf(Request $request)
     {
         try {
-            // Validate and set date range
             $request->validate([
                 'start_date' => 'nullable|date',
                 'end_date' => 'nullable|date|after_or_equal:start_date',
@@ -167,37 +221,61 @@ class ProductAnalysisReportController extends Controller
             $startDate = $request->start_date ? Carbon::parse($request->start_date)->startOfDay() : Carbon::now()->startOfMonth();
             $endDate = $request->end_date ? Carbon::parse($request->end_date)->endOfDay() : Carbon::now()->endOfDay();
 
+            // Get total sale amount
             $totalSaleAmount = Sale::whereBetween('created_at', [$startDate, $endDate])
                 ->whereNull('deleted_at')
                 ->sum('total');
 
-            // Get latest stock positions and weighted average costs
+            // Get before stock positions
+            $beforeStockPositions = DB::table(function ($query) use ($startDate) {
+                $query->from('product_stocks')
+                    ->select('product_id')
+                    ->selectRaw('
+                        FIRST_VALUE(available_quantity) OVER (
+                            PARTITION BY product_id
+                            ORDER BY created_at DESC, id DESC
+                        ) as before_quantity
+                    ')
+                    ->selectRaw('
+                        FIRST_VALUE(unit_cost) OVER (
+                            PARTITION BY product_id
+                            ORDER BY created_at DESC, id DESC
+                        ) as before_avg_cost
+                    ')
+                    ->where('created_at', '<', $startDate);
+            }, 'before_stocks')
+                ->select('product_id', 'before_quantity', 'before_avg_cost')
+                ->distinct()
+                ->get()
+                ->keyBy('product_id');
+
+            // Get current stock positions
             $stockPositions = DB::table('product_stocks as ps')
                 ->select('ps.product_id')
                 ->selectRaw('
-                CASE
-                    WHEN ps.id IN (
-                        SELECT MAX(id)
-                        FROM product_stocks
-                        WHERE product_id = ps.product_id
-                        AND created_at <= ?
-                        GROUP BY product_id
-                    )
-                    THEN ps.available_quantity
-                    ELSE 0
-                END as available_quantity
-            ', [$endDate])
+                    CASE
+                        WHEN ps.id IN (
+                            SELECT MAX(id)
+                            FROM product_stocks
+                            WHERE product_id = ps.product_id
+                            AND created_at <= ?
+                            GROUP BY product_id
+                        )
+                        THEN ps.available_quantity
+                        ELSE 0
+                    END as available_quantity
+                ', [$endDate])
                 ->selectRaw('
-                CASE
-                    WHEN SUM(CASE WHEN ps2.quantity > 0 THEN ps2.quantity ELSE 0 END) > 0
-                    THEN CAST(
-                        SUM(CASE WHEN ps2.quantity > 0 THEN (ps2.quantity * ps2.unit_cost) ELSE 0 END) /
-                        SUM(CASE WHEN ps2.quantity > 0 THEN ps2.quantity ELSE 0 END)
-                        AS DECIMAL(15,6)
-                    )
-                    ELSE 0
-                END as weighted_avg_cost
-            ')
+                    CASE
+                        WHEN SUM(CASE WHEN ps2.quantity > 0 THEN ps2.quantity ELSE 0 END) > 0
+                        THEN CAST(
+                            SUM(CASE WHEN ps2.quantity > 0 THEN (ps2.quantity * ps2.unit_cost) ELSE 0 END) /
+                            SUM(CASE WHEN ps2.quantity > 0 THEN ps2.quantity ELSE 0 END)
+                            AS DECIMAL(15,6)
+                        )
+                        ELSE 0
+                    END as weighted_avg_cost
+                ')
                 ->join('product_stocks as ps2', function ($join) use ($endDate) {
                     $join->on('ps2.product_id', '=', 'ps.product_id')
                         ->where('ps2.created_at', '<=', $endDate);
@@ -207,11 +285,9 @@ class ProductAnalysisReportController extends Controller
                 ->get()
                 ->keyBy('product_id');
 
-            // Get products with analysis data
             $products = Product::with(['category', 'unit'])
                 ->select('products.*')
                 ->addSelect([
-                    // Buy Information
                     'buy_quantity' => ProductStock::selectRaw('CAST(COALESCE(SUM(quantity), 0) AS DECIMAL(15,6))')
                         ->whereColumn('product_id', 'products.id')
                         ->whereBetween('created_at', [$startDate, $endDate])
@@ -222,7 +298,6 @@ class ProductAnalysisReportController extends Controller
                         ->whereBetween('created_at', [$startDate, $endDate])
                         ->where('type', 'purchase'),
 
-                    // Sale Information
                     'sale_quantity' => SaleItem::selectRaw('CAST(COALESCE(SUM(quantity), 0) AS DECIMAL(15,6))')
                         ->whereColumn('product_id', 'products.id')
                         ->whereHas('sale', function ($query) use ($startDate, $endDate) {
@@ -237,23 +312,28 @@ class ProductAnalysisReportController extends Controller
                         })
                 ])
                 ->get()
-                ->map(function ($product, $index) use ($stockPositions) {
-                    // Get stock position for this product
+                ->map(function ($product, $index) use ($stockPositions, $beforeStockPositions) {
                     $stockPosition = $stockPositions[$product->id] ?? null;
+                    $beforeStockPosition = $beforeStockPositions[$product->id] ?? null;
 
-                    // Calculate buy price (average cost per unit)
+                    $beforeQuantity = $beforeStockPosition ? (float) $beforeStockPosition->before_quantity : 0;
+                    $beforeAvgCost = $beforeStockPosition ? (float) $beforeStockPosition->before_avg_cost : 0;
+                    $beforeStockValue = $beforeQuantity * $beforeAvgCost;
+
                     $buyPrice = $product->buy_quantity > 0
                         ? (float) ($product->total_buy_cost / $product->buy_quantity)
                         : 0;
 
-                    // Calculate sale price (average sale price per unit)
                     $salePrice = $product->sale_quantity > 0
                         ? (float) ($product->total_sale_amount / $product->sale_quantity)
                         : 0;
 
-                    // Get available quantity and weighted average cost from stock positions
                     $availableQuantity = $stockPosition ? (float) $stockPosition->available_quantity : 0;
                     $weightedAvgCost = $stockPosition ? (float) $stockPosition->weighted_avg_cost : 0;
+
+                    // Calculate profits
+                    $profitPerUnit = $salePrice - $buyPrice;
+                    $totalProfit = $product->sale_quantity * $profitPerUnit;
 
                     return [
                         'serial' => $index + 1,
@@ -261,33 +341,44 @@ class ProductAnalysisReportController extends Controller
                         'product_model' => $product->sku,
                         'category' => $product->category->name,
                         'unit' => $product->unit->name,
+
+                        // Before Stock Info
+                        'before_quantity' => $beforeQuantity,
+                        'before_price' => $beforeAvgCost,
+                        'before_value' => $beforeStockValue,
+
+                        // Buy Info
                         'buy_quantity' => (float) $product->buy_quantity,
                         'buy_price' => $buyPrice,
                         'total_buy_price' => (float) $product->total_buy_cost,
+
+                        // Sale Info
                         'sale_quantity' => (float) $product->sale_quantity,
                         'sale_price' => $salePrice,
                         'total_sale_price' => (float) $product->total_sale_amount,
+
+                        // Profit Info
+                        'profit_per_unit' => $profitPerUnit,
+                        'total_profit' => $totalProfit,
+
+                        // Available Info
                         'available_quantity' => $availableQuantity,
                         'available_stock_value' => $availableQuantity * $weightedAvgCost
                     ];
                 });
 
             $calculatedTotals = [
+                'before_quantity' => (float) $products->sum('before_quantity'),
+                'before_value' => (float) $products->sum('before_value'),
                 'buy_quantity' => (float) $products->sum('buy_quantity'),
                 'total_buy_price' => (float) $products->sum('total_buy_price'),
                 'sale_quantity' => (float) $products->sum('sale_quantity'),
                 'total_sale_price' => $totalSaleAmount,
+                'total_profit' => (float) $products->sum('total_profit'),
                 'available_quantity' => (float) $products->sum('available_quantity'),
                 'available_stock_value' => (float) $products->sum('available_stock_value'),
             ];
 
-            // For debugging
-            \Log::info('PDF Data:', [
-                'products_count' => count($products),
-                'totals' => $calculatedTotals
-            ]);
-
-            // Prepare data for PDF
             $data = [
                 'products' => $products,
                 'totals' => $calculatedTotals,
@@ -295,15 +386,12 @@ class ProductAnalysisReportController extends Controller
                 'end_date' => $endDate->format('Y-m-d'),
             ];
 
-            // Generate PDF
             $pdf = Pdf::loadView('pdf.product-analysis', $data)
                 ->setPaper('a4', 'landscape')
                 ->setOptions(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
 
-            // Generate filename
             $filename = 'product-analysis-' . $startDate->format('Y-m-d') . '-to-' . $endDate->format('Y-m-d') . '.pdf';
 
-            // Download PDF
             return $pdf->download($filename);
         } catch (\Exception $e) {
             \Log::error('PDF Generation Error: ' . $e->getMessage());
@@ -314,4 +402,5 @@ class ProductAnalysisReportController extends Controller
             ], 500);
         }
     }
+
 }

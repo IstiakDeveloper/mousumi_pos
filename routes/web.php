@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\ReceiptPaymentController;
 use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\SaleReportController;
 use App\Http\Controllers\Admin\UnitController;
+use App\Http\Controllers\ExtraIncomeCategoryController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Artisan;
@@ -90,6 +91,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('bank-transactions', BankTransactionController::class);
     // Route::resource('sales', SaleController::class);
     Route::resource('extra-incomes', ExtraIncomeController::class);
+    Route::resource('extra-income-categories', ExtraIncomeCategoryController::class);
     Route::resource('funds', FundManagementController::class);
 
 

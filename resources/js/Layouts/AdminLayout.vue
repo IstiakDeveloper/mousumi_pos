@@ -381,8 +381,16 @@ const dropdownNavItems = [
         icon: 'fa-shopping-cart',
         items: [
             { name: 'Sales List', href: '/admin/sales', icon: 'fa-list' },
-            { name: 'Extra Income', href: '/admin/extra-incomes', icon: 'fa-coins' },
             { name: 'POS', href: '/admin/pos', icon: 'fa-cash-register' }
+        ]
+    },
+    {
+        name: 'Extra Income',
+        icon: 'fa-coins',
+        items: [
+            { name: 'Extra Income Categories', href: '/admin/extra-income-categories', icon: 'fa-list' },
+            { name: 'Extra Income', href: '/admin/extra-incomes', icon: 'fa-coins' },
+
         ]
     },
     {

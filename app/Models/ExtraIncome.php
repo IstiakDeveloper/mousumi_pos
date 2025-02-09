@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ExtraIncome extends Model
 {
@@ -12,6 +13,7 @@ class ExtraIncome extends Model
 
     protected $fillable = [
         'bank_account_id',
+        'category_id',
         'amount',
         'title',
         'description',
@@ -27,6 +29,11 @@ class ExtraIncome extends Model
     public function bankAccount()
     {
         return $this->belongsTo(BankAccount::class);
+    }
+
+    public function category(): BelongsTo  // Add this relationship
+    {
+        return $this->belongsTo(ExtraIncomeCategory::class, 'category_id');
     }
 
     public function createdBy()

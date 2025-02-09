@@ -25,7 +25,8 @@
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <form @submit.prevent="submit" class="p-6 space-y-6">
                         <!-- Bank Account Selection -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- Bank Account -->
                             <div class="col-span-1">
                                 <InputLabel for="bank_account_id" class="text-gray-700 dark:text-gray-300">
                                     Bank Account <span class="text-red-500">*</span>
@@ -42,6 +43,33 @@
                                 <InputError :message="form.errors.bank_account_id" />
                             </div>
 
+                            <!-- Category Selection - Add this -->
+                            <div class="col-span-1">
+                                <InputLabel for="category_id" class="text-gray-700 dark:text-gray-300">
+                                    Category <span class="text-red-500">*</span>
+                                </InputLabel>
+                                <select v-model="form.category_id" id="category_id"
+                                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                                    required>
+                                    <option value="" disabled>Select Category</option>
+                                    <option v-for="category in categories" :key="category.id" :value="category.id">
+                                        {{ category.name }}
+                                    </option>
+                                </select>
+                                <InputError :message="form.errors.category_id" />
+
+                                <!-- Add Category Link -->
+                                <Link :href="route('admin.extra-income-categories.create')"
+                                    class="mt-2 inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                Add New Category
+                                </Link>
+                            </div>
+
+                            <!-- Date -->
                             <div class="col-span-1">
                                 <InputLabel for="date" class="text-gray-700 dark:text-gray-300">
                                     Date <span class="text-red-500">*</span>
@@ -105,6 +133,12 @@
                                     </span>
                                 </div>
                                 <div class="flex justify-between">
+                                    <span class="text-gray-600 dark:text-gray-400">Category:</span>
+                                    <span class="text-gray-900 dark:text-gray-200">
+                                        {{ selectedCategory?.name || 'Not selected' }}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
                                     <span class="text-gray-600 dark:text-gray-400">Current Balance:</span>
                                     <span class="text-gray-900 dark:text-gray-200">
                                         {{ formatCurrency(selectedBank?.current_balance) }}
@@ -159,11 +193,16 @@ const props = defineProps({
     bankAccounts: {
         type: Array,
         required: true
+    },
+    categories: {
+        type: Array,
+        required: true
     }
 })
 
 const form = useForm({
     bank_account_id: '',
+    category_id: '',
     title: '',
     amount: '',
     description: '',
@@ -180,6 +219,10 @@ const formatCurrency = (amount) => {
     }).format(amount || 0)
 }
 
+const selectedCategory = computed(() => {
+    return props.categories.find(category => category.id === form.category_id)
+})
+
 const selectedBank = computed(() => {
     return props.bankAccounts.find(account => account.id === form.bank_account_id)
 })
@@ -193,6 +236,7 @@ onMounted(() => {
         form.bank_account_id = props.bankAccounts[0].id
     }
 })
+
 
 const submit = () => {
     form.post(route('admin.extra-incomes.store'), {
