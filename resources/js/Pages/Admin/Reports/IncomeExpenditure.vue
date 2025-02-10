@@ -77,14 +77,28 @@
 
                                 <!-- Extra Income Row -->
                                 <tr class="border-b">
-                                    <td class="py-2 px-4 border-r">Extra Income</td>
+                                    <td class="py-2 px-4 border-r font-medium">Extra Income</td>
                                     <td class="py-2 px-4 text-right border-r text-green-600">
-                                        {{ formatCurrency(income.extra_income.period) }}
+                                        {{ formatCurrency(income.extra_income.total.period) }}
                                     </td>
                                     <td class="py-2 px-4 text-right text-green-600">
-                                        {{ formatCurrency(income.extra_income.cumulative) }}
+                                        {{ formatCurrency(income.extra_income.total.cumulative) }}
                                     </td>
                                 </tr>
+                                <!-- Extra Income Categories -->
+                                <template v-for="category in income.extra_income.categories" :key="category.name">
+                                    <tr class="border-b bg-gray-50">
+                                        <td class="py-2 px-4 border-r pl-8 text-sm">
+                                            {{ category.name }}
+                                        </td>
+                                        <td class="py-2 px-4 text-right border-r text-green-600 text-sm">
+                                            {{ formatCurrency(category.period) }}
+                                        </td>
+                                        <td class="py-2 px-4 text-right text-green-600 text-sm">
+                                            {{ formatCurrency(category.cumulative) }}
+                                        </td>
+                                    </tr>
+                                </template>
 
                                 <!-- Total Row -->
                                 <tr class="bg-gray-50 font-bold">
@@ -120,9 +134,19 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Expense Categories -->
-                                <tr class="border-b">
-                                    <td class="py-2 px-4 border-r">Total Expense</td>
+                                <tr v-for="category in expenditure.categories" :key="category.name" class="border-b">
+                                    <td class="py-2 px-4 border-r">{{ category.name }}</td>
+                                    <td class="py-2 px-4 text-right border-r text-red-600">
+                                        {{ formatCurrency(category.period) }}
+                                    </td>
+                                    <td class="py-2 px-4 text-right text-red-600">
+                                        {{ formatCurrency(category.cumulative) }}
+                                    </td>
+                                </tr>
+
+                                <!-- Total Expenses Row -->
+                                <tr class="border-b bg-gray-50 font-bold">
+                                    <td class="py-2 px-4 border-r">Total Expenditure</td>
                                     <td class="py-2 px-4 text-right border-r text-red-600">
                                         {{ formatCurrency(expenditure.total.period) }}
                                     </td>

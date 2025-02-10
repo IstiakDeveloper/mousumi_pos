@@ -18,19 +18,20 @@ use Illuminate\Support\Facades\DB;
 
 class ReceiptPaymentController extends Controller
 {
-    protected $bankAccountId = 1; // Since you always use one bank
+    protected $bankAccountId = 1;
 
     public function index(Request $request)
     {
-        // If no dates provided, use current month
-        if (!$request->filled(['start_date', 'end_date'])) {
-            $now = Carbon::now();
-            $startDate = $now->startOfMonth()->format('Y-m-d');
-            $endDate = $now->endOfMonth()->format('Y-m-d');
+        // Use request year and month if provided, otherwise use current date
+        if ($request->filled(['year', 'month'])) {
+            $date = Carbon::createFromDate($request->year, $request->month, 1);
         } else {
-            $startDate = $request->start_date;
-            $endDate = $request->end_date;
+            $date = Carbon::now();
         }
+
+        // Always use start and end of month
+        $startDate = $date->copy()->startOfMonth()->format('Y-m-d');
+        $endDate = $date->copy()->endOfMonth()->format('Y-m-d');
 
         \Log::info('Date Range', [
             'start_date' => $startDate,
@@ -40,12 +41,10 @@ class ReceiptPaymentController extends Controller
         $receiptData = $this->getReceiptData($startDate, $endDate);
         $paymentData = $this->getPaymentData($startDate, $endDate);
 
-        // For debugging
-        \Log::info('Receipt Data', $receiptData);
-        \Log::info('Payment Data', $paymentData);
-
         return Inertia::render('Admin/ReceiptPayment/Index', [
             'filters' => [
+                'year' => $date->year,
+                'month' => $date->month,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
             ],
@@ -59,22 +58,18 @@ class ReceiptPaymentController extends Controller
         // Get the bank account
         $bank = BankAccount::findOrFail($this->bankAccountId);
 
-        // Calculate opening balance up to start date
-        $openingBalance = $bank->opening_balance;
-
-        // Sum all transactions before start date
-        $previousTransactions = DB::table('bank_transactions')
+        // Get the latest bank transaction from previous month
+        $prevMonthEndBalance = DB::table('bank_transactions')
             ->where('bank_account_id', $this->bankAccountId)
-            ->where('date', '<', $startDate)
+            ->where('date', '<', $startDate)  // All transactions before current month
             ->whereNull('deleted_at')
-            ->select(
-                DB::raw('COALESCE(SUM(CASE WHEN transaction_type = "in" THEN amount ELSE 0 END), 0) as total_in'),
-                DB::raw('COALESCE(SUM(CASE WHEN transaction_type = "out" THEN amount ELSE 0 END), 0) as total_out')
-            )
+            ->orderBy('date', 'desc')
+            ->orderBy('id', 'desc')  // In case multiple transactions on same date
             ->first();
 
-        // Calculate actual opening balance for the selected date
-        $openingCashAtBank = $openingBalance + $previousTransactions->total_in - $previousTransactions->total_out;
+        // If we found a previous transaction, use its running balance
+        $openingCashAtBank = $prevMonthEndBalance ? $prevMonthEndBalance->running_balance : $bank->opening_balance;
+
 
         // Get sale collection for the period
         $salePaid = Sale::whereBetween('created_at', [$startDate, $endDate])
@@ -85,6 +80,19 @@ class ReceiptPaymentController extends Controller
         $extraIncome = ExtraIncome::whereBetween('date', [$startDate, $endDate])
             ->where('bank_account_id', $this->bankAccountId)
             ->sum('amount');
+
+        $extraIncomeByCategory = ExtraIncome::whereBetween('date', [$startDate, $endDate])
+            ->where('bank_account_id', $this->bankAccountId)
+            ->select('category_id', DB::raw('SUM(amount) as total_amount'))
+            ->groupBy('category_id')
+            ->with('category')
+            ->get()
+            ->map(function ($income) {
+                return [
+                    'category' => $income->category ? $income->category->name : 'Uncategorized',
+                    'amount' => (float) $income->total_amount
+                ];
+            });
 
         // Get fund received for the period
         $fundReceive = Fund::whereBetween('date', [$startDate, $endDate])
@@ -98,7 +106,10 @@ class ReceiptPaymentController extends Controller
         return [
             'opening_cash_on_bank' => (float) $openingCashAtBank,
             'sale_collection' => (float) $salePaid,
-            'extra_income' => (float) $extraIncome,
+            'extra_income' => [
+                'total' => (float) $extraIncome,
+                'categories' => $extraIncomeByCategory
+            ],
             'fund_receive' => (float) $fundReceive,
             'total' => (float) $totalReceipt,
         ];
@@ -106,7 +117,7 @@ class ReceiptPaymentController extends Controller
 
     protected function getPaymentData($startDate, $endDate)
     {
-        // Get the bank account
+        // Get the bank account with current balance
         $bank = BankAccount::findOrFail($this->bankAccountId);
 
         // Purchase amount for the period
@@ -125,26 +136,33 @@ class ReceiptPaymentController extends Controller
             ->where('bank_account_id', $this->bankAccountId)
             ->sum('amount');
 
-        // Calculate closing balance for the period
-        $currentTransactions = DB::table('bank_transactions')
+        // Get expenses by category
+        $expensesByCategory = Expense::whereBetween('date', [$startDate, $endDate])
             ->where('bank_account_id', $this->bankAccountId)
-            ->where('date', '<=', $endDate)
-            ->whereNull('deleted_at')
-            ->select(
-                DB::raw('COALESCE(SUM(CASE WHEN transaction_type = "in" THEN amount ELSE 0 END), 0) as total_in'),
-                DB::raw('COALESCE(SUM(CASE WHEN transaction_type = "out" THEN amount ELSE 0 END), 0) as total_out')
-            )
-            ->first();
+            ->select('expense_category_id', DB::raw('SUM(amount) as total_amount'))
+            ->groupBy('expense_category_id')
+            ->with('category')
+            ->get()
+            ->map(function ($expense) {
+                return [
+                    'category' => $expense->category ? $expense->category->name : 'Uncategorized',
+                    'amount' => (float) $expense->total_amount
+                ];
+            });
 
-        $closingCashAtBank = $bank->opening_balance + $currentTransactions->total_in - $currentTransactions->total_out;
+        // Use current bank balance directly as closing balance
+        $closingCashAtBank = $bank->current_balance;
 
-        // Calculate total payment
+        // Calculate total payment including current bank balance
         $totalPayment = $purchaseAmount + $fundRefund + $expenses + $closingCashAtBank;
 
         return [
             'purchase' => (float) $purchaseAmount,
             'fund_refund' => (float) $fundRefund,
-            'expenses' => (float) $expenses,
+            'expenses' => [
+                'total' => (float) $expenses,
+                'categories' => $expensesByCategory
+            ],
             'closing_cash_at_bank' => (float) $closingCashAtBank,
             'total' => (float) $totalPayment,
         ];

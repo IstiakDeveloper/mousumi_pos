@@ -58,9 +58,12 @@ class BalanceSheetController extends Controller
     private function calculateFundAndLiabilities(Carbon $startDate, Carbon $endDate)
     {
         // 1. Fund Calculation up to the end date
-        $fundAmount = Fund::where('type', 'in')
-            ->where('date', '<=', $endDate)
-            ->sum('amount');
+        $fundAmount = Fund::where('date', '<=', $endDate)
+            ->whereIn('type', ['in', 'out'])
+            ->get()
+            ->reduce(function ($carry, $fund) {
+                return $carry + ($fund->type === 'in' ? $fund->amount : -$fund->amount);
+            }, 0);
 
         // Sales up to the end date
         $salesAmount = Sale::where('created_at', '<=', $endDate)

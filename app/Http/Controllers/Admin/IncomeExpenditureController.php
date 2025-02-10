@@ -52,29 +52,39 @@ class IncomeExpenditureController extends Controller
 
     private function calculateIncome(Carbon $startDate, Carbon $endDate)
     {
-        // 1. Sales Revenue
+        // Sales Profit calculation remains same
         $salesRevenuePeriod = Sale::whereBetween('created_at', [$startDate, $endDate])
             ->sum('total');
 
         $salesRevenueCumulative = Sale::where('created_at', '<=', Carbon::now()->endOfDay())
             ->sum('total');
 
-        // 2. Cost of Goods Sold
         $costOfGoodsSoldPeriod = $this->calculateCostOfGoodsSold($startDate, $endDate);
         $costOfGoodsSoldCumulative = $this->calculateCostOfGoodsSold(null, Carbon::now()->endOfDay());
 
-        // 3. Sales Profit
         $salesProfitPeriod = $salesRevenuePeriod - $costOfGoodsSoldPeriod;
         $salesProfitCumulative = $salesRevenueCumulative - $costOfGoodsSoldCumulative;
 
-        // 4. Extra Income
-        $extraIncomePeriod = ExtraIncome::whereBetween('date', [$startDate, $endDate])
-            ->sum('amount');
+        // Extra Income with category breakdown
+        $extraIncomeByCategory = ExtraIncome::whereBetween('date', [$startDate, $endDate])
+            ->select('category_id', DB::raw('SUM(amount) as total_amount'))
+            ->groupBy('category_id')
+            ->with('category')
+            ->get()
+            ->map(function ($income) {
+                return [
+                    'name' => $income->category ? $income->category->name : 'Uncategorized',
+                    'period' => (float) $income->total_amount,
+                    'cumulative' => (float) ExtraIncome::where('category_id', $income->category_id)
+                        ->where('date', '<=', Carbon::now()->endOfDay())
+                        ->sum('amount')
+                ];
+            });
 
+        $extraIncomePeriod = $extraIncomeByCategory->sum('period');
         $extraIncomeCumulative = ExtraIncome::where('date', '<=', Carbon::now()->endOfDay())
             ->sum('amount');
 
-        // 5. Total Income
         $totalIncomePeriod = $salesProfitPeriod + $extraIncomePeriod;
         $totalIncomeCumulative = $salesProfitCumulative + $extraIncomeCumulative;
 
@@ -84,8 +94,11 @@ class IncomeExpenditureController extends Controller
                 'cumulative' => (float) $salesProfitCumulative,
             ],
             'extra_income' => [
-                'period' => (float) $extraIncomePeriod,
-                'cumulative' => (float) $extraIncomeCumulative,
+                'categories' => $extraIncomeByCategory,
+                'total' => [
+                    'period' => (float) $extraIncomePeriod,
+                    'cumulative' => (float) $extraIncomeCumulative,
+                ]
             ],
             'total' => [
                 'period' => (float) $totalIncomePeriod,

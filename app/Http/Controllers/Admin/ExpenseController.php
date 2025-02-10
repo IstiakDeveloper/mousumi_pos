@@ -126,10 +126,19 @@ class ExpenseController extends Controller
                     ->store('expenses/attachments', 'public');
             }
 
+            // Find the related bank transaction
+            $bankTransaction = BankTransaction::where([
+                'bank_account_id' => $oldBankAccountId,
+                'transaction_type' => 'out',
+                'amount' => $oldAmount,
+                'date' => $expense->date
+            ])->where('description', 'LIKE', 'Expense: ' . $expense->description)
+                ->first();
+
             // Update expense
             $expense->update($validated);
 
-            // Update bank transactions and balances
+            // Handle bank transactions and balances
             if ($oldBankAccountId !== $validated['bank_account_id']) {
                 // Restore old bank account balance
                 $oldBank = BankAccount::find($oldBankAccountId);
@@ -141,6 +150,11 @@ class ExpenseController extends Controller
                 $newBank->current_balance -= $validated['amount'];
                 $newBank->save();
 
+                // If found old transaction, delete it
+                if ($bankTransaction) {
+                    $bankTransaction->delete();
+                }
+
                 // Create new transaction for new bank
                 BankTransaction::create([
                     'bank_account_id' => $validated['bank_account_id'],
@@ -150,11 +164,32 @@ class ExpenseController extends Controller
                     'date' => $validated['date'],
                     'created_by' => auth()->id()
                 ]);
-            } else if ($oldAmount !== $validated['amount']) {
-                // Update existing bank balance
-                $bank = BankAccount::find($validated['bank_account_id']);
-                $bank->current_balance += $oldAmount - $validated['amount'];
-                $bank->save();
+            } else {
+                // Update bank balance for amount change
+                if ($oldAmount !== $validated['amount']) {
+                    $bank = BankAccount::find($validated['bank_account_id']);
+                    $bank->current_balance += $oldAmount - $validated['amount'];
+                    $bank->save();
+                }
+
+                // Update existing transaction if found
+                if ($bankTransaction) {
+                    $bankTransaction->update([
+                        'amount' => $validated['amount'],
+                        'description' => "Expense: {$validated['description']}",
+                        'date' => $validated['date']
+                    ]);
+                } else {
+                    // Create new transaction if not found
+                    BankTransaction::create([
+                        'bank_account_id' => $validated['bank_account_id'],
+                        'transaction_type' => 'out',
+                        'amount' => $validated['amount'],
+                        'description' => "Expense: {$validated['description']}",
+                        'date' => $validated['date'],
+                        'created_by' => auth()->id()
+                    ]);
+                }
             }
 
             DB::commit();

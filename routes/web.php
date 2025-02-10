@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\BalanceSheetController;
 use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\BankReportController;
 use App\Http\Controllers\Admin\BankTransactionController;
+use App\Http\Controllers\Admin\BankTransactionReportController;
 use App\Http\Controllers\Admin\BarcodeController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
@@ -124,6 +125,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/reports/bank/download', [BankReportController::class, 'downloadPdf'])
         ->name('reports.bank.download');
 
+    Route::get('/reports/bank-transaction-report', [BankTransactionReportController::class, 'index'])
+        ->name('bank-transaction-report');
+
     Route::get('/reports/stock', [ProductStockReportController::class, 'index'])
         ->name('reports.stock');
     Route::get('/reports/stock/download', [ProductStockReportController::class, 'downloadPdf'])
@@ -162,7 +166,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::get('/reports/product-analysis/data', 'getAnalysisData')->name('reports.product-analysis.data');
     });
     Route::get('/reports/product-analysis/pdf', [ProductAnalysisReportController::class, 'downloadPdf'])
-    ->name('reports.product-analysis.pdf');
+        ->name('reports.product-analysis.pdf');
 
     Route::get('/reports/receipt-payment', [ReceiptPaymentController::class, 'index'])
         ->name('reports.receipt-payment');

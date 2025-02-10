@@ -68,9 +68,19 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td class="px-4 py-2 font-medium">Extra Income</td>
+                                <td class="px-4 py-2">
+                                    <div class="font-medium">Extra Income</div>
+                                    <!-- Category breakdown -->
+                                    <div class="pl-4 text-sm text-gray-600">
+                                        <div v-for="category in receipt?.extra_income?.categories"
+                                            :key="category.category" class="flex justify-between">
+                                            <span>{{ category.category }}</span>
+                                            <span class="text-green-600">{{ formatCurrency(category.amount) }}</span>
+                                        </div>
+                                    </div>
+                                </td>
                                 <td class="px-4 py-2 text-right text-green-600 font-semibold">
-                                    {{ formatCurrency(receipt?.extra_income || 0) }}
+                                    {{ formatCurrency(receipt?.extra_income?.total || 0) }}
                                 </td>
                             </tr>
                             <tr class="bg-gray-50">
@@ -114,9 +124,19 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td class="px-4 py-2 font-medium">Expenses</td>
+                                <td class="px-4 py-2">
+                                    <div class="font-medium">Expenses</div>
+                                    <!-- Category breakdown -->
+                                    <div class="pl-4 text-sm text-gray-600">
+                                        <div v-for="category in payment?.expenses?.categories" :key="category.category"
+                                            class="flex justify-between">
+                                            <span>{{ category.category }}</span>
+                                            <span class="text-red-600">{{ formatCurrency(category.amount) }}</span>
+                                        </div>
+                                    </div>
+                                </td>
                                 <td class="px-4 py-2 text-right text-red-600 font-semibold">
-                                    {{ formatCurrency(payment?.expenses || 0) }}
+                                    {{ formatCurrency(payment?.expenses?.total || 0) }}
                                 </td>
                             </tr>
                             <tr class="bg-gray-50">
@@ -150,7 +170,12 @@ export default defineComponent({
     props: {
         filters: {
             type: Object,
-            default: () => ({ start_date: null, end_date: null })
+            default: () => ({
+                year: null,
+                month: null,
+                start_date: null,
+                end_date: null
+            })
         },
         receipt: {
             type: Object,
@@ -175,7 +200,6 @@ export default defineComponent({
     },
     data() {
         const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth() + 1;
 
         return {
             years: [currentYear - 1, currentYear, currentYear + 1],
@@ -193,8 +217,8 @@ export default defineComponent({
                 { value: 11, label: 'November' },
                 { value: 12, label: 'December' }
             ],
-            selectedYear: currentYear,
-            selectedMonth: currentMonth,
+            selectedYear: this.filters.year || currentYear,
+            selectedMonth: this.filters.month || (new Date().getMonth() + 1),
             isDownloading: false,
             isDownloadDisabled: false,
         }
@@ -202,13 +226,9 @@ export default defineComponent({
     methods: {
         formatCurrency,
         handleDateChange() {
-            // Calculate first and last day of selected month
-            const startDate = new Date(this.selectedYear, this.selectedMonth - 1, 1);
-            const endDate = new Date(this.selectedYear, this.selectedMonth, 0);
-
             router.get(route('admin.reports.receipt-payment'), {
-                start_date: startDate.toISOString().split('T')[0],
-                end_date: endDate.toISOString().split('T')[0],
+                year: this.selectedYear,
+                month: this.selectedMonth
             }, {
                 preserveState: true,
                 preserveScroll: true,
@@ -221,8 +241,8 @@ export default defineComponent({
             try {
                 const response = await axios.get(route('admin.reports.receipt-payment.pdf'), {
                     params: {
-                        start_date: new Date(this.selectedYear, this.selectedMonth - 1, 1).toISOString().split('T')[0],
-                        end_date: new Date(this.selectedYear, this.selectedMonth, 0).toISOString().split('T')[0],
+                        year: this.selectedYear,
+                        month: this.selectedMonth
                     },
                     responseType: 'blob'
                 });
@@ -240,14 +260,6 @@ export default defineComponent({
                 this.isDownloading = false;
                 this.isDownloadDisabled = false;
             }
-        },
-    },
-    mounted() {
-        // If there are dates in filters, set the year and month accordingly
-        if (this.filters.start_date) {
-            const date = new Date(this.filters.start_date);
-            this.selectedYear = date.getFullYear();
-            this.selectedMonth = date.getMonth() + 1;
         }
     }
 })
