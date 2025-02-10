@@ -421,7 +421,7 @@ const dropdownNavItems = [
         name: 'Reports',
         icon: 'fa-chart-line',
         items: [
-            { name: 'Bank Report', href: '/admin/reports/bank', icon: 'fa-university' },
+            { name: 'Bank Report', href: '/admin/reports/bank-transaction-report', icon: 'fa-university' },
             { name: 'Stock Report', href: '/admin/reports/stock', icon: 'fa-warehouse' },
             { name: 'Sales Report', href: '/admin/reports/sales', icon: 'fa-chart-bar' },
             { name: 'Product', href: '/admin/reports/product-analysis', icon: 'fa-box' },
