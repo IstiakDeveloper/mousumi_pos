@@ -30,7 +30,10 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Cache;
+
 use Inertia\Inertia;
+
 
 // Route::get('/', function () {
 //     return Inertia::render('Welcome', [
@@ -40,6 +43,8 @@ use Inertia\Inertia;
 //         'phpVersion' => PHP_VERSION,
 //     ]);
 // });
+
+
 Route::get('/', fn() => Inertia::render('Welcome'))->name('home');
 Route::get('/about', fn() => Inertia::render('About'))->name('about');
 Route::get('/contact', fn() => Inertia::render('Contact'))->name('contact');
@@ -59,6 +64,30 @@ Route::get('/migrate', function () {
 
     return response()->json(['message' => 'Migrations run successfully.']);
 })->name('migrate');
+
+Route::get('/run-backup', function() {
+    try {
+        // Capture the output
+        $output = '';
+        $result = Artisan::call('backup:database', [], $output);
+
+        // Get the output buffer
+        $output = Artisan::output();
+
+        return response()->json([
+            'status' => ($result === 0) ? 'success' : 'error',
+            'message' => 'Backup process completed',
+            'output' => $output,
+            'result_code' => $result
+        ]);
+    } catch(\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+    }
+});
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
