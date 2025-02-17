@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Product Analysis Report</title>
@@ -42,7 +43,7 @@
         }
 
         .company-details {
-            font-size: 8pt;
+            font-size: 9pt;
             color: #666;
             margin-bottom: 4px;
         }
@@ -81,15 +82,37 @@
             text-align: center;
         }
 
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .text-left { text-align: left; }
+        .text-center {
+            text-align: right;
+        }
 
-        .bg-purple { background-color: #f8efff; }
-        .bg-blue { background-color: #e8f4ff; }
-        .bg-green { background-color: #e8fff0; }
-        .bg-orange { background-color: #fff3e8; }
-        .bg-yellow { background-color: #fffde8; }
+        .text-center {
+            text-align: center;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        .bg-purple {
+            background-color: #f8efff;
+        }
+
+        .bg-blue {
+            background-color: #e8f4ff;
+        }
+
+        .bg-green {
+            background-color: #e8fff0;
+        }
+
+        .bg-orange {
+            background-color: #fff3e8;
+        }
+
+        .bg-yellow {
+            background-color: #fffde8;
+        }
 
         .total-row {
             font-weight: bold;
@@ -116,15 +139,16 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- Company Header -->
         <div class="company-header">
-            <div class="company-name">{{ config('app.name', 'Your Company Name') }}</div>
-            <div class="sub-company-name">Departmental Store</div>
+            <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Departmental Store</div>
+            <div class="sub-company-name"></div>
             <div class="company-details">
-                Ukilpara, Naogaon Sadar, Naogaon<br>
-                Phone: (+88) 01718903743 | Email: contact@mousumiprokashon.com
+                Ukilpara, Naogaon Sadar, Naogaon.<br>
+                Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
             </div>
         </div>
 
@@ -184,57 +208,58 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($products as $product)
-                <tr>
-                    <td class="text-center">{{ $product['serial'] }}</td>
-                    <td class="product-cell">{{ $product['product_name'] }}</td>
 
-                    <!-- Before Stock Info -->
-                    <td class="text-right bg-purple">{{ number_format($product['before_quantity'], 2) }}</td>
-                    <td class="text-right bg-purple">{{ number_format($product['before_price'], 2) }}</td>
-                    <td class="text-right bg-purple">{{ number_format($product['before_value'], 2) }}</td>
+                @foreach ($products as $product)
+                    <tr>
+                        <td class="text-center">{{ $product['serial'] }}</td>
+                        <td class="product-cell">{{ $product['product_name'] }}</td>
 
-                    <!-- Buy Info -->
-                    <td class="text-right bg-blue">{{ number_format($product['buy_quantity'], 2) }}</td>
-                    <td class="text-right bg-blue">{{ number_format($product['buy_price'], 2) }}</td>
-                    <td class="text-right bg-blue">{{ number_format($product['total_buy_price'], 2) }}</td>
+                        <!-- Before Stock Info -->
+                        <td class="text-center bg-purple">{{$product['before_quantity']}}</td>
+                        <td class="text-center bg-purple">{{ number_format($product['before_price'], 2) }}</td>
+                        <td class="text-center bg-purple">{{ number_format($product['before_value'], 2) }}</td>
 
-                    <!-- Sale Info -->
-                    <td class="text-right bg-green">{{ number_format($product['sale_quantity'], 2) }}</td>
-                    <td class="text-right bg-green">{{ number_format($product['sale_price'], 2) }}</td>
-                    <td class="text-right bg-green">{{ number_format($product['total_sale_price'], 2) }}</td>
+                        <!-- Buy Info -->
+                        <td class="text-center bg-blue">{{ $product['buy_quantity'] }}</td>
+                        <td class="text-center bg-blue">{{ number_format($product['buy_price'], 2) }}</td>
+                        <td class="text-center bg-blue">{{ number_format($product['total_buy_price'], 2) }}</td>
 
-                    <!-- Profit Info -->
-                    <td class="text-right bg-orange">{{ number_format($product['profit_per_unit'], 2) }}</td>
-                    <td class="text-right bg-orange">{{ number_format($product['total_profit'], 2) }}</td>
+                        <!-- Sale Info -->
+                        <td class="text-center bg-green">{{$product['sale_quantity']}}</td>
+                        <td class="text-center bg-green">{{ number_format($product['sale_price'], 2) }}</td>
+                        <td class="text-center bg-green">{{ number_format($product['total_sale_price'], 2) }}</td>
 
-                    <!-- Available Info -->
-                    <td class="text-right bg-yellow">{{ number_format($product['available_quantity'], 2) }}</td>
-                    <td class="text-right bg-yellow">{{ number_format($product['available_stock_value'], 2) }}</td>
-                </tr>
+                        <!-- Profit Info -->
+                        <td class="text-center bg-orange">{{ number_format($product['profit_per_unit'], 2) }}</td>
+                        <td class="text-center bg-orange">{{ number_format($product['total_profit'], 2) }}</td>
+
+                        <!-- Available Info -->
+                        <td class="text-center bg-yellow">{{$product['available_quantity'] }}</td>
+                        <td class="text-center bg-yellow">{{ number_format($product['available_stock_value'], 2) }}</td>
+                    </tr>
                 @endforeach
             </tbody>
             <tfoot>
                 <tr class="total-row">
-                    <td colspan="2" class="text-right">Totals:</td>
+                    <td colspan="2" class="text-center">Totals:</td>
                     <!-- Before Stock Totals -->
-                    <td class="text-right bg-purple">{{ number_format($totals['before_quantity'], 2) }}</td>
+                    <td class="text-center bg-purple">{{ $totals['before_quantity']}}</td>
                     <td class="text-center bg-purple">-</td>
-                    <td class="text-right bg-purple">{{ number_format($totals['before_value'], 2) }}</td>
+                    <td class="text-center bg-purple">{{ number_format($totals['before_value'], 2) }}</td>
                     <!-- Buy Info Totals -->
-                    <td class="text-right bg-blue">{{ number_format($totals['buy_quantity'], 2) }}</td>
+                    <td class="text-center bg-blue">{{ $totals['buy_quantity']}}</td>
                     <td class="text-center bg-blue">-</td>
-                    <td class="text-right bg-blue">{{ number_format($totals['total_buy_price'], 2) }}</td>
+                    <td class="text-center bg-blue">{{ number_format($totals['total_buy_price'], 2) }}</td>
                     <!-- Sale Info Totals -->
-                    <td class="text-right bg-green">{{ number_format($totals['sale_quantity'], 2) }}</td>
+                    <td class="text-center bg-green">{{ $totals['sale_quantity'] }}</td>
                     <td class="text-center bg-green">-</td>
-                    <td class="text-right bg-green">{{ number_format($totals['total_sale_price'], 2) }}</td>
+                    <td class="text-center bg-green">{{ number_format($totals['total_sale_price'], 2) }}</td>
                     <!-- Profit Info Totals -->
                     <td class="text-center bg-orange">-</td>
-                    <td class="text-right bg-orange">{{ number_format($totals['total_profit'], 2) }}</td>
+                    <td class="text-center bg-orange">{{ number_format($totals['total_profit'], 2) }}</td>
                     <!-- Available Info Totals -->
-                    <td class="text-right bg-yellow">{{ number_format($totals['available_quantity'], 2) }}</td>
-                    <td class="text-right bg-yellow">{{ number_format($totals['available_stock_value'], 2) }}</td>
+                    <td class="text-center bg-yellow">{{ $totals['available_quantity'] }}</td>
+                    <td class="text-center bg-yellow">{{ number_format($totals['available_stock_value'], 2) }}</td>
                 </tr>
             </tfoot>
         </table>
@@ -247,4 +272,5 @@
         </div>
     </div>
 </body>
+
 </html>

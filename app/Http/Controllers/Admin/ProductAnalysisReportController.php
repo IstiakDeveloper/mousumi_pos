@@ -153,7 +153,7 @@ class ProductAnalysisReportController extends Controller
                 $weightedAvgCost = $stockPosition ? (float) $stockPosition->weighted_avg_cost : 0;
 
                 // Calculate profits
-                $profitPerUnit = $salePrice - $buyPrice;
+                $profitPerUnit = $salePrice - ($beforeAvgCost > 0 ? $beforeAvgCost : $buyPrice);
                 $totalProfit = $product->sale_quantity * $profitPerUnit;
 
                 return [
@@ -332,7 +332,7 @@ class ProductAnalysisReportController extends Controller
                     $weightedAvgCost = $stockPosition ? (float) $stockPosition->weighted_avg_cost : 0;
 
                     // Calculate profits
-                    $profitPerUnit = $salePrice - $buyPrice;
+                    $profitPerUnit = $salePrice - ($beforeAvgCost > 0 ? $beforeAvgCost : $buyPrice);
                     $totalProfit = $product->sale_quantity * $profitPerUnit;
 
                     return [
