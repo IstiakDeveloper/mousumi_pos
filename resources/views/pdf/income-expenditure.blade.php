@@ -158,8 +158,8 @@
         <!-- Report Title and Period -->
         <div class="report-title">Income & Expenditure Statement</div>
         <div class="report-period">
-            Period: {{ \Carbon\Carbon::parse($start_date)->format('d M Y') }} to
-            {{ \Carbon\Carbon::parse($end_date)->format('d M Y') }}
+            Period: {{ \Carbon\Carbon::parse($filters['start_date'])->format('d M Y') }} to
+            {{ \Carbon\Carbon::parse($filters['end_date'])->format('d M Y') }}
         </div>
 
         <!-- Statement Content in side by side layout -->
@@ -171,13 +171,14 @@
                     <thead>
                         <tr>
                             <th>Description</th>
-                            <th class="text-right">Month </th>
+                            <th class="text-right">Month</th>
                             <th class="text-right">Cumulative</th>
                         </tr>
                     </thead>
                     <tbody>
+                        <!-- Sales Profit Row -->
                         <tr>
-                            <td>Sales Profit</td>
+                            <td class="font-bold">Sales Profit</td>
                             <td class="text-right {{ $income['sales_profit']['period'] >= 0 ? 'green' : 'red' }}">
                                 {{ number_format($income['sales_profit']['period'], 2) }}
                             </td>
@@ -185,20 +186,43 @@
                                 {{ number_format($income['sales_profit']['cumulative'], 2) }}
                             </td>
                         </tr>
+
+                        <!-- Extra Income Row -->
                         <tr>
-                            <td>Extra Income</td>
-                            <td class="text-right green">{{ number_format($income['extra_income']['period'], 2) }}</td>
-                            <td class="text-right green">{{ number_format($income['extra_income']['cumulative'], 2) }}</td>
+                            <td>Others Income</td>
+                            <td class="text-right green">
+                                {{ number_format($income['extra_income']['total']['period'], 2) }}
+                            </td>
+                            <td class="text-right green">
+                                {{ number_format($income['extra_income']['total']['cumulative'], 2) }}
+                            </td>
                         </tr>
-                        <!-- Add empty rows to match balance sheet spacing -->
+
+                        <!-- Extra Income Categories -->
+                        @foreach($income['extra_income']['categories'] as $category)
                         <tr class="total-row">
-                            <td>Total Income</td>
-                            <td class="text-right {{ $income['total']['period'] >= 0 ? 'green' : 'red' }}">
-                                {{ number_format($income['total']['period'], 2) }}
+                            <td style="padding-left: 20px">{{ $category['name'] }}</td>
+                            <td class="text-right green">{{ number_format($category['period'], 2) }}</td>
+                            <td class="text-right green">{{ number_format($category['cumulative'], 2) }}</td>
+                        </tr>
+                        @endforeach
+
+                        <!-- Surplus Row -->
+                        <tr class="total-row">
+                            <td><strong>Surplus</strong></td>
+                            <td class="text-right {{ ($income['total']['period'] - $expenditure['total']['period']) >= 0 ? 'green' : 'red' }}">
+                                {{ number_format($income['total']['period'] - $expenditure['total']['period'], 2) }}
                             </td>
-                            <td class="text-right {{ $income['total']['cumulative'] >= 0 ? 'green' : 'red' }}">
-                                {{ number_format($income['total']['cumulative'], 2) }}
+                            <td class="text-right {{ ($income['total']['cumulative'] - $expenditure['total']['cumulative']) >= 0 ? 'green' : 'red' }}">
+                                {{ number_format($income['total']['cumulative'] - $expenditure['total']['cumulative'], 2) }}
                             </td>
+                        </tr>
+
+                        <!-- Grand Total Row -->
+                        <tr class="total-row">
+                            <td><strong>Grand Total</strong></td>
+                            <td class="text-right red">{{ number_format($expenditure['total']['period'], 2) }}</td>
+                            <td class="text-right red">{{ number_format($expenditure['total']['cumulative'], 2) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -211,43 +235,29 @@
                     <thead>
                         <tr>
                             <th>Description</th>
-                            <th class="text-right">Month </th>
+                            <th class="text-right">Month</th>
                             <th class="text-right">Cumulative</th>
                         </tr>
                     </thead>
                     <tbody>
+                        <!-- Expenditure Categories -->
+                        @foreach($expenditure['categories'] as $category)
                         <tr>
-                            <td>Total Expense</td>
-                            <td class="text-right red">{{ number_format($expenditure['total']['period'], 2) }}</td>
-                            <td class="text-right red">{{ number_format($expenditure['total']['cumulative'], 2) }}</td>
+                            <td>{{ $category['name'] }}</td>
+                            <td class="text-right red">{{ number_format($category['period'], 2) }}</td>
+                            <td class="text-right red">{{ number_format($category['cumulative'], 2) }}</td>
                         </tr>
-                        <tr>
-                            <td colspan="3" style="height: 20px;"></td>
-                        </tr>
+                        @endforeach
+
+                        <!-- Total Expenditure Row -->
                         <tr class="total-row">
-                            <td>Total Expenditure</td>
+                            <td><strong>Total Expenditure</strong></td>
                             <td class="text-right red">{{ number_format($expenditure['total']['period'], 2) }}</td>
                             <td class="text-right red">{{ number_format($expenditure['total']['cumulative'], 2) }}</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-        </div>
-
-        <!-- Net Result Section -->
-        <div class="net-result">
-            <table>
-                <tr>
-                    <td width="25%"><strong>Net Result (Month)</strong></td>
-                    <td width="25%" class="text-right {{ ($income['total']['period'] - $expenditure['total']['period']) >= 0 ? 'green' : 'red' }}">
-                        {{ number_format($income['total']['period'] - $expenditure['total']['period'], 2) }}
-                    </td>
-                    <td width="25%"><strong>Net Result (Cumulative)</strong></td>
-                    <td width="25%" class="text-right {{ ($income['total']['cumulative'] - $expenditure['total']['cumulative']) >= 0 ? 'green' : 'red' }}">
-                        {{ number_format($income['total']['cumulative'] - $expenditure['total']['cumulative'], 2) }}
-                    </td>
-                </tr>
-            </table>
         </div>
 
         <!-- Footer with Page Number -->

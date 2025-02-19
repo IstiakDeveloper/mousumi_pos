@@ -148,36 +148,6 @@ class IncomeExpenditureController extends Controller
         ];
     }
 
-    private function calculateCostOfGoodsSold(?Carbon $startDate, Carbon $endDate)
-    {
-        $query = DB::table('sale_items as si')
-            ->join('sales as s', 's.id', '=', 'si.sale_id')
-            ->where('s.created_at', '<=', $endDate);
-
-        // Add start date condition if provided
-        if ($startDate) {
-            $query->where('s.created_at', '>=', $startDate);
-        }
-
-        return $query->select(
-            DB::raw('SUM(
-                si.quantity * (
-                    SELECT
-                        CASE
-                            WHEN SUM(ps2.quantity) > 0
-                            THEN SUM(ps2.total_cost) / SUM(ps2.quantity)
-                            ELSE 0
-                        END
-                    FROM product_stocks ps2
-                    WHERE ps2.product_id = si.product_id
-                    AND ps2.type = "purchase"
-                    AND ps2.created_at <= s.created_at
-                )
-            ) as total_cost')
-        )
-            ->first()
-            ->total_cost ?? 0;
-    }
 
     public function downloadPdf(Request $request)
     {
@@ -201,12 +171,14 @@ class IncomeExpenditureController extends Controller
         // Calculate Expenditure Section
         $expenditureData = $this->calculateExpenditure($startDate, $endDate);
 
-        // Prepare data for PDF
+        // Prepare data for PDF - using same structure as index
         $data = [
             'income' => $incomeData,
             'expenditure' => $expenditureData,
-            'start_date' => $startDate->format('Y-m-d'),
-            'end_date' => $endDate->format('Y-m-d'),
+            'filters' => [
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
+            ]
         ];
 
         // Generate PDF

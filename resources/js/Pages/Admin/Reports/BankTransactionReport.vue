@@ -1,4 +1,3 @@
-<!-- resources/js/Pages/Admin/Reports/BankTransactionReport.vue -->
 <script setup>
 import { ref, watch } from 'vue';
 import { Head } from '@inertiajs/vue3';
@@ -81,7 +80,7 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
         <Head title="Bank Transaction Report" />
 
         <div class="py-6">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                     <!-- Filter Section -->
                     <div class="p-6 bg-white border-b border-gray-200">
@@ -152,7 +151,7 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                                         class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
                                         Fund</th>
                                     <th
-                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">Sale
                                         Receive</th>
                                     <th
                                         class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">

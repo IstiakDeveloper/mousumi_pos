@@ -40,7 +40,7 @@
         </template>
 
         <div class="py-6">
-            <div id="income-expenditure-content" class="max-w-7xl mx-auto">
+            <div id="income-expenditure-content" class=" mx-auto">
 
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -77,7 +77,7 @@
 
                                 <!-- Extra Income Row -->
                                 <tr class="border-b">
-                                    <td class="py-2 px-4 border-r font-medium">Extra Income</td>
+                                    <td class="py-2 px-4 border-r font-medium">Others Income</td>
                                     <td class="py-2 px-4 text-right border-r text-green-600">
                                         {{ formatCurrency(income.extra_income.total.period) }}
                                     </td>
@@ -102,18 +102,31 @@
 
                                 <!-- Total Row -->
                                 <tr class="bg-gray-50 font-bold">
-                                    <td class="py-2 px-4 border-r">Total Income</td>
-                                    <td class="py-2 px-4 text-right border-r" :class="{
-                                        'text-green-600': income.total.period > 0,
-                                        'text-red-600': income.total.period < 0
-                                    }">
-                                        {{ formatCurrency(income.total.period) }}
+                                    <td class="py-2 px-4 border-r">Surplus</td>
+                                    <td class="py-2 px-4 text-right border-r">
+                                        <span class="font-bold" :class="{
+                                            'text-green-600': netResultPeriod > 0,
+                                            'text-red-600': netResultPeriod < 0
+                                        }">
+                                            {{ formatCurrency(netResultPeriod) }}
+                                        </span>
                                     </td>
-                                    <td class="py-2 px-4 text-right" :class="{
-                                        'text-green-600': income.total.cumulative > 0,
-                                        'text-red-600': income.total.cumulative < 0
-                                    }">
-                                        {{ formatCurrency(income.total.cumulative) }}
+                                    <td class="py-2 px-4 text-right">
+                                        <span class="font-bold" :class="{
+                                            'text-green-600': netResultCumulative > 0,
+                                            'text-red-600': netResultCumulative < 0
+                                        }">
+                                            {{ formatCurrency(netResultCumulative) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr class="border-b bg-gray-50 font-bold">
+                                    <td class="py-2 px-4 border-r">Grand Total</td>
+                                    <td class="py-2 px-4 text-right border-r text-red-600">
+                                        {{ formatCurrency(expenditure.total.period) }}
+                                    </td>
+                                    <td class="py-2 px-4 text-right text-red-600">
+                                        {{ formatCurrency(expenditure.total.cumulative) }}
                                     </td>
                                 </tr>
                             </tbody>
@@ -154,59 +167,11 @@
                                         {{ formatCurrency(expenditure.total.cumulative) }}
                                     </td>
                                 </tr>
-
-                                <tr class="border-b">
-                                    <td class="py-5 px-4 border-r"></td>
-                                    <td class="py-5 px-4 text-right border-r text-red-600">
-
-                                    </td>
-                                    <td class="py-5 px-4 text-right text-red-600">
-
-                                    </td>
-                                </tr>
-
-                                <!-- Total Expenses Row -->
-                                <tr class="border-b bg-gray-50 font-bold">
-                                    <td class="py-2 px-4 border-r">Total Expenditure</td>
-                                    <td class="py-2 px-4 text-right border-r text-red-600">
-                                        {{ formatCurrency(expenditure.total.period) }}
-                                    </td>
-                                    <td class="py-2 px-4 text-right text-red-600">
-                                        {{ formatCurrency(expenditure.total.cumulative) }}
-                                    </td>
-                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- Net Result Section -->
-                <div class="mt-6 bg-white rounded-lg shadow-sm border p-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="border-r pr-4">
-                            <div class="flex justify-between items-center">
-                                <span class="font-semibold text-gray-700">Net Result (Month)</span>
-                                <span class="font-bold" :class="{
-                                    'text-green-600': netResultPeriod > 0,
-                                    'text-red-600': netResultPeriod < 0
-                                }">
-                                    {{ formatCurrency(netResultPeriod) }}
-                                </span>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="flex justify-between items-center">
-                                <span class="font-semibold text-gray-700">Net Result (Cumulative)</span>
-                                <span class="font-bold" :class="{
-                                    'text-green-600': netResultCumulative > 0,
-                                    'text-red-600': netResultCumulative < 0
-                                }">
-                                    {{ formatCurrency(netResultCumulative) }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </AdminLayout>
