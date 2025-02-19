@@ -1,11 +1,13 @@
 <template>
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
         <!-- Sidebar -->
+
         <aside :class="[
             'fixed inset-y-0 left-0 z-50 w-72 transition-transform duration-300 ease-in-out flex flex-col',
             'bg-gradient-to-b from-indigo-700 via-indigo-800 to-indigo-900 dark:from-gray-800 dark:via-gray-900 dark:to-black',
             isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         ]">
+
             <!-- Fixed Header -->
             <div class="flex-shrink-0">
                 <div
@@ -32,7 +34,7 @@
                 <nav class="mt-6 px-4">
                     <div class="space-y-2">
                         <!-- Single Items -->
-                        <Link v-for="item in singleNavItems" :key="item.name" :href="item.href" :class="[
+                        <Link v-for="item in filteredSingleNavItems" :key="item.name" :href="item.href" :class="[
                             'flex items-center px-4 py-3 text-sm rounded-xl transition-all duration-200',
                             'hover:bg-white/10 dark:hover:bg-gray-700 backdrop-blur-sm group',
                             isActivePath(item.href)
@@ -51,7 +53,7 @@
                         </Link>
 
                         <!-- Dropdown Items -->
-                        <div v-for="(group, index) in dropdownNavItems" :key="index" class="space-y-1">
+                        <div v-for="(group, index) in filteredDropdownNavItems" :key="index" class="space-y-1">
                             <button @click="toggleDropdown(group.name)" :class="[
                                 'w-full flex items-center justify-between px-4 py-3 text-sm rounded-xl transition-all duration-200',
                                 'hover:bg-white/10 dark:hover:bg-gray-700 backdrop-blur-sm group',
@@ -139,7 +141,7 @@
                         </div>
                         <div class="ml-3 flex-1 text-left">
                             <p class="text-sm font-medium text-white">{{ user.name }}</p>
-                            <p class="text-xs text-indigo-200">{{ user.role || 'Administrator' }}</p>
+                            <p class="text-xs text-indigo-200">{{ user.role.name || 'Administrator' }}</p>
                         </div>
                         <i class="fas fa-chevron-up ml-2 text-indigo-200"></i>
                     </MenuButton>
@@ -335,6 +337,8 @@
         <div v-if="isOpen" class="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden transition-opacity"
             @click="toggleSidebar"></div>
     </div>
+
+
 </template>
 
 <script setup>
@@ -345,14 +349,8 @@ import { switchTheme } from '@/theme';
 
 
 const page = usePage();
-const { flash, auth } = page.props;
-const user = auth.user;
-const props = defineProps({
-    user: {
-        type: Object,
-        required: true
-    }
-})
+const user = page.props.auth.user;
+
 
 
 // Sidebar state
@@ -361,76 +359,116 @@ const activeDropdowns = ref([])
 
 // Navigation items
 const singleNavItems = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: 'fa-tachometer-alt' }
+    {
+        name: 'Dashboard',
+        href: '/admin/dashboard',
+        icon: 'fa-tachometer-alt',
+        allowedRoles: ['admin', 'manager', 'staff'] // Example roles
+    }
 ]
 
 const dropdownNavItems = [
     {
         name: 'Products',
         icon: 'fa-box',
+        allowedRoles: ['admin', 'manager'],
         items: [
-            { name: 'Products', href: '/admin/products', icon: 'fa-boxes' },
-            { name: 'Categories', href: '/admin/categories', icon: 'fa-folder' },
-            { name: 'Units', href: '/admin/units', icon: 'fa-ruler' },
-            { name: 'Brands', href: '/admin/brands', icon: 'fa-tag' },
-            { name: 'Stock Management', href: '/admin/product-stocks', icon: 'fa-warehouse' }
+            { name: 'Products', href: '/admin/products', icon: 'fa-boxes', allowedRoles: ['admin'] },
+            { name: 'Categories', href: '/admin/categories', icon: 'fa-folder', allowedRoles: ['admin'] },
+            { name: 'Units', href: '/admin/units', icon: 'fa-ruler', allowedRoles: ['admin'] },
+            { name: 'Brands', href: '/admin/brands', icon: 'fa-tag', allowedRoles: ['admin'] },
+            { name: 'Stock Management', href: '/admin/product-stocks', icon: 'fa-warehouse', allowedRoles: ['admin', 'manager'] }
         ]
     },
     {
         name: 'Sales',
         icon: 'fa-shopping-cart',
+        allowedRoles: ['admin', 'manager', 'staff'],
         items: [
-            { name: 'Sales List', href: '/admin/sales', icon: 'fa-list' },
-            { name: 'POS', href: '/admin/pos', icon: 'fa-cash-register' }
+            { name: 'Sales List', href: '/admin/sales', icon: 'fa-list', allowedRoles: ['admin', 'staff'] },
+            { name: 'POS', href: '/admin/pos', icon: 'fa-cash-register', allowedRoles: ['admin', 'manager', 'staff'] }
         ]
     },
     {
         name: 'Extra Income',
         icon: 'fa-coins',
+        allowedRoles: ['admin', 'manager'],
         items: [
-            { name: 'Extra Income Categories', href: '/admin/extra-income-categories', icon: 'fa-list' },
-            { name: 'Extra Income', href: '/admin/extra-incomes', icon: 'fa-coins' },
-
+            { name: 'Extra Income Categories', href: '/admin/extra-income-categories', icon: 'fa-list', allowedRoles: ['admin'] },
+            { name: 'Extra Income', href: '/admin/extra-incomes', icon: 'fa-coins', allowedRoles: ['admin', 'manager'] }
         ]
     },
     {
         name: 'Customers',
         icon: 'fa-users',
+        allowedRoles: ['admin', 'manager', 'staff'],
         items: [
-            { name: 'Customer List', href: '/admin/customers', icon: 'fa-user-friends' },
+            { name: 'Customer List', href: '/admin/customers', icon: 'fa-user-friends', allowedRoles: ['admin', 'manager', 'staff'] }
         ]
     },
     {
         name: 'Banking',
         icon: 'fa-university',
+        allowedRoles: ['admin'],
         items: [
-            { name: 'Bank Accounts', href: '/admin/bank-accounts', icon: 'fa-piggy-bank' },
-            { name: 'Funds', href: '/admin/funds', icon: 'fas fa-wallet' },
-            { name: 'Transactions', href: '/admin/bank-transactions', icon: 'fa-exchange-alt' }
+            { name: 'Bank Accounts', href: '/admin/bank-accounts', icon: 'fa-piggy-bank', allowedRoles: ['admin'] },
+            { name: 'Funds', href: '/admin/funds', icon: 'fas fa-wallet', allowedRoles: ['admin'] },
+            { name: 'Transactions', href: '/admin/bank-transactions', icon: 'fa-exchange-alt', allowedRoles: ['admin'] }
         ]
     },
     {
         name: 'Expenses',
         icon: 'fa-receipt',
+        allowedRoles: ['admin'],
         items: [
-            { name: 'Expenses', href: '/admin/expenses', icon: 'fa-file-invoice-dollar' },
-            { name: 'Categories', href: '/admin/expense-categories', icon: 'fa-folder' }
+            { name: 'Expenses', href: '/admin/expenses', icon: 'fa-file-invoice-dollar', allowedRoles: ['admin', 'manager'] },
+            { name: 'Categories', href: '/admin/expense-categories', icon: 'fa-folder', allowedRoles: ['admin'] }
         ]
     },
     {
         name: 'Reports',
         icon: 'fa-chart-line',
+        allowedRoles: ['admin', 'manager'],
         items: [
-            { name: 'Bank Report', href: '/admin/reports/bank-transaction-report', icon: 'fa-university' },
-            { name: 'Stock Report', href: '/admin/reports/stock', icon: 'fa-warehouse' },
-            { name: 'Sales Report', href: '/admin/reports/sales', icon: 'fa-chart-bar' },
-            { name: 'Product', href: '/admin/reports/product-analysis', icon: 'fa-box' },
-            { name: 'Receipt & Payment', href: '/admin/reports/receipt-payment', icon: 'fa-credit-card' },
-            { name: 'Income & Expenditure', href: '/admin/reports/income-expenditure', icon: 'fa-file-alt' },
-            { name: 'Balance Sheet', href: '/admin/reports/balance-sheet', icon: 'fas fa-balance-scale' }
+            { name: 'Bank Report', href: '/admin/reports/bank-transaction-report', icon: 'fa-university', allowedRoles: ['admin', 'manager'] },
+            { name: 'Stock Report', href: '/admin/reports/stock', icon: 'fa-warehouse', allowedRoles: ['admin',] },
+            { name: 'Sales Report', href: '/admin/reports/sales', icon: 'fa-chart-bar', allowedRoles: ['admin'] },
+            { name: 'Product', href: '/admin/reports/product-analysis', icon: 'fa-box', allowedRoles: ['admin', 'manager'] },
+            { name: 'Receipt & Payment', href: '/admin/reports/receipt-payment', icon: 'fa-credit-card', allowedRoles: ['admin'] },
+            { name: 'Income & Expenditure', href: '/admin/reports/income-expenditure', icon: 'fa-file-alt', allowedRoles: ['admin'] },
+            { name: 'Balance Sheet', href: '/admin/reports/balance-sheet', icon: 'fas fa-balance-scale', allowedRoles: ['admin'] }
         ]
     }
 ]
+
+
+const filteredSingleNavItems = computed(() => {
+    return singleNavItems.filter(item =>
+        item.allowedRoles?.includes(user.role.name.toLowerCase())
+    )
+})
+
+const filteredDropdownNavItems = computed(() => {
+    return dropdownNavItems.filter(group => {
+        // First check if the group itself is allowed for the user's role
+        if (!group.allowedRoles?.includes(user.role.name.toLowerCase())) {
+            return false
+        }
+
+        // Filter the items within the group
+        const filteredItems = group.items.filter(item =>
+            item.allowedRoles?.includes(user.role.name.toLowerCase())
+        )
+
+        // Only include groups that have at least one accessible item
+        return filteredItems.length > 0
+    }).map(group => ({
+        ...group,
+        items: group.items.filter(item =>
+            item.allowedRoles?.includes(user.role.name.toLowerCase())
+        )
+    }))
+})
 
 // Quick actions for frequently used features
 const quickActions = [

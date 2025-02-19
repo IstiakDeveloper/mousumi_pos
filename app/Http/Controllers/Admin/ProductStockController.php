@@ -157,12 +157,12 @@ class ProductStockController extends Controller
                     $query->latest();
                 }
             ])->get()->map(fn($product) => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'sku' => $product->sku,
-                'current_stock' => $product->productStocks->sum('quantity'),
-                'last_unit_cost' => $product->productStocks->first()?->unit_cost ?? 0,
-            ]),
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'current_stock' => $product->productStocks->sum('quantity'),
+                    'last_unit_cost' => $product->productStocks->first()?->unit_cost ?? 0,
+                ]),
             'bankAccounts' => BankAccount::where('status', true)
                 ->select('id', 'account_name', 'bank_name', 'current_balance')
                 ->get()
@@ -275,58 +275,48 @@ class ProductStockController extends Controller
 
             $stock = ProductStock::with('product')->findOrFail($id);
 
-            // Get current available quantity
-            $latestStock = ProductStock::where('product_id', $stock->product_id)
-                ->orderBy('id', 'desc')
-                ->first();
-
-            if ($latestStock->available_quantity < $stock->quantity) {
-                throw new \Exception('Cannot delete this stock entry as it would result in negative stock.');
+            // Only allow deleting purchase type entries
+            if ($stock->type !== 'purchase') {
+                throw new \Exception('Only purchase entries can be deleted.');
             }
 
-            // Calculate new available quantity
-            $newAvailableQuantity = bcsub($latestStock->available_quantity, $stock->quantity, 6);
+            // Find the original bank transaction
+            $bankTransaction = BankTransaction::where('transaction_type', 'out')
+                ->where('amount', $stock->total_cost)
+                ->where('description', 'like', "%Stock purchase for product ID: {$stock->product_id}%")
+                ->whereDate('date', $stock->created_at->toDateString())
+                ->first();
 
-            // Create a new stock entry to record the deletion
-            ProductStock::create([
-                'product_id' => $stock->product_id,
-                'quantity' => -$stock->quantity,
-                'available_quantity' => $newAvailableQuantity,
-                'unit_cost' => $stock->unit_cost,
-                'total_cost' => bcmul(-$stock->quantity, $stock->unit_cost, 6),
-                'type' => 'adjustment',
-                'note' => 'Stock entry deletion adjustment',
-                'created_by' => auth()->id()
-            ]);
-
-            // Record stock movement
-            StockMovement::create([
-                'product_id' => $stock->product_id,
-                'reference_type' => 'adjustment',
-                'reference_id' => $stock->id,
-                'quantity' => $stock->quantity,
-                'before_quantity' => $latestStock->available_quantity,
-                'after_quantity' => $newAvailableQuantity,
-                'type' => 'out',
-                'created_by' => auth()->id()
-            ]);
-
-            // Handle bank transaction reversal
-            $bankTransaction = BankTransaction::where([
-                ['description', 'like', "%Stock purchase for product ID: {$stock->product_id}%"],
-                ['amount', $stock->total_cost],
-                ['transaction_type', 'out']
-            ])->first();
-
+            // Handle bank transaction reversal if found
             if ($bankTransaction) {
                 $bankAccount = BankAccount::findOrFail($bankTransaction->bank_account_id);
+
+                // Create refund transaction
+                BankTransaction::create([
+                    'bank_account_id' => $bankAccount->id,
+                    'transaction_type' => 'in',
+                    'amount' => $stock->total_cost,
+                    'description' => "Total refund for deleted product ID: {$stock->product->id}",
+                    'date' => now(),
+                    'running_balance' => bcadd($bankAccount->current_balance, $stock->total_cost, 4),
+                    'created_by' => auth()->id()
+                ]);
+
+                // Update bank balance
                 $bankAccount->update([
                     'current_balance' => bcadd($bankAccount->current_balance, $stock->total_cost, 4)
                 ]);
+
+                // Delete original transaction
                 $bankTransaction->delete();
             }
 
-            // Delete the original stock entry
+            // Delete related stock movement
+            StockMovement::where('reference_type', 'purchase')
+                ->where('reference_id', $stock->id)
+                ->delete();
+
+            // Delete the stock entry
             $stock->delete();
 
             // Update product's average cost
@@ -338,6 +328,7 @@ class ProductStockController extends Controller
                 'success' => true,
                 'message' => 'Stock entry deleted successfully'
             ]);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -345,5 +336,32 @@ class ProductStockController extends Controller
                 'message' => 'Error: ' . $e->getMessage()
             ], 422);
         }
+    }
+
+    public function getStockHistory($productId)
+    {
+        $history = ProductStock::with(['createdBy'])
+            ->where('product_id', $productId)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($stock) {
+                return [
+                    'id' => $stock->id,
+                    'type' => $stock->type,
+                    'quantity' => $stock->quantity,
+                    'unit_cost' => $stock->unit_cost,
+                    'total_cost' => $stock->total_cost,
+                    'available_quantity' => $stock->available_quantity,
+                    'note' => $stock->note,
+                    'created_by' => $stock->createdBy?->name ?? 'N/A',
+                    'created_at' => $stock->created_at->format('d M Y H:i:s'),
+                    'can_delete' => $stock->type === 'purchase' && auth()->user()->role->name === 'Admin'
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $history
+        ]);
     }
 }

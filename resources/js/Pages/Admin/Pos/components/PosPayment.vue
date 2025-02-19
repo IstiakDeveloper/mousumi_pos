@@ -1,13 +1,14 @@
-# Payment.vue
 <template>
-    <div class="grid grid-cols-12 gap-4 h-full p-4 bg-gray-50 dark:bg-gray-800">
-        <!-- Top Row - Customer & Bank Selection (Full Width) -->
-        <div class="col-span-12 grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-12 gap-3 h-full p-4 bg-gray-50 dark:bg-gray-800">
+        <!-- Top Row - Customer & Bank Selection -->
+        <div class="col-span-12 grid grid-cols-2 gap-3">
             <!-- Customer Selection -->
-            <div class="bg-white dark:bg-gray-700 rounded-lg p-3">
-                <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Customer</label>
+            <div class="bg-white dark:bg-gray-700 rounded-lg shadow-sm p-3">
+                <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Customer</label>
                 <select v-model="selectedCustomer"
-                    class="mt-1 w-full border rounded-lg p-2 text-sm dark:bg-gray-600 dark:border-gray-500">
+                    class="w-full rounded-lg border-gray-200 dark:border-gray-600 bg-transparent
+                           dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm py-2
+                           focus:ring-1 focus:ring-blue-500 focus:border-transparent">
                     <option :value="null">Walk-in Customer</option>
                     <option v-for="customer in customers" :key="customer.id" :value="customer.id">
                         {{ customer.name }} ({{ customer.phone }})
@@ -16,10 +17,12 @@
             </div>
 
             <!-- Bank Account -->
-            <div class="bg-white dark:bg-gray-700 rounded-lg p-3">
-                <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Bank Account</label>
+            <div class="bg-white dark:bg-gray-700 rounded-lg shadow-sm p-3">
+                <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Bank Account</label>
                 <select v-model="selectedBankAccount"
-                    class="mt-1 w-full border rounded-lg p-2 text-sm dark:bg-gray-600 dark:border-gray-500">
+                    class="w-full rounded-lg border-gray-200 dark:border-gray-600 bg-transparent
+                           dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm py-2
+                           focus:ring-1 focus:ring-blue-500 focus:border-transparent">
                     <option :value="null">Select Account</option>
                     <option v-for="account in bankAccounts" :key="account.id" :value="account.id">
                         {{ account.account_name }} - ৳{{ formatNumber(account.current_balance) }}
@@ -28,56 +31,42 @@
             </div>
         </div>
 
-        <!-- Middle Section - Cart Summary & Payments -->
-        <div class="col-span-12 grid grid-cols-12 gap-4">
-            <!-- Left Side - Cart Summary -->
-            <div class="col-span-7 bg-white dark:bg-gray-700 rounded-lg p-4">
-                <div class="space-y-2">
-                    <div class="flex justify-between border-b pb-2 dark:border-gray-600">
-                        <span class="text-gray-600 dark:text-gray-300">Items</span>
-                        <span class="font-medium">{{ cartSummary.items }}</span>
-                    </div>
-                    <div class="flex justify-between border-b pb-2 dark:border-gray-600">
-                        <span class="text-gray-600 dark:text-gray-300">Subtotal</span>
-                        <span class="font-medium">৳{{ formatNumber(cartSummary.subtotal) }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600 dark:text-gray-300">Discount</span>
-                        <input type="number" v-model.number="discount"
-                            class="w-24 text-right border rounded p-1 text-sm dark:bg-gray-600 dark:border-gray-500"
-                            min="0" step="0.01" @input="calculateTotal" />
-                    </div>
-                    <div class="flex justify-between text-lg font-bold pt-2 border-t dark:border-gray-600">
-                        <span>Total</span>
-                        <span class="text-blue-600 dark:text-blue-400">৳{{ formatNumber(total) }}</span>
-                    </div>
+        <!-- Middle Section - Cart Summary -->
+        <div class="col-span-12 bg-white dark:bg-gray-700 rounded-lg shadow-sm p-4">
+            <div class="space-y-3">
+                <div class="flex justify-between pb-2 border-b dark:border-gray-600">
+                    <span class="text-gray-600 dark:text-gray-300">Items</span>
+                    <span class="font-medium text-gray-900 dark:text-gray-100">{{ cartSummary.items }}</span>
                 </div>
-            </div>
-
-            <!-- Right Side - Quick Payment -->
-            <div class="col-span-5 bg-white dark:bg-gray-700 rounded-lg p-4">
-                <div class="grid grid-cols-2 gap-2">
-                    <button v-for="amount in quickAmounts" :key="amount"
-                        @click="setQuickAmount(amount)"
-                        class="p-2 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">
-                        ৳{{ amount }}
-                    </button>
+                <div class="flex justify-between pb-2 border-b dark:border-gray-600">
+                    <span class="text-gray-600 dark:text-gray-300">Subtotal</span>
+                    <span class="font-medium text-gray-900 dark:text-gray-100">৳{{ formatNumber(cartSummary.subtotal) }}</span>
                 </div>
-                <div class="mt-3">
-                    <input type="number" v-model.number="amountPaid"
-                        class="w-full border rounded-lg p-2 text-right text-lg dark:bg-gray-600 dark:border-gray-500"
-                        min="0" step="0.01" />
+                <div class="flex justify-between text-base font-bold pt-1">
+                    <span class="text-gray-900 dark:text-gray-100">Total</span>
+                    <span class="text-blue-600 dark:text-blue-400">৳{{ formatNumber(total) }}</span>
                 </div>
             </div>
         </div>
 
-        <!-- Bottom Section - Due Amount, Note & Actions -->
-        <div class="col-span-12 grid grid-cols-12 gap-4">
+        <!-- Amount Paid Input -->
+        <div class="col-span-12">
+            <input type="number" v-model.number="amountPaid"
+                class="w-full border-gray-200 dark:border-gray-600 rounded-lg p-3 text-right text-lg
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                       focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                min="0" step="0.01"
+                placeholder="Enter amount paid..."
+            />
+        </div>
+
+        <!-- Due Amount & Note -->
+        <div class="col-span-12 grid grid-cols-12 gap-3">
             <!-- Due Amount -->
-            <div class="col-span-4 bg-yellow-50 dark:bg-yellow-900/50 rounded-lg p-4">
+            <div class="col-span-4 bg-yellow-50 dark:bg-yellow-900/50 rounded-lg shadow-sm p-3">
                 <div class="flex justify-between items-center">
-                    <span class="text-yellow-700 dark:text-yellow-300">Due</span>
-                    <span class="font-bold text-lg text-yellow-700 dark:text-yellow-300">
+                    <span class="text-yellow-800 dark:text-yellow-300 text-sm">Due</span>
+                    <span class="text-lg font-bold text-yellow-800 dark:text-yellow-300">
                         ৳{{ formatNumber(dueAmount) }}
                     </span>
                 </div>
@@ -86,24 +75,38 @@
             <!-- Note -->
             <div class="col-span-8">
                 <textarea v-model="note" rows="2"
-                    class="w-full border rounded-lg p-2 text-sm dark:bg-gray-700 dark:border-gray-600"
+                    class="w-full rounded-lg border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700
+                           text-gray-900 dark:text-gray-100 p-2 text-sm
+                           focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Add note (optional)"></textarea>
             </div>
         </div>
 
         <!-- Action Buttons -->
-        <div class="col-span-12 grid grid-cols-2 gap-4">
+        <div class="col-span-12 grid grid-cols-2 gap-3">
+            <!-- Reset Button -->
             <button @click="$emit('reset-cart')"
-                class="p-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center justify-center">
-                <ArrowPathIcon class="w-5 h-5 mr-2" />
+                class="flex items-center justify-center px-4 py-2 bg-gray-100 hover:bg-gray-200
+                       dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200
+                       rounded-lg transition-colors duration-150">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
                 Reset
             </button>
+
+            <!-- Process Sale Button -->
             <button @click="processSale"
                 :disabled="!canProcessSale"
-                class="p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400
-                       disabled:cursor-not-allowed flex items-center justify-center">
-                <BanknotesIcon class="w-5 h-5 mr-2" />
-                Process Sale
+                class="flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700
+                       text-white rounded-lg transition-colors duration-150
+                       disabled:bg-gray-400 disabled:cursor-not-allowed">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Process
             </button>
         </div>
     </div>

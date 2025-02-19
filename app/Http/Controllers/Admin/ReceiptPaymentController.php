@@ -171,51 +171,71 @@ class ReceiptPaymentController extends Controller
     public function downloadPdf(Request $request)
     {
         try {
-            // Validate and set date range
-            $request->validate([
-                'start_date' => 'nullable|date',
-                'end_date' => 'nullable|date|after_or_equal:start_date',
+            // Add detailed logging at the start
+            \Log::info('PDF Download Request:', [
+                'year' => $request->year,
+                'month' => $request->month
             ]);
 
-            // Set default to current month if no dates provided
-            $startDate = $request->start_date
-                ? Carbon::parse($request->start_date)->startOfDay()
-                : Carbon::now()->startOfMonth();
-            $endDate = $request->end_date
-                ? Carbon::parse($request->end_date)->endOfDay()
-                : Carbon::now()->endOfDay();
+            // Validate input
+            $validatedData = $request->validate([
+                'year' => 'required|integer|min:2000|max:2099',
+                'month' => 'required|integer|between:1,12',
+            ]);
 
-            // Get receipt and payment data
+            // Create date range
+            $startDate = Carbon::create($validatedData['year'], $validatedData['month'], 1)->startOfMonth();
+            $endDate = $startDate->copy()->endOfMonth();
+
+            \Log::info('Date Range:', [
+                'start' => $startDate->toDateString(),
+                'end' => $endDate->toDateString()
+            ]);
+
+            // Get data
             $receiptData = $this->getReceiptData($startDate, $endDate);
             $paymentData = $this->getPaymentData($startDate, $endDate);
 
-            // Prepare data for PDF
-            $data = [
-                'receipt' => $receiptData,
-                'payment' => $paymentData,
-                'start_date' => $startDate->format('Y-m-d'),
-                'end_date' => $endDate->format('Y-m-d'),
-            ];
+            \Log::info('Data Retrieved:', [
+                'receiptCount' => count($receiptData),
+                'paymentCount' => count($paymentData)
+            ]);
 
-            // For debugging
-            \Log::info('PDF Data:', $data);
+            // Generate PDF with error handling
+            try {
+                $pdf = PDF::loadView('pdf.receipt-payment', [
+                    'receipt' => $receiptData,
+                    'payment' => $paymentData,
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('PDF Generation Failed:', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw new \Exception('PDF generation failed: ' . $e->getMessage());
+            }
 
-            // Generate PDF
-            $pdf = Pdf::loadView('pdf.receipt-payment', $data)
-                ->setPaper('a4', 'portrait')
-                ->setOptions(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
+            return $pdf->download("receipt-payment-{$validatedData['year']}-{$validatedData['month']}.pdf");
 
-            // Generate filename
-            $filename = 'receipt-payment-' . $startDate->format('Y-m-d') . '-to-' . $endDate->format('Y-m-d') . '.pdf';
-
-            // Download PDF
-            return $pdf->download($filename);
-        } catch (\Exception $e) {
-            \Log::error('PDF Generation Error: ' . $e->getMessage());
-            \Log::error($e->getTraceAsString());
-
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation Failed:', [
+                'errors' => $e->errors()
+            ]);
             return response()->json([
-                'message' => 'Error generating PDF: ' . $e->getMessage()
+                'error' => 'Validation failed',
+                'details' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            \Log::error('PDF Download Failed:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'error' => 'Failed to generate PDF',
+                'details' => $e->getMessage()
             ], 500);
         }
     }

@@ -207,11 +207,7 @@
                                         </span>
                                     </div>
                                 </th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Category
-                                </th>
-                                <th class="relative px-6 py-3">
+                                <th class="relative px-6 py-3" v-if="user.role.name.toLowerCase() === 'admin'">
                                     <span class="sr-only">Actions</span>
                                 </th>
                             </tr>
@@ -252,7 +248,7 @@
                                 </td>
 
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <div class="flex items-center justify-end space-x-3">
+                                    <div class="flex items-center justify-end space-x-3" v-if="user.role.name.toLowerCase() === 'admin'">
                                         <Link :href="route('admin.extra-incomes.edit', income.id)"
                                             class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">
                                         Edit
@@ -317,7 +313,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useForm, Link } from '@inertiajs/vue3'
+import { useForm, Link, usePage } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TextInput from '@/Components/TextInput.vue'
 import InputLabel from '@/Components/InputLabel.vue'
@@ -325,6 +321,8 @@ import Pagination from '@/Components/Pagination.vue'
 import Modal from '@/Components/Modal.vue'
 import debounce from 'lodash/debounce'
 
+const page = usePage();
+const user = page.props.auth.user;
 const props = defineProps({
     extraIncomes: {
         type: Object,

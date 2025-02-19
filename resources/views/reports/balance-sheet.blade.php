@@ -152,9 +152,12 @@
     <div class="first-page">
         <!-- Company Header -->
         <div class="company-header">
-            <div class="company-name">Your Company Name</div>
-            <div>123 Business Street, City, Country</div>
-            <div>Phone: +123 456 7890 | Email: info@company.com</div>
+            <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Departmental Store</div>
+            <div class="sub-company-name"></div>
+            <div class="company-details">
+                Ukilpara, Naogaon Sadar, Naogaon.<br>
+                Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
+            </div>
         </div>
 
         <!-- Report Title -->

@@ -209,21 +209,22 @@
             }
         }
 
-        @media screen and (max-width: 480px) {
-
-        }
+        @media screen and (max-width: 480px) {}
     </style>
 </head>
 
 <body>
-    <div class="header">
-        <div class="company-name">{{ $company['name'] }}</div>
+    <div class="company-header">
+        <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Departmental Store</div>
+        <div class="sub-company-name"></div>
         <div class="company-details">
-            {{ $company['address'] }} | {{ $company['phone'] }} | {{ $company['email'] }}
+            Ukilpara, Naogaon Sadar, Naogaon.<br>
+            Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
         </div>
-        <div class="report-title">Stock Movement Report</div>
-        <div class="date-range">{{ $filters['from_date'] }} to {{ $filters['to_date'] }}</div>
     </div>
+    <div class="report-title">Stock Movement Report</div>
+    <div class="date-range">{{ $filters['from_date'] }} to {{ $filters['to_date'] }}</div>
+
 
     @foreach ($reports as $report)
         <div class="product-section">

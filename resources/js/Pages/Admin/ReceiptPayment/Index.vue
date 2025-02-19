@@ -239,24 +239,32 @@ export default defineComponent({
             this.isDownloadDisabled = true;
 
             try {
-                const response = await axios.get(route('admin.reports.receipt-payment.pdf'), {
-                    params: {
-                        year: this.selectedYear,
-                        month: this.selectedMonth
-                    },
-                    responseType: 'blob'
+                // Validate inputs
+                if (!this.selectedYear || !this.selectedMonth) {
+                    throw new Error('Year and month must be selected');
+                }
+
+                // Create URL parameters
+                const params = new URLSearchParams({
+                    year: this.selectedYear,
+                    month: this.selectedMonth
                 });
 
-                const url = window.URL.createObjectURL(new Blob([response.data]));
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `receipt-payment-${this.selectedYear}-${this.selectedMonth}.pdf`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                // Trigger download
+                window.location.href = `${route('admin.reports.receipt-payment.pdf')}?${params}`;
+
+                // Reset states after a brief delay to show loading state
+                setTimeout(() => {
+                    this.isDownloading = false;
+                    this.isDownloadDisabled = false;
+                }, 1000);
+
             } catch (error) {
                 console.error('Error downloading PDF:', error);
-            } finally {
+                this.$notify({
+                    type: 'error',
+                    message: error.message || 'Failed to download PDF'
+                });
                 this.isDownloading = false;
                 this.isDownloadDisabled = false;
             }

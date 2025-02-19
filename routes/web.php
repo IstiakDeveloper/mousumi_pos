@@ -65,7 +65,7 @@ Route::get('/migrate', function () {
     return response()->json(['message' => 'Migrations run successfully.']);
 })->name('migrate');
 
-Route::get('/run-backup', function() {
+Route::get('/run-backup', function () {
     try {
         // Capture the output
         $output = '';
@@ -80,7 +80,7 @@ Route::get('/run-backup', function() {
             'output' => $output,
             'result_code' => $result
         ]);
-    } catch(\Exception $e) {
+    } catch (\Exception $e) {
         return response()->json([
             'status' => 'error',
             'message' => $e->getMessage(),
@@ -111,6 +111,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     Route::resource('product-stocks', ProductStockController::class)
         ->only(['index', 'create', 'store', 'destroy']);
+    Route::get('product-stocks/history/{productId}', [ProductStockController::class, 'getStockHistory'])
+        ->name('product-stocks.history');
 
     Route::resource('customers', CustomerController::class);
     Route::post('customers/{customer}/toggle-status', [CustomerController::class, 'toggleStatus'])
@@ -120,6 +122,10 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('bank-accounts', BankAccountController::class);
     Route::resource('bank-transactions', BankTransactionController::class);
     // Route::resource('sales', SaleController::class);
+
+    Route::get('reports/bank-transactions/pdf', [BankTransactionReportController::class, 'downloadPdf'])
+        ->name('reports.bank-transactions.pdf');
+
     Route::resource('extra-incomes', ExtraIncomeController::class);
     Route::resource('extra-income-categories', ExtraIncomeCategoryController::class);
     Route::resource('funds', FundManagementController::class);

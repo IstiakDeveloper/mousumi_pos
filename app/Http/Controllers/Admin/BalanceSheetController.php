@@ -85,9 +85,11 @@ class BalanceSheetController extends Controller
         $costOfGoodsSold = $this->calculateCostOfGoodsSold(null, $endDate);
 
         // Calculate Net Profit
-        $netProfit = $salesAmount + $extraIncomeAmount - $expensesAmount - $costOfGoodsSold;
+        $startDate = '2024-01-01';
+        $productTotalProfit = Product::getProductAnalysis($startDate, $endDate)['totals']['total_profit'];
 
-        // Total (Fund + Net Profit)
+        // Net Profit calculation
+        $netProfit = $productTotalProfit + $extraIncomeAmount - $expensesAmount;
         $total = $fundAmount + $netProfit;
 
         return [
@@ -120,7 +122,9 @@ class BalanceSheetController extends Controller
             : 0;
 
         // 4. Stock Value up to the end date
-        $stockValue = $this->calculateStockValue($endDate);
+        $startDate = '2024-01-01';
+        $analysis = Product::getProductAnalysis($startDate, $endDate);
+        $stockValue = $analysis['totals']['available_stock_value'];
 
         // Calculate Total
         $total = $bankBalance + $customerDue + $fixedAssets + $stockValue;
@@ -181,65 +185,13 @@ class BalanceSheetController extends Controller
 
     private function calculateBankBalance(?Carbon $startDate, Carbon $endDate)
     {
-        $query = DB::table('bank_transactions')
-            ->where('date', '<=', $endDate);
-
-        // If start date is provided, add the start date condition
-        if ($startDate) {
-            $query->where('date', '>=', $startDate);
-        }
-
-        return $query->select(DB::raw('CAST(
-            SUM(CASE
-                WHEN transaction_type = "in" THEN amount
-                ELSE -amount
-            END) AS DECIMAL(15,6)
-        ) as balance'))
-            ->first()
-            ->balance ?? 0;
+        return DB::table('bank_transactions')
+            ->where('date', '<=', $endDate)
+            ->whereNull('deleted_at')  // Add this if you have soft deletes
+            ->orderBy('date', 'desc')
+            ->orderBy('id', 'desc')    // In case multiple transactions on same date
+            ->value('running_balance') ?? 0;
     }
-
-    private function calculateStockValue(Carbon $endDate)
-    {
-        $stockPositions = DB::table('product_stocks as ps')
-            ->select('ps.product_id')
-            ->selectRaw('
-                CASE
-                    WHEN ps.id IN (
-                        SELECT MAX(id)
-                        FROM product_stocks
-                        WHERE product_id = ps.product_id
-                        AND created_at <= ?
-                        GROUP BY product_id
-                    )
-                    THEN ps.available_quantity
-                    ELSE 0
-                END as available_quantity
-            ', [$endDate])
-            ->selectRaw('
-                CASE
-                    WHEN SUM(CASE WHEN ps2.quantity > 0 THEN ps2.quantity ELSE 0 END) > 0
-                    THEN CAST(
-                        SUM(CASE WHEN ps2.quantity > 0 THEN (ps2.quantity * ps2.unit_cost) ELSE 0 END) /
-                        SUM(CASE WHEN ps2.quantity > 0 THEN ps2.quantity ELSE 0 END)
-                        AS DECIMAL(15,6)
-                    )
-                    ELSE 0
-                END as weighted_avg_cost
-            ')
-            ->join('product_stocks as ps2', function ($join) use ($endDate) {
-                $join->on('ps2.product_id', '=', 'ps.product_id')
-                    ->where('ps2.created_at', '<=', $endDate);
-            })
-            ->groupBy('ps.product_id', 'ps.id', 'ps.available_quantity')
-            ->having('available_quantity', '>', 0)
-            ->get();
-
-        return $stockPositions->sum(function ($stock) {
-            return $stock->available_quantity * $stock->weighted_avg_cost;
-        });
-    }
-
 
     public function downloadPdf(Request $request)
     {

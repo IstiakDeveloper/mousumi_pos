@@ -32,7 +32,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? $request->user()->load('role') : null,
             ],
             'appUrl' => config('app.url'),
             'flash' => [
@@ -41,4 +41,5 @@ class HandleInertiaRequests extends Middleware
             ],
         ];
     }
+
 }

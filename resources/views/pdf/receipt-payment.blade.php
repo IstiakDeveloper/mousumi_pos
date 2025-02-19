@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Receipt & Payment Statement</title>
     <style>
         @page {
-            margin: 20mm 15mm;
+            margin: 10mm 15mm;
         }
 
         body {
@@ -133,15 +134,16 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- Company Header -->
         <div class="company-header">
-            <div class="company-name">{{ config('app.name', 'Your Company Name') }}</div>
-            <div class="sub-company-name">Departmental Store</div>
+            <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Departmental Store</div>
+            <div class="sub-company-name"></div>
             <div class="company-details">
-                Ukilpara, Naogaon Sadar, Naogaon<br>
-                Phone: (+88) 01718903743 | Email: contact@mousumiprokashon.com
+                Ukilpara, Naogaon Sadar, Naogaon.<br>
+                Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
             </div>
         </div>
 
@@ -168,25 +170,36 @@
                         <tr>
                             <td>Opening Cash On the Bank</td>
                             <td class="text-right green">
-                                {{ number_format($receipt['opening_cash_on_bank'], 2) }}
+                                {{ number_format(floatval($receipt['opening_cash_on_bank']), 2) }}
                             </td>
                         </tr>
                         <tr>
                             <td>Sale Collection</td>
                             <td class="text-right green">
-                                {{ number_format($receipt['sale_collection'], 2) }}
+                                {{ number_format(floatval($receipt['sale_collection']), 2) }}
                             </td>
                         </tr>
                         <tr>
-                            <td>Extra Income</td>
+                            <td>
+                                Others Income
+                                @if (isset($receipt['extra_income']['categories']))
+                                    @foreach ($receipt['extra_income']['categories'] as $category)
+                                        <br>
+                                        <span style="padding-left: 20px; font-size: 0.6em;">
+                                            - {{ $category['category'] }}:
+                                            {{ number_format(floatval($category['amount']), 2) }}
+                                        </span>
+                                    @endforeach
+                                @endif
+                            </td>
                             <td class="text-right green">
-                                {{ number_format($receipt['extra_income'], 2) }}
+                                {{ number_format(floatval($receipt['extra_income']['total']), 2) }}
                             </td>
                         </tr>
                         <tr>
                             <td>Fund Receive</td>
                             <td class="text-right green">
-                                {{ number_format($receipt['fund_receive'], 2) }}
+                                {{ number_format(floatval($receipt['fund_receive']), 2) }}
                             </td>
                         </tr>
                         <tr>
@@ -195,7 +208,7 @@
                         <tr class="total-row">
                             <td>Total Receipt</td>
                             <td class="text-right green">
-                                {{ number_format($receipt['total'], 2) }}
+                                {{ number_format(floatval($receipt['total']), 2) }}
                             </td>
                         </tr>
                     </tbody>
@@ -216,25 +229,36 @@
                         <tr>
                             <td>Purchase</td>
                             <td class="text-right red">
-                                {{ number_format($payment['purchase'], 2) }}
+                                {{ number_format(floatval($payment['purchase']), 2) }}
                             </td>
                         </tr>
                         <tr>
                             <td>Fund Refund</td>
                             <td class="text-right red">
-                                {{ number_format($payment['fund_refund'], 2) }}
+                                {{ number_format(floatval($payment['fund_refund']), 2) }}
                             </td>
                         </tr>
                         <tr>
-                            <td>Expenses</td>
+                            <td>
+                                Expenses
+                                @if (isset($payment['expenses']['categories']))
+                                    @foreach ($payment['expenses']['categories'] as $category)
+                                        <br>
+                                        <span style="padding-left: 20px; font-size: 0.6em;">
+                                            - {{ $category['category'] }}:
+                                            {{ number_format(floatval($category['amount']), 2) }}
+                                        </span>
+                                    @endforeach
+                                @endif
+                            </td>
                             <td class="text-right red">
-                                {{ number_format($payment['expenses'], 2) }}
+                                {{ number_format(floatval($payment['expenses']['total']), 2) }}
                             </td>
                         </tr>
                         <tr>
                             <td>Closing Cash at Bank</td>
                             <td class="text-right red">
-                                {{ number_format($payment['closing_cash_at_bank'], 2) }}
+                                {{ number_format(floatval($payment['closing_cash_at_bank']), 2) }}
                             </td>
                         </tr>
                         <tr>
@@ -243,7 +267,7 @@
                         <tr class="total-row">
                             <td>Total Payment</td>
                             <td class="text-right red">
-                                {{ number_format($payment['total'], 2) }}
+                                {{ number_format(floatval($payment['total']), 2) }}
                             </td>
                         </tr>
                     </tbody>
@@ -259,4 +283,5 @@
         </div>
     </div>
 </body>
+
 </html>

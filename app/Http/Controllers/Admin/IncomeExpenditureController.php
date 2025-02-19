@@ -7,6 +7,7 @@ use App\Models\Sale;
 use App\Models\Expense;
 use App\Models\ExtraIncome;
 use App\Models\ExpenseCategory;
+use App\Models\Product;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -52,21 +53,25 @@ class IncomeExpenditureController extends Controller
 
     private function calculateIncome(Carbon $startDate, Carbon $endDate)
     {
-        // Sales Profit calculation remains same
-        $salesRevenuePeriod = Sale::whereBetween('created_at', [$startDate, $endDate])
-            ->sum('total');
+        $productAnalysis = Product::getProductAnalysis($startDate, $endDate);
+        $extraIncomeAnalysis = $this->calculateExtraIncome($startDate, $endDate);
 
-        $salesRevenueCumulative = Sale::where('created_at', '<=', Carbon::now()->endOfDay())
-            ->sum('total');
+        return [
+            'sales_profit' => [
+                'period' => (float) $productAnalysis['totals']['total_profit'],
+                'cumulative' => (float) Product::getCumulativeTotals()['total_profit']['cumulative'],
+            ],
+            'extra_income' => $extraIncomeAnalysis,
+            'total' => [
+                'period' => (float) $productAnalysis['totals']['total_profit'] + $extraIncomeAnalysis['total']['period'],
+                'cumulative' => (float) Product::getCumulativeTotals()['total_profit']['cumulative'] + $extraIncomeAnalysis['total']['cumulative'],
+            ],
+        ];
+    }
 
-        $costOfGoodsSoldPeriod = $this->calculateCostOfGoodsSold($startDate, $endDate);
-        $costOfGoodsSoldCumulative = $this->calculateCostOfGoodsSold(null, Carbon::now()->endOfDay());
-
-        $salesProfitPeriod = $salesRevenuePeriod - $costOfGoodsSoldPeriod;
-        $salesProfitCumulative = $salesRevenueCumulative - $costOfGoodsSoldCumulative;
-
-        // Extra Income with category breakdown
-        $extraIncomeByCategory = ExtraIncome::whereBetween('date', [$startDate, $endDate])
+    private function calculateExtraIncome(Carbon $startDate, Carbon $endDate)
+    {
+        $extraIncomeCategories = ExtraIncome::whereBetween('date', [$startDate, $endDate])
             ->select('category_id', DB::raw('SUM(amount) as total_amount'))
             ->groupBy('category_id')
             ->with('category')
@@ -81,28 +86,11 @@ class IncomeExpenditureController extends Controller
                 ];
             });
 
-        $extraIncomePeriod = $extraIncomeByCategory->sum('period');
-        $extraIncomeCumulative = ExtraIncome::where('date', '<=', Carbon::now()->endOfDay())
-            ->sum('amount');
-
-        $totalIncomePeriod = $salesProfitPeriod + $extraIncomePeriod;
-        $totalIncomeCumulative = $salesProfitCumulative + $extraIncomeCumulative;
-
         return [
-            'sales_profit' => [
-                'period' => (float) $salesProfitPeriod,
-                'cumulative' => (float) $salesProfitCumulative,
-            ],
-            'extra_income' => [
-                'categories' => $extraIncomeByCategory,
-                'total' => [
-                    'period' => (float) $extraIncomePeriod,
-                    'cumulative' => (float) $extraIncomeCumulative,
-                ]
-            ],
+            'categories' => $extraIncomeCategories,
             'total' => [
-                'period' => (float) $totalIncomePeriod,
-                'cumulative' => (float) $totalIncomeCumulative,
+                'period' => (float) $extraIncomeCategories->sum('period'),
+                'cumulative' => (float) $extraIncomeCategories->sum('cumulative'),
             ],
         ];
     }

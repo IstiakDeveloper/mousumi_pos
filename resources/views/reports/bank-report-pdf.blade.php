@@ -175,10 +175,13 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="company-name">{{ config('app.name', 'Company Name') }}</div>
-        <div class="report-title">Bank Transaction Report</div>
-        <div class="date-range">Report Period: {{ $date_range['from'] }} to {{ $date_range['to'] }}</div>
+    <div class="company-header">
+        <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Departmental Store</div>
+        <div class="sub-company-name"></div>
+        <div class="company-details">
+            Ukilpara, Naogaon Sadar, Naogaon.<br>
+            Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
+        </div>
     </div>
 
     <div class="meta-info">

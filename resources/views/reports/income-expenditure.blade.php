@@ -107,11 +107,17 @@
 <body>
     <div class="container">
         <!-- Header Section -->
-        <div class="header">
-            <div class="company-name">{{ config('app.name', 'Company Name') }}</div>
-            <div class="report-title">Income & Expenditure Report</div>
-            <div class="report-period">{{ $filters['monthName'] }} {{ $filters['year'] }}</div>
+        <div class="company-header">
+            <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Departmental Store</div>
+            <div class="sub-company-name"></div>
+            <div class="company-details">
+                Ukilpara, Naogaon Sadar, Naogaon.<br>
+                Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
+            </div>
         </div>
+
+            <div class="report-period">{{ $filters['monthName'] }} {{ $filters['year'] }}</div>
+
 
         <!-- Monthly Summary Section -->
         <div class="summary-section">

@@ -167,12 +167,12 @@
     <div class="a4-container">
         <div class="inner-content">
             <!-- Header Section -->
-            <div class="header">
-                <div class="company-name">{{ $company['name'] }}</div>
-                <div class="company-info">
-                    {{ $company['address'] }}<br>
-                    Tel: 01334766435<br>
-                    {{ $company['email'] }}
+            <<div class="company-header">
+                <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Departmental Store</div>
+                <div class="sub-company-name"></div>
+                <div class="company-details">
+                    Ukilpara, Naogaon Sadar, Naogaon.<br>
+                    Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
                 </div>
             </div>
 

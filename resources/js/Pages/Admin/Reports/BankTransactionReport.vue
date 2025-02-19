@@ -42,6 +42,18 @@ const formatDate = (dateStr) => {
     return date.toLocaleDateString('en-GB');
 };
 
+const downloadPdf = () => {
+    // Create URL with current filters
+    const params = new URLSearchParams({
+        month: currentMonth.value,
+        year: currentYear.value,
+        bank_account_id: selectedBankAccount.value
+    });
+
+    // Trigger download
+    window.location.href = `${route('admin.reports.bank-transactions.pdf')}?${params}`;
+};
+
 const formatAmount = (amount) => {
     const num = Number(amount) || 0;
     return num.toLocaleString('en-US', {
@@ -65,6 +77,7 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
 
 <template>
     <AdminLayout>
+
         <Head title="Bank Transaction Report" />
 
         <div class="py-6">
@@ -74,7 +87,7 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                     <div class="p-6 bg-white border-b border-gray-200">
                         <div class="flex flex-wrap gap-4 items-center">
                             <div class="flex-1 min-w-[200px]">
-                                <label class="block text-sm font-medium text-gray-700">Bank Account</label>
+
                                 <select v-model="selectedBankAccount"
                                     class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                     <option v-for="account in bankAccounts" :key="account.id" :value="account.id">
@@ -83,8 +96,9 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                                 </select>
                             </div>
 
+
                             <div class="w-[150px]">
-                                <label class="block text-sm font-medium text-gray-700">Month</label>
+
                                 <select v-model="currentMonth"
                                     class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                     <option v-for="month in months" :key="month.id" :value="month.id">
@@ -94,11 +108,18 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                             </div>
 
                             <div class="w-[120px]">
-                                <label class="block text-sm font-medium text-gray-700">Year</label>
+
                                 <select v-model="currentYear"
                                     class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                     <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
                                 </select>
+                            </div>
+
+                            <div class="">
+                                <button @click="downloadPdf" :disabled="isDownloadDisabled"
+                                    class="bg-red-600 text-white px-4 py-2 text-xs rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 flex items-center">
+                                    {{ isDownloading ? 'Downloading...' : 'PDF' }}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -108,31 +129,53 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                         <table class="w-full border-collapse">
                             <thead>
                                 <tr>
-                                    <th rowspan="2" class="border border-gray-300 bg-gray-50 px-4 py-2 text-left text-sm font-semibold text-gray-900">
+                                    <th rowspan="2"
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-center text-sm font-semibold text-gray-900">
                                         Date
                                     </th>
-                                    <th colspan="5" class="border border-gray-300 bg-gray-50 px-4 py-2 text-center text-sm font-semibold text-gray-900">
-                                        IN
+                                    <th colspan="5"
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-center text-sm font-semibold text-gray-900">
+                                        Deposit
                                     </th>
-                                    <th colspan="4" class="border border-gray-300 bg-gray-50 px-4 py-2 text-center text-sm font-semibold text-gray-900">
-                                        OUT
+                                    <th colspan="4"
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-center text-sm font-semibold text-gray-900">
+                                        Withdrawal
                                     </th>
-                                    <th rowspan="2" class="border border-gray-300 bg-gray-50 px-4 py-2 text-right text-sm font-semibold text-gray-900">
-                                        Available Balance
+                                    <th rowspan="2"
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-right text-sm font-semibold text-gray-900">
+                                        Bank Balance
                                     </th>
                                 </tr>
                                 <tr>
                                     <!-- IN subcategories -->
-                                    <th class="border border-gray-300 bg-gray-50 px-4 py-2 text-right text-sm font-semibold text-gray-900">Fund</th>
-                                    <th class="border border-gray-300 bg-gray-50 px-4 py-2 text-right text-sm font-semibold text-gray-900">Payment</th>
-                                    <th class="border border-gray-300 bg-gray-50 px-4 py-2 text-right text-sm font-semibold text-gray-900">Extra</th>
-                                    <th class="border border-gray-300 bg-gray-50 px-4 py-2 text-right text-sm font-semibold text-gray-900">Refund</th>
-                                    <th class="border border-gray-300 bg-gray-50 px-4 py-2 text-right text-sm font-semibold text-green-600">Total</th>
+                                    <th
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
+                                        Fund</th>
+                                    <th
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
+                                        Receive</th>
+                                    <th
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
+                                        Others</th>
+                                    <th
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
+                                        Refund</th>
+                                    <th
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-green-600">
+                                        Total</th>
                                     <!-- OUT subcategories -->
-                                    <th class="border border-gray-300 bg-gray-50 px-4 py-2 text-right text-sm font-semibold text-gray-900">Fund</th>
-                                    <th class="border border-gray-300 bg-gray-50 px-4 py-2 text-right text-sm font-semibold text-gray-900">Purchase</th>
-                                    <th class="border border-gray-300 bg-gray-50 px-4 py-2 text-right text-sm font-semibold text-gray-900">Expense</th>
-                                    <th class="border border-gray-300 bg-gray-50 px-4 py-2 text-right text-sm font-semibold text-red-600">Total</th>
+                                    <th
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
+                                        Fund</th>
+                                    <th
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
+                                        Purchase</th>
+                                    <th
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
+                                        Expense</th>
+                                    <th
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-red-600">
+                                        Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -141,16 +184,26 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                                     <td class="border border-gray-300 px-4 py-2 text-sm font-medium text-gray-900">
                                         Previous Month Balance
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-gray-500">0.00</td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-gray-500">0.00</td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-gray-500">0.00</td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-gray-500">0.00</td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-gray-500">0.00</td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-gray-500">0.00</td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-gray-500">0.00</td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-gray-500">0.00</td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-gray-500">0.00</td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm font-medium text-gray-900">
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-gray-500">0.00
+                                    </td>
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-gray-500">0.00
+                                    </td>
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-gray-500">0.00
+                                    </td>
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-gray-500">0.00
+                                    </td>
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-gray-500">0.00
+                                    </td>
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-gray-500">0.00
+                                    </td>
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-gray-500">0.00
+                                    </td>
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-gray-500">0.00
+                                    </td>
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-gray-500">0.00
+                                    </td>
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-center text-sm font-medium text-gray-900">
                                         {{ formatAmount(previousMonthBalance) }}
                                     </td>
                                 </tr>
@@ -161,35 +214,38 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                                         {{ formatDate(transaction.date) }}
                                     </td>
                                     <!-- IN columns -->
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-green-600">
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-green-600">
                                         {{ formatAmount(transaction.in.fund) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-green-600">
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-green-600">
                                         {{ formatAmount(transaction.in.payment) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-green-600">
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-green-600">
                                         {{ formatAmount(transaction.in.extra) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-green-600">
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-green-600">
                                         {{ formatAmount(transaction.in.refund) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm font-medium text-green-600">
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-center text-sm font-medium text-green-600">
                                         {{ formatAmount(transaction.in.total) }}
                                     </td>
                                     <!-- OUT columns -->
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-red-600">
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-red-600">
                                         {{ formatAmount(transaction.out.fund) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-red-600">
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-red-600">
                                         {{ formatAmount(transaction.out.purchase) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm text-red-600">
+                                    <td class="border border-gray-300 px-4 py-2 text-center text-sm text-red-600">
                                         {{ formatAmount(transaction.out.expense) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm font-medium text-red-600">
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-center text-sm font-medium text-red-600">
                                         {{ formatAmount(transaction.out.total) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm font-medium text-gray-900">
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-center text-sm font-medium text-gray-900">
                                         {{ formatAmount(transaction.balance) }}
                                     </td>
                                 </tr>
@@ -197,38 +253,48 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                                 <!-- Total Row -->
                                 <tr class="bg-gray-100 font-medium">
                                     <td class="border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-900">
-                                        Month Total
+                                        Month Total:
                                     </td>
                                     <!-- IN totals -->
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm font-semibold text-green-600">
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-center text-sm font-semibold text-green-600">
                                         {{ formatAmount(monthTotals.in.fund) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm font-semibold text-green-600">
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-center text-sm font-semibold text-green-600">
                                         {{ formatAmount(monthTotals.in.payment) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm font-semibold text-green-600">
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-center text-sm font-semibold text-green-600">
                                         {{ formatAmount(monthTotals.in.extra) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm font-semibold text-green-600">
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-center text-sm font-semibold text-green-600">
                                         {{ formatAmount(monthTotals.in.refund) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm font-semibold text-green-600">
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-center text-sm font-semibold text-green-600">
                                         {{ formatAmount(monthTotals.in.total) }}
                                     </td>
                                     <!-- OUT totals -->
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm font-semibold text-red-600">
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-center text-sm font-semibold text-red-600">
                                         {{ formatAmount(monthTotals.out.fund) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm font-semibold text-red-600">
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-center text-sm font-semibold text-red-600">
                                         {{ formatAmount(monthTotals.out.purchase) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm font-semibold text-red-600">
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-center text-sm font-semibold text-red-600">
                                         {{ formatAmount(monthTotals.out.expense) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm font-semibold text-red-600">
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-center text-sm font-semibold text-red-600">
                                         {{ formatAmount(monthTotals.out.total) }}
                                     </td>
-                                    <td class="border border-gray-300 px-4 py-2 text-right text-sm font-semibold text-gray-900">
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-center text-sm font-semibold text-gray-900">
                                         {{ formatAmount(dailyTransactions[dailyTransactions.length - 1]?.balance) }}
                                     </td>
                                 </tr>
