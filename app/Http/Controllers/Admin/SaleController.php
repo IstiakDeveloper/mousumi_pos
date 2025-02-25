@@ -338,11 +338,27 @@ class SaleController extends Controller
 
     public function printReceipt($id)
     {
-        $sale = Sale::with(['saleItems.product', 'customer', 'createdBy', 'bankAccount'])
-            ->findOrFail($id);
+        // Fetch the sale with related data, including product categories
+        $sale = Sale::with([
+            'saleItems.product.category', // Include product category relationship
+            'customer',
+            'createdBy',
+            'bankAccount'
+        ])->findOrFail($id);
+
+        // Calculate category subtotals
+        $categoryTotals = [];
+        foreach ($sale->saleItems as $item) {
+            $categoryName = $item->product->category->name ?? 'Uncategorized';
+            if (!isset($categoryTotals[$categoryName])) {
+                $categoryTotals[$categoryName] = 0;
+            }
+            $categoryTotals[$categoryName] += $item->subtotal;
+        }
 
         $pdf = PDF::loadView('admin.sales.receipt', [
             'sale' => $sale,
+            'categoryTotals' => $categoryTotals,
             'company' => [
                 'name' => config('app.name'),
                 'address' => config('app.address'),
@@ -352,7 +368,7 @@ class SaleController extends Controller
             ]
         ]);
 
-        // Set paper size for 80mm receipt
+        // Set paper size for 80mm receipt (width: 80mm)
         $pdf->setPaper([0, 0, 226.772, 841.89], 'portrait');
 
         return $pdf->stream("receipt-{$sale->invoice_no}.pdf");

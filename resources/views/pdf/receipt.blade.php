@@ -99,6 +99,28 @@
             text-align: center;
         }
 
+        /* Category Header */
+        .category-header {
+            background: #f0f0f0;
+            font-weight: bold;
+            border-bottom: 1px solid #ccc;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Category Subtotal */
+        .category-subtotal {
+            background: #f8f8f8;
+            font-weight: bold;
+            font-style: italic;
+            border-bottom: 2px solid #ddd;
+        }
+
+        /* Category Section */
+        .category-section {
+            margin-bottom: 8mm;
+        }
+
         /* Totals Section */
         .totals-section {
             width: 60%;
@@ -167,7 +189,7 @@
     <div class="a4-container">
         <div class="inner-content">
             <!-- Header Section -->
-            <<div class="company-header">
+            <div class="company-header">
                 <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Departmental Store</div>
                 <div class="sub-company-name"></div>
                 <div class="company-details">
@@ -179,7 +201,7 @@
             <!-- Invoice Details Section -->
             <div class="invoice-section">
                 <div class="invoice-details">
-                    <div class="invoice-title">TAX INVOICE</div>
+                    <div class="invoice-title">SALE INVOICE</div>
                     <p><strong>Invoice No:</strong> {{ $sale->invoice_no }}</p>
                     <p><strong>Date:</strong> {{ $sale->created_at->format('d/m/Y H:i') }}</p>
                     <p><strong>Payment Method:</strong> {{ ucfirst($sale->payment_method) }}</p>
@@ -187,11 +209,10 @@
                 <div class="customer-details">
                     <p><strong>Bill To:</strong></p>
                     <p>{{ $sale->customer ? $sale->customer->name : 'Walk-in Customer' }}</p>
-                    <p><strong>Served by:</strong> {{ $sale->created_by }}</p>
                 </div>
             </div>
 
-            <!-- Items Table -->
+            <!-- Items Table Grouped by Category -->
             <table class="items-table">
                 <thead>
                     <tr>
@@ -201,14 +222,47 @@
                         <th style="width: 20%" class="amount">Amount</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @foreach($sale->saleItems as $item)
-                    <tr>
-                        <td>{{ $item->product->name }}</td>
-                        <td class="quantity">{{ $item->quantity }}</td>
-                        <td class="amount">{{ number_format($item->unit_price, 2) }}</td>
-                        <td class="amount">{{ number_format($item->subtotal, 2) }}</td>
-                    </tr>
+                @php
+                    // Group items by category
+                    $itemsByCategory = $sale->saleItems->groupBy(function($item) {
+                        return $item->product->category->name ?? 'Uncategorized';
+                    });
+
+                    // Calculate totals per category
+                    $categoryTotals = [];
+                    foreach ($itemsByCategory as $category => $items) {
+                        $categoryTotals[$category] = $items->sum('subtotal');
+                    }
+                @endphp
+
+                    @foreach($itemsByCategory as $categoryName => $items)
+                        <tbody class="category-section">
+                            <!-- Category Header -->
+                            <tr class="category-header">
+                                <td colspan="4">{{ $categoryName }}</td>
+                            </tr>
+
+                            <!-- Items in this category -->
+                            @foreach($items as $item)
+                            <tr>
+                                <td>{{ $item->product->name }}</td>
+                                <td class="quantity">{{ $item->quantity }}</td>
+                                <td class="amount">{{ number_format($item->unit_price, 2) }}</td>
+                                <td class="amount">{{ number_format($item->subtotal, 2) }}</td>
+                            </tr>
+                            @endforeach
+
+                            <!-- Category Subtotal -->
+                            <tr class="category-subtotal">
+                                <td colspan="3" style="text-align: right; padding-right: 10mm;">{{ $categoryName }} Subtotal:</td>
+                                <td class="amount">{{ number_format($categoryTotals[$categoryName], 2) }}</td>
+                            </tr>
+
+                            <!-- Empty spacer row for margin -->
+                            <tr style="height: 5mm">
+                                <td colspan="4" style="border: none;"></td>
+                            </tr>
+                        </tbody>
                     @endforeach
                 </tbody>
             </table>

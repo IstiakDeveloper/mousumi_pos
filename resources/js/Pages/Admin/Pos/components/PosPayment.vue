@@ -42,6 +42,22 @@
                     <span class="text-gray-600 dark:text-gray-300">Subtotal</span>
                     <span class="font-medium text-gray-900 dark:text-gray-100">৳{{ formatNumber(cartSummary.subtotal) }}</span>
                 </div>
+                <!-- Discount Input -->
+                <div class="flex justify-between pb-2 border-b dark:border-gray-600">
+                    <span class="text-gray-600 dark:text-gray-300">Discount</span>
+                    <div class="flex items-center">
+                        <input
+                            type="number"
+                            v-model.number="discount"
+                            class="w-24 text-right border-gray-200 dark:border-gray-600 rounded-md text-sm p-1
+                                  bg-transparent dark:bg-gray-600 text-gray-900 dark:text-gray-100
+                                  focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                            min="0"
+                            step="0.01"
+                        />
+                        <span class="ml-1 font-medium text-gray-900 dark:text-gray-100">৳</span>
+                    </div>
+                </div>
                 <div class="flex justify-between text-base font-bold pt-1">
                     <span class="text-gray-900 dark:text-gray-100">Total</span>
                     <span class="text-blue-600 dark:text-blue-400">৳{{ formatNumber(total) }}</span>

@@ -227,11 +227,26 @@ class PosController extends Controller
 
     public function printReceipt($id)
     {
-        $sale = Sale::with(['saleItems.product', 'customer', 'createdBy'])
-            ->findOrFail($id);
+        // Fetch the sale with related data, including product categories
+        $sale = Sale::with([
+            'saleItems.product.category', // Include product category relationship
+            'customer',
+            'createdBy'
+        ])->findOrFail($id);
+
+        // Calculate category subtotals
+        $categoryTotals = [];
+        foreach ($sale->saleItems as $item) {
+            $categoryName = $item->product->category->name ?? 'Uncategorized';
+            if (!isset($categoryTotals[$categoryName])) {
+                $categoryTotals[$categoryName] = 0;
+            }
+            $categoryTotals[$categoryName] += $item->subtotal;
+        }
 
         $pdf = Pdf::loadView('pdf.receipt', [
             'sale' => $sale,
+            'categoryTotals' => $categoryTotals,
             'company' => [
                 'name' => config('app.name'),
                 'address' => config('app.address'),
