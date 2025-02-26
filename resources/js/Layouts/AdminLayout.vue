@@ -373,7 +373,7 @@ const dropdownNavItems = [
         icon: 'fa-box',
         allowedRoles: ['admin', 'manager'],
         items: [
-            { name: 'Products', href: '/admin/products', icon: 'fa-boxes', allowedRoles: ['admin'] },
+            { name: 'Products', href: '/admin/products', icon: 'fa-boxes', allowedRoles: ['admin', 'manager'] },
             { name: 'Categories', href: '/admin/categories', icon: 'fa-folder', allowedRoles: ['admin'] },
             { name: 'Units', href: '/admin/units', icon: 'fa-ruler', allowedRoles: ['admin'] },
             { name: 'Brands', href: '/admin/brands', icon: 'fa-tag', allowedRoles: ['admin'] },

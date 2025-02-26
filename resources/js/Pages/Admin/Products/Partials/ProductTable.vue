@@ -89,15 +89,15 @@
                     </td>
                     <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                         <div class="flex justify-end space-x-2">
-                            <Link :href="route('admin.products.show', product.id)"
+                            <Link v-if="user.role.name.toLowerCase() === 'admin'" :href="route('admin.products.show', product.id)"
                                 class="text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
                             <EyeIcon class="h-5 w-5" />
                             </Link>
-                            <Link :href="route('admin.products.edit', product.id)"
+                            <Link v-if="user.role.name.toLowerCase() === 'admin'" :href="route('admin.products.edit', product.id)"
                                 class="text-blue-400 hover:text-blue-900 dark:hover:text-blue-100">
                             <PencilIcon class="h-5 w-5" />
                             </Link>
-                            <button @click="$emit('delete', product)"
+                            <button v-if="user.role.name.toLowerCase() === 'admin'" @click="$emit('delete', product)"
                                 class="text-red-400 hover:text-red-900 dark:hover:text-red-100">
                                 <TrashIcon class="h-5 w-5" />
                             </button>
@@ -110,7 +110,7 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { EyeIcon, PencilIcon, TrashIcon, PhotoIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -119,6 +119,9 @@ const props = defineProps({
         required: true
     }
 });
+
+const page = usePage();
+const user = page.props.auth.user;
 
 defineEmits(['delete']);
 

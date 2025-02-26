@@ -195,17 +195,42 @@ class IncomeExpenditureController extends Controller
     {
         // Validate and set date range
         $request->validate([
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'selected_month' => 'nullable|integer|min:1|max:12',
+            'selected_year' => 'nullable|integer'
         ]);
 
-        // Set default to current month if no dates provided
-        $startDate = $request->start_date
-            ? Carbon::parse($request->start_date)->startOfDay()
-            : Carbon::now()->startOfMonth();
-        $endDate = $request->end_date
-            ? Carbon::parse($request->end_date)->endOfDay()
-            : Carbon::now()->endOfDay();
+        // Parse the provided dates
+        $startDate = Carbon::parse($request->start_date)->startOfDay();
+        $endDate = Carbon::parse($request->end_date)->endOfDay();
+
+        // Extract month and year - use the directly provided values if available
+        if ($request->has('selected_month') && $request->has('selected_year')) {
+            $month = (int) $request->selected_month;
+            $year = (int) $request->selected_year;
+
+            // Get the month name using Carbon
+            $monthName = Carbon::createFromDate($year, $month, 1)->format('F');
+        } else {
+            // Fallback to extracting from the date
+            $month = $startDate->month;
+            $year = $startDate->year;
+            $monthName = $startDate->format('F');
+        }
+
+        // Double-check that we have the correct month
+        // If the start date is the last day of the previous month due to timezone issues,
+        // adjust to use the first day of the intended month
+        if ($month != $startDate->month) {
+            // Adjust start date to be the first day of the intended month
+            $startDate = Carbon::createFromDate($year, $month, 1)->startOfDay();
+
+            // If end date also needs adjustment, set it to the last day of the intended month
+            if ($month != $endDate->month) {
+                $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->endOfDay();
+            }
+        }
 
         // Calculate Income Section
         $incomeData = $this->calculateIncome($startDate, $endDate);
@@ -213,21 +238,24 @@ class IncomeExpenditureController extends Controller
         // Calculate Expenditure Section
         $expenditureData = $this->calculateExpenditure($startDate, $endDate);
 
-        // Prepare data for PDF - using same structure as index
+        // Prepare data for PDF - using same structure as index, but with added month info
         $data = [
             'income' => $incomeData,
             'expenditure' => $expenditureData,
             'filters' => [
                 'start_date' => $startDate->format('Y-m-d'),
                 'end_date' => $endDate->format('Y-m-d'),
+                'year' => $year,
+                'month' => $month,
+                'month_name' => $monthName
             ]
         ];
 
         // Generate PDF
         $pdf = Pdf::loadView('pdf.income-expenditure', $data);
 
-        // Generate filename
-        $filename = 'income-expenditure-' . $startDate->format('Y-m-d') . '-to-' . $endDate->format('Y-m-d') . '.pdf';
+        // Generate filename with month and year
+        $filename = 'income-expenditure-' . $monthName . '-' . $year . '.pdf';
 
         // Download PDF
         return $pdf->download($filename);

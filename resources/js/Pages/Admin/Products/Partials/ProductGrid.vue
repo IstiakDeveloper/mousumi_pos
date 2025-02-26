@@ -59,15 +59,15 @@
 
                 <!-- Actions -->
                 <div class="mt-4 flex justify-end space-x-2">
-                    <Link :href="route('admin.products.show', product.id)"
+                    <Link v-if="user.role.name.toLowerCase() === 'admin'" :href="route('admin.products.show', product.id)"
                         class="inline-flex items-center p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                     <EyeIcon class="h-5 w-5" />
                     </Link>
-                    <Link :href="route('admin.products.edit', product.id)"
+                    <Link v-if="user.role.name.toLowerCase() === 'admin'" :href="route('admin.products.edit', product.id)"
                         class="inline-flex items-center p-2 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-200">
                     <PencilIcon class="h-5 w-5" />
                     </Link>
-                    <button @click="$emit('delete', product)"
+                    <button v-if="user.role.name.toLowerCase() === 'admin'" @click="$emit('delete', product)"
                         class="inline-flex items-center p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200">
                         <TrashIcon class="h-5 w-5" />
                     </button>
@@ -78,7 +78,7 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { EyeIcon, PencilIcon, TrashIcon, PhotoIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -87,6 +87,8 @@ const props = defineProps({
         required: true
     }
 });
+const page = usePage();
+const user = page.props.auth.user;
 
 defineEmits(['delete']);
 

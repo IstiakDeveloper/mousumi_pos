@@ -262,24 +262,33 @@ export default defineComponent({
             this.isDownloadDisabled = true;
 
             try {
-                const response = await axios.get(route('admin.reports.income-expenditure.pdf'), {
-                    params: {
-                        start_date: new Date(this.selectedYear, this.selectedMonth - 1, 1).toISOString().split('T')[0],
-                        end_date: new Date(this.selectedYear, this.selectedMonth, 0).toISOString().split('T')[0],
-                    },
-                    responseType: 'blob'
-                });
+                // Get first and last day of selected month with timezone safety
+                // Use Date.UTC to ensure consistent dates without timezone issues
+                const startDate = new Date(Date.UTC(this.selectedYear, this.selectedMonth - 1, 1));
+                const endDate = new Date(Date.UTC(this.selectedYear, this.selectedMonth, 0)); // Last day of month
 
-                const url = window.URL.createObjectURL(new Blob([response.data]));
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `income-expenditure-${this.selectedYear}-${this.selectedMonth}.pdf`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                // Format dates as YYYY-MM-DD ensuring we get the correct day
+                // Use local date methods rather than ISO string to avoid timezone shifts
+                const formattedStartDate = `${startDate.getUTCFullYear()}-${String(startDate.getUTCMonth() + 1).padStart(2, '0')}-${String(startDate.getUTCDate()).padStart(2, '0')}`;
+                const formattedEndDate = `${endDate.getUTCFullYear()}-${String(endDate.getUTCMonth() + 1).padStart(2, '0')}-${String(endDate.getUTCDate()).padStart(2, '0')}`;
+
+                // Also include the month directly as a parameter to ensure the controller has the correct month
+                const monthName = this.getMonthName(this.selectedMonth);
+
+                // Create URL with query parameters
+                const url = route('admin.reports.income-expenditure.pdf') +
+                    `?start_date=${formattedStartDate}&end_date=${formattedEndDate}&selected_month=${this.selectedMonth}&selected_year=${this.selectedYear}`;
+
+                // Open in new window or redirect current window
+                window.location.href = url;
+
+                // Reset states after a brief delay to show loading state
+                setTimeout(() => {
+                    this.isDownloading = false;
+                    this.isDownloadDisabled = false;
+                }, 1500);
             } catch (error) {
                 console.error('Error downloading PDF:', error);
-            } finally {
                 this.isDownloading = false;
                 this.isDownloadDisabled = false;
             }

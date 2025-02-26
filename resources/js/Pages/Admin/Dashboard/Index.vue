@@ -129,7 +129,7 @@
 
 
                     <!-- Stock Value Card -->
-                    <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
+                    <!-- <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
                         <dt>
                             <div class="absolute rounded-md bg-purple-500 p-3">
                                 <ArchiveBoxIcon class="h-6 w-6 text-white" aria-hidden="true" />
@@ -146,11 +146,11 @@
                                 </div>
                             </div>
                         </dd>
-                    </div>
+                    </div> -->
 
 
                     <!-- Stock Wrowth Card -->
-                    <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
+                    <!-- <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
                         <dt>
                             <div class="absolute rounded-md bg-amber-500 p-3">
                                 <ArchiveBoxIcon class="h-6 w-6 text-white" aria-hidden="true" />
@@ -161,17 +161,8 @@
                             <p class="text-2xl font-semibold text-gray-900">
                                 {{ formatCurrency(summary.stock.potential_value) }}
                             </p>
-                            <!-- <p class="ml-2 flex items-baseline text-sm font-semibold text-green-600">
-                                <ArrowUpIcon class="h-5 w-5 flex-shrink-0 self-center" aria-hidden="true" />
-                                {{ calculateProfitPercentage }}%
-                            </p> -->
                             <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
                                 <div class="text-sm flex justify-between">
-                                    <!-- <div>
-                                        <span class="text-gray-600">Potential Profit: </span>
-                                        <span class="font-medium text-green-600">{{
-                                            formatCurrency(summary.stock.potential_profit) }}</span>
-                                    </div> -->
                                     <div>
                                         <span class="text-gray-600">ROI: </span>
                                         <span class="font-medium text-green-600">{{ calculateProfitPercentage }}%</span>
@@ -179,7 +170,7 @@
                                 </div>
                             </div>
                         </dd>
-                    </div>
+                    </div> -->
                 </dl>
 
 

@@ -67,19 +67,33 @@
                                     {{ formatCurrency(receipt?.sale_collection || 0) }}
                                 </td>
                             </tr>
-                            <tr>
-                                <td class="px-4 py-2">
-                                    <div class="font-medium">Extra Income</div>
-                                    <!-- Category breakdown -->
-                                    <div class="pl-4 text-sm text-gray-600">
-                                        <div v-for="category in receipt?.extra_income?.categories"
-                                            :key="category.category" class="flex justify-between">
-                                            <span>{{ category.category }}</span>
-                                            <span class="text-green-600">{{ formatCurrency(category.amount) }}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-2 text-right text-green-600 font-semibold">
+                            <!-- Extra Income Header Row -->
+                            <tr class="bg-gray-50">
+                                <td colspan="2" class="px-4 py-2 font-medium text-gray-900">Others Income</td>
+                            </tr>
+                            <!-- Individual Extra Income Category Rows -->
+                            <template
+                                v-if="receipt?.extra_income?.categories && receipt.extra_income.categories.length > 0">
+                                <tr v-for="category in receipt.extra_income.categories" :key="category.category">
+                                    <td class="px-4 py-2 pl-8 text-sm text-gray-700">{{ category.category }}</td>
+                                    <td class="px-4 py-2 text-right text-green-600">
+                                        {{ formatCurrency(category.amount) }}
+                                    </td>
+                                </tr>
+                            </template>
+                            <template v-else>
+                                <tr>
+                                    <td class="px-4 py-2 pl-8 text-sm text-gray-500 italic">No others income this period
+                                    </td>
+                                    <td class="px-4 py-2 text-right text-gray-500">
+                                        {{ formatCurrency(0) }}
+                                    </td>
+                                </tr>
+                            </template>
+                            <!-- Extra Income Total Row -->
+                            <tr class="bg-gray-100 font-semibold">
+                                <td class="px-4 py-2 text-gray-800">Total Others Income</td>
+                                <td class="px-4 py-2 text-right text-green-600 font-bold">
                                     {{ formatCurrency(receipt?.extra_income?.total || 0) }}
                                 </td>
                             </tr>
@@ -123,19 +137,31 @@
                                     {{ formatCurrency(payment?.fund_refund || 0) }}
                                 </td>
                             </tr>
-                            <tr>
-                                <td class="px-4 py-2">
-                                    <div class="font-medium">Expenses</div>
-                                    <!-- Category breakdown -->
-                                    <div class="pl-4 text-sm text-gray-600">
-                                        <div v-for="category in payment?.expenses?.categories" :key="category.category"
-                                            class="flex justify-between">
-                                            <span>{{ category.category }}</span>
-                                            <span class="text-red-600">{{ formatCurrency(category.amount) }}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-2 text-right text-red-600 font-semibold">
+                            <!-- Expenses Header Row -->
+                            <tr class="bg-gray-50">
+                                <td colspan="2" class="px-4 py-2 font-medium text-gray-900">Expenses</td>
+                            </tr>
+                            <!-- Individual Expense Category Rows -->
+                            <template v-if="payment?.expenses?.categories && payment.expenses.categories.length > 0">
+                                <tr v-for="category in payment.expenses.categories" :key="category.category">
+                                    <td class="px-4 py-2 pl-8 text-sm text-gray-700">{{ category.category }}</td>
+                                    <td class="px-4 py-2 text-right text-red-600">
+                                        {{ formatCurrency(category.amount) }}
+                                    </td>
+                                </tr>
+                            </template>
+                            <template v-else>
+                                <tr>
+                                    <td class="px-4 py-2 pl-8 text-sm text-gray-500 italic">No expenses this period</td>
+                                    <td class="px-4 py-2 text-right text-gray-500">
+                                        {{ formatCurrency(0) }}
+                                    </td>
+                                </tr>
+                            </template>
+                            <!-- Expenses Total Row -->
+                            <tr class="bg-gray-100 font-semibold">
+                                <td class="px-4 py-2 text-gray-800">Total Expenses</td>
+                                <td class="px-4 py-2 text-right text-red-600 font-bold">
                                     {{ formatCurrency(payment?.expenses?.total || 0) }}
                                 </td>
                             </tr>

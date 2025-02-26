@@ -11,7 +11,7 @@
 
         body {
             font-family: 'DejaVu Sans', Arial, sans-serif;
-            font-size: 10pt;
+            font-size: 8pt;
             line-height: 1.6;
             color: #333;
         }
@@ -57,7 +57,7 @@
 
         .report-period {
             text-align: center;
-            font-size: 9pt;
+            font-size: 8pt;
             color: #7f8c8d;
             margin-bottom: 20px;
         }
@@ -160,8 +160,12 @@
         <!-- Report Title and Period -->
         <div class="report-title">Income & Expenditure Statement</div>
         <div class="report-period">
-            Period: {{ \Carbon\Carbon::parse($filters['start_date'])->format('d M Y') }} to
-            {{ \Carbon\Carbon::parse($filters['end_date'])->format('d M Y') }}
+            @if (isset($filters['month_name']))
+                Period: {{ $filters['month_name'] }} {{ $filters['year'] }}
+            @else
+                Period: {{ \Carbon\Carbon::parse($filters['start_date'])->format('d M Y') }} to
+                {{ \Carbon\Carbon::parse($filters['end_date'])->format('d M Y') }}
+            @endif
         </div>
 
         <!-- Statement Content in side by side layout -->
@@ -201,19 +205,21 @@
                         <!-- Total Income Row -->
                         <tr class="total-row">
                             <td><strong>Total Income</strong></td>
-                            <td class="text-right green">{{ number_format($income['total']['period'], 2) }}</td>
-                            <td class="text-right green">{{ number_format($income['total']['cumulative'], 2) }}</td>
+                            <td style="font-size: 9px;" class="text-right green">
+                                {{ number_format($income['total']['period'], 2) }}</td>
+                            <td style="font-size: 9px;" class="text-right green">
+                                {{ number_format($income['total']['cumulative'], 2) }}</td>
                         </tr>
 
                         <!-- Surplus Row -->
                         <tr class="total-row">
                             <td><strong>Surplus</strong></td>
-                            <td
-                                class="text-right {{ $income['total']['period'] - $expenditure['total']['period'] >= 0 ? 'green' : 'red' }}">
+                            <td class="text-right {{ $income['total']['period'] - $expenditure['total']['period'] >= 0 ? 'green' : 'red' }}"
+                                style="font-size: 9px;">
                                 {{ number_format($income['total']['period'] - $expenditure['total']['period'], 2) }}
                             </td>
-                            <td
-                                class="text-right {{ $income['total']['cumulative'] - $expenditure['total']['cumulative'] >= 0 ? 'green' : 'red' }}">
+                            <td class="text-right {{ $income['total']['cumulative'] - $expenditure['total']['cumulative'] >= 0 ? 'green' : 'red' }}"
+                                style="font-size: 9px;">
                                 {{ number_format($income['total']['cumulative'] - $expenditure['total']['cumulative'], 2) }}
                             </td>
                         </tr>
@@ -221,8 +227,10 @@
                         <!-- Grand Total Row -->
                         <tr class="total-row">
                             <td><strong>Grand Total</strong></td>
-                            <td class="text-right red">{{ number_format($expenditure['total']['period'], 2) }}</td>
-                            <td class="text-right red">{{ number_format($expenditure['total']['cumulative'], 2) }}</td>
+                            <td style="font-size: 9px;" class="text-right red">
+                                {{ number_format($expenditure['total']['period'], 2) }}</td>
+                            <td style="font-size: 9px;" class="text-right red">
+                                {{ number_format($expenditure['total']['cumulative'], 2) }}</td>
                         </tr>
                     </tbody>
                 </table>

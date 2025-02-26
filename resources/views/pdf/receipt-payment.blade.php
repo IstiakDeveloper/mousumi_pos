@@ -92,7 +92,7 @@
         table td {
             padding: 6px 10px;
             border: 1px solid #202020;
-            font-size: 9pt;
+            font-size: 7pt;
         }
 
         table th {
@@ -179,20 +179,41 @@
                                 {{ number_format(floatval($receipt['sale_collection']), 2) }}
                             </td>
                         </tr>
+                        <!-- Extra Income Header Row -->
                         <tr>
-                            <td>
+                            <td colspan="2" style="padding: 8px; font-weight: 600; background-color: #f3f4f6;">
                                 Others Income
-                                @if (isset($receipt['extra_income']['categories']))
-                                    @foreach ($receipt['extra_income']['categories'] as $category)
-                                        <br>
-                                        <span style="padding-left: 20px; font-size: 0.6em;">
-                                            - {{ $category['category'] }}:
-                                            {{ number_format(floatval($category['amount']), 2) }}
-                                        </span>
-                                    @endforeach
-                                @endif
                             </td>
-                            <td class="text-right green">
+                        </tr>
+                        <!-- Individual Extra Income Category Rows -->
+                        @if (isset($receipt['extra_income']['categories']) && count($receipt['extra_income']['categories']) > 0)
+                            @foreach ($receipt['extra_income']['categories'] as $category)
+                                <tr>
+                                    <td style="padding: 8px; padding-left: 24px; font-size: 0.7em;">
+                                        {{ $category['category'] }}
+                                    </td>
+                                    <td style="padding: 8px; text-align: right; color: #059669;">
+                                        {{ number_format(floatval($category['amount']), 2) }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr>
+                                <td
+                                    style="padding: 8px; padding-left: 24px; font-size: 0.7em; font-style: italic; color: #6b7280;">
+                                    No extra income this period
+                                </td>
+                                <td style="padding: 8px; text-align: right; color: #6b7280;">
+                                    0.00
+                                </td>
+                            </tr>
+                        @endif
+                        <!-- Extra Income Total Row -->
+                        <tr style="background-color: #f3f4f6;">
+                            <td style="padding: 8px; font-weight: 600;">
+                                Total Others Income
+                            </td>
+                            <td style="padding: 8px; text-align: right; color: #059669; font-weight: 700;">
                                 {{ number_format(floatval($receipt['extra_income']['total']), 2) }}
                             </td>
                         </tr>
@@ -238,20 +259,41 @@
                                 {{ number_format(floatval($payment['fund_refund']), 2) }}
                             </td>
                         </tr>
+                        <!-- Expenses Header Row -->
                         <tr>
-                            <td>
+                            <td colspan="2" style="padding: 8px; font-weight: 600; background-color: #f3f4f6;">
                                 Expenses
-                                @if (isset($payment['expenses']['categories']))
-                                    @foreach ($payment['expenses']['categories'] as $category)
-                                        <br>
-                                        <span style="padding-left: 20px; font-size: 0.6em;">
-                                            - {{ $category['category'] }}:
-                                            {{ number_format(floatval($category['amount']), 2) }}
-                                        </span>
-                                    @endforeach
-                                @endif
                             </td>
-                            <td class="text-right red">
+                        </tr>
+                        <!-- Individual Expense Category Rows -->
+                        @if (isset($payment['expenses']['categories']) && count($payment['expenses']['categories']) > 0)
+                            @foreach ($payment['expenses']['categories'] as $category)
+                                <tr>
+                                    <td style="padding: 8px; padding-left: 24px; font-size: 0.7em;">
+                                        {{ $category['category'] }}
+                                    </td>
+                                    <td style="padding: 8px; text-align: right; color: #dc2626;">
+                                        {{ number_format(floatval($category['amount']), 2) }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr>
+                                <td
+                                    style="padding: 8px; padding-left: 24px; font-size: 0.7em; font-style: italic; color: #6b7280;">
+                                    No expenses this period
+                                </td>
+                                <td style="padding: 8px; text-align: right; color: #6b7280;">
+                                    0.00
+                                </td>
+                            </tr>
+                        @endif
+                        <!-- Expenses Total Row -->
+                        <tr style="background-color: #f3f4f6;">
+                            <td style="padding: 8px; font-weight: 600;">
+                                Total Expenses
+                            </td>
+                            <td style="padding: 8px; text-align: right; color: #dc2626; font-weight: 700;">
                                 {{ number_format(floatval($payment['expenses']['total']), 2) }}
                             </td>
                         </tr>
