@@ -18,7 +18,7 @@ class ManagerSeeder extends Seeder
         Role::create([
             'name' => 'Manager',
             'slug' => 'manager',
-            'permissions' => null, // You can add specific permissions if needed
+            'permissions' => null,
         ]);
 
         $role = Role::where('slug', 'manager')->first();
@@ -31,14 +31,14 @@ class ManagerSeeder extends Seeder
             'role_id' => $role->id,
             'phone' => null,
             'address' => null,
-            'status' => 1,  // Use integer 1 for active status
+            'status' => 1,
         ]);
 
 
         Role::create([
             'name' => 'Super Admin',
             'slug' => 'super-admin',
-            'permissions' => null, // You can add specific permissions if needed
+            'permissions' => null,
         ]);
 
         $role = Role::where('slug', 'super-admin')->first();

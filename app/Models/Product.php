@@ -288,7 +288,6 @@ class Product extends Model
         return $this->stocks()->sum('quantity');
     }
 
-
     public static function getCumulativeTotals()
     {
         try {

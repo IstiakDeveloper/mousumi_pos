@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ExtraIncomeCategory;
 use App\Models\Sale;
 use App\Models\Expense;
 use App\Models\ExtraIncome;
@@ -71,20 +72,61 @@ class IncomeExpenditureController extends Controller
 
     private function calculateExtraIncome(Carbon $startDate, Carbon $endDate)
     {
-        $extraIncomeCategories = ExtraIncome::whereBetween('date', [$startDate, $endDate])
+        // Get all category IDs that have ever had a transaction
+        $allCategoryIds = ExtraIncome::select('category_id')
+            ->distinct()
+            ->whereNotNull('category_id')
+            ->pluck('category_id');
+
+        // Get current period data
+        $currentPeriodData = ExtraIncome::whereBetween('date', [$startDate, $endDate])
             ->select('category_id', DB::raw('SUM(amount) as total_amount'))
             ->groupBy('category_id')
-            ->with('category')
-            ->get()
-            ->map(function ($income) {
-                return [
-                    'name' => $income->category ? $income->category->name : 'Uncategorized',
-                    'period' => (float) $income->total_amount,
-                    'cumulative' => (float) ExtraIncome::where('category_id', $income->category_id)
-                        ->where('date', '<=', Carbon::now()->endOfDay())
-                        ->sum('amount')
-                ];
-            });
+            ->pluck('total_amount', 'category_id')
+            ->toArray();
+
+        // Create the results array with all categories
+        $extraIncomeCategories = collect();
+
+        foreach ($allCategoryIds as $categoryId) {
+            // Get the category name
+            $category = ExtraIncomeCategory::find($categoryId);
+            $categoryName = $category ? $category->name : 'Uncategorized';
+
+            // Calculate cumulative amount
+            $cumulative = ExtraIncome::where('category_id', $categoryId)
+                ->where('date', '<=', $endDate)
+                ->sum('amount');
+
+            // Get period amount (0 if not present in current period)
+            $periodAmount = $currentPeriodData[$categoryId] ?? 0;
+
+            // Add to results only if cumulative amount exists
+            if ($cumulative > 0) {
+                $extraIncomeCategories->push([
+                    'name' => $categoryName,
+                    'period' => (float) $periodAmount,
+                    'cumulative' => (float) $cumulative
+                ]);
+            }
+        }
+
+        // Handle uncategorized income
+        $uncategorizedPeriod = ExtraIncome::whereBetween('date', [$startDate, $endDate])
+            ->whereNull('category_id')
+            ->sum('amount');
+
+        $uncategorizedCumulative = ExtraIncome::whereNull('category_id')
+            ->where('date', '<=', $endDate)
+            ->sum('amount');
+
+        if ($uncategorizedCumulative > 0) {
+            $extraIncomeCategories->push([
+                'name' => 'Uncategorized',
+                'period' => (float) $uncategorizedPeriod,
+                'cumulative' => (float) $uncategorizedCumulative
+            ]);
+        }
 
         return [
             'categories' => $extraIncomeCategories,

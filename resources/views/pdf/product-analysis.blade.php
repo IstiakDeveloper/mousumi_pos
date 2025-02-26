@@ -17,6 +17,26 @@
             color: #333;
         }
 
+        /* Fix the conflicting classes */
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        body {
+            font-family: 'DejaVu Sans', Arial, sans-serif;
+            font-size: 8pt;
+            line-height: 1.3;
+            color: #333;
+        }
+
         .container {
             width: 100%;
             margin: 0 auto;
@@ -215,7 +235,7 @@
                         <td class="product-cell">{{ $product['product_name'] }}</td>
 
                         <!-- Before Stock Info -->
-                        <td class="text-center bg-purple">{{$product['before_quantity']}}</td>
+                        <td class="text-center bg-purple">{{ $product['before_quantity'] }}</td>
                         <td class="text-center bg-purple">{{ number_format($product['before_price'], 2) }}</td>
                         <td class="text-center bg-purple">{{ number_format($product['before_value'], 2) }}</td>
 
@@ -225,7 +245,7 @@
                         <td class="text-center bg-blue">{{ number_format($product['total_buy_price'], 2) }}</td>
 
                         <!-- Sale Info -->
-                        <td class="text-center bg-green">{{$product['sale_quantity']}}</td>
+                        <td class="text-center bg-green">{{ $product['sale_quantity'] }}</td>
                         <td class="text-center bg-green">{{ number_format($product['sale_price'], 2) }}</td>
                         <td class="text-center bg-green">{{ number_format($product['total_sale_price'], 2) }}</td>
 
@@ -234,8 +254,9 @@
                         <td class="text-center bg-orange">{{ number_format($product['total_profit'], 2) }}</td>
 
                         <!-- Available Info -->
-                        <td class="text-center bg-yellow">{{$product['available_quantity'] }}</td>
-                        <td class="text-center bg-yellow">{{ number_format($product['available_stock_value'], 2) }}</td>
+                        <td class="text-center bg-yellow">{{ $product['available_quantity'] }}</td>
+                        <td class="text-center bg-yellow">{{ number_format($product['available_stock_value'], 2) }}
+                        </td>
                     </tr>
                 @endforeach
             </tbody>
@@ -243,11 +264,11 @@
                 <tr class="total-row">
                     <td colspan="2" class="text-center">Totals:</td>
                     <!-- Before Stock Totals -->
-                    <td class="text-center bg-purple">{{ $totals['before_quantity']}}</td>
+                    <td class="text-center bg-purple">{{ $totals['before_quantity'] }}</td>
                     <td class="text-center bg-purple">-</td>
                     <td class="text-center bg-purple">{{ number_format($totals['before_value'], 2) }}</td>
                     <!-- Buy Info Totals -->
-                    <td class="text-center bg-blue">{{ $totals['buy_quantity']}}</td>
+                    <td class="text-center bg-blue">{{ $totals['buy_quantity'] }}</td>
                     <td class="text-center bg-blue">-</td>
                     <td class="text-center bg-blue">{{ number_format($totals['total_buy_price'], 2) }}</td>
                     <!-- Sale Info Totals -->

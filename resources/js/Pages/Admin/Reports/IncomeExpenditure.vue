@@ -75,32 +75,33 @@
                                     </td>
                                 </tr>
 
-                                <!-- Extra Income Row -->
-                                <tr class="border-b">
-                                    <td class="py-2 px-4 border-r font-medium">Others Income</td>
-                                    <td class="py-2 px-4 text-right border-r text-green-600">
-                                        {{ formatCurrency(income.extra_income.total.period) }}
-                                    </td>
-                                    <td class="py-2 px-4 text-right text-green-600">
-                                        {{ formatCurrency(income.extra_income.total.cumulative) }}
-                                    </td>
-                                </tr>
                                 <!-- Extra Income Categories -->
                                 <template v-for="category in income.extra_income.categories" :key="category.name">
-                                    <tr class="border-b bg-gray-50">
-                                        <td class="py-2 px-4 border-r pl-8 text-sm">
-                                            {{ category.name }}
+                                    <tr class="border-b">
+                                        <td class="py-2 px-4 border-r">
+                                            {{ category.name }} <span class="text-gray-500">(Others Income)</span>
                                         </td>
-                                        <td class="py-2 px-4 text-right border-r text-green-600 text-sm">
+                                        <td class="py-2 px-4 text-right border-r text-green-600">
                                             {{ formatCurrency(category.period) }}
                                         </td>
-                                        <td class="py-2 px-4 text-right text-green-600 text-sm">
+                                        <td class="py-2 px-4 text-right text-green-600">
                                             {{ formatCurrency(category.cumulative) }}
                                         </td>
                                     </tr>
                                 </template>
 
-                                <!-- Total Row -->
+                                <!-- Total Income Row -->
+                                <tr class="border-b bg-gray-50 font-bold">
+                                    <td class="py-2 px-4 border-r">Total Income</td>
+                                    <td class="py-2 px-4 text-right border-r text-green-600">
+                                        {{ formatCurrency(income.total.period) }}
+                                    </td>
+                                    <td class="py-2 px-4 text-right text-green-600">
+                                        {{ formatCurrency(income.total.cumulative) }}
+                                    </td>
+                                </tr>
+
+                                <!-- Surplus Row -->
                                 <tr class="bg-gray-50 font-bold">
                                     <td class="py-2 px-4 border-r">Surplus</td>
                                     <td class="py-2 px-4 text-right border-r">

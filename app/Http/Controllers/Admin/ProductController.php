@@ -14,6 +14,7 @@ use App\Models\StockMovement;
 use App\Models\Unit;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\File;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -177,7 +178,29 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'specifications' => 'nullable|array',
             'status' => 'boolean',
-            'images.*' => 'image|max:2048',
+            'images' => 'nullable|array',
+            'images.*' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    // Manual file validation
+                    if (!is_file($value)) {
+                        $fail('Invalid file upload.');
+                    }
+
+                    // Check file extension
+                    $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                    $extension = strtolower($value->getClientOriginalExtension());
+                    if (!in_array($extension, $allowedExtensions)) {
+                        $fail('Invalid image type. Allowed types: ' . implode(', ', $allowedExtensions));
+                    }
+
+                    // Check file size (2MB = 2048 KB)
+                    $maxSize = 2048;
+                    if ($value->getSize() > $maxSize * 1024) {
+                        $fail("Image cannot be larger than {$maxSize}KB.");
+                    }
+                }
+            ],
             'primary_image_index' => 'required|integer|min:0'
         ]);
 
@@ -186,10 +209,26 @@ class ProductController extends Controller
         $product = Product::create($validated);
 
         if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $index => $image) {
+            $images = $request->file('images');
+            $primaryIndex = (int) $request->primary_image_index;
+
+            foreach ($images as $index => $image) {
+                // Generate a unique filename
+                $filename = uniqid() . '.' . $image->getClientOriginalExtension();
+
+                // Ensure products directory exists
+                $uploadDir = public_path('storage/products');
+                if (!File::exists($uploadDir)) {
+                    File::makeDirectory($uploadDir, 0755, true);
+                }
+
+                // Move the file manually to the public storage
+                $path = $image->move($uploadDir, $filename);
+
+                // Create the database entry with the relative path
                 $product->images()->create([
-                    'image' => $image->store('products', 'public'),
-                    'is_primary' => $index === (int) $request->primary_image_index,
+                    'image' => 'products/' . $filename,
+                    'is_primary' => $index === $primaryIndex,
                     'sort_order' => $index
                 ]);
             }
@@ -229,22 +268,75 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'unit_id' => 'required|exists:units,id',
-            'selling_price' => 'required|numeric|min:0|gte:cost_price',
+            'selling_price' => 'required|numeric|min:0',
             'alert_quantity' => 'required|integer|min:0',
             'description' => 'nullable|string',
             'specifications' => 'nullable|array',
             'status' => 'boolean',
-            'images.*' => 'image|max:2048'
+            'images' => 'nullable|array',
+            'images.*' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    // Manual file validation
+                    if (!is_file($value)) {
+                        $fail('Invalid file upload.');
+                    }
+
+                    // Check file extension
+                    $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                    $extension = strtolower($value->getClientOriginalExtension());
+                    if (!in_array($extension, $allowedExtensions)) {
+                        $fail('Invalid image type. Allowed types: ' . implode(', ', $allowedExtensions));
+                    }
+
+                    // Check file size (2MB = 2048 KB)
+                    $maxSize = 2048;
+                    if ($value->getSize() > $maxSize * 1024) {
+                        $fail("Image cannot be larger than {$maxSize}KB.");
+                    }
+                }
+            ],
+            'primary_image_index' => 'nullable|integer',
+            'primary_image_id' => 'nullable|exists:product_images,id'
         ]);
 
+        // Add slug
         $validated['slug'] = Str::slug($request->name);
 
+        // Perform the update with the validated data
         $product->update($validated);
 
+        // Handle primary image update if a specific existing image was selected
+        if ($request->has('primary_image_id') && $request->primary_image_id) {
+            // Reset all images to non-primary
+            $product->images()->update(['is_primary' => false]);
+
+            // Set the selected image as primary
+            $product->images()->where('id', $request->primary_image_id)->update(['is_primary' => true]);
+        }
+
+        // Handle new uploaded images
         if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
+            $newImageCount = count($request->file('images'));
+            $primaryIndex = $request->input('primary_image_index');
+
+            // If no primary image exists and primary_image_index refers to a new image
+            $setPrimaryForNew = !$request->has('primary_image_id') &&
+                is_numeric($primaryIndex) &&
+                $primaryIndex < $newImageCount;
+
+            foreach ($request->file('images') as $index => $image) {
+                // Generate a unique filename
+                $filename = uniqid() . '.' . $image->getClientOriginalExtension();
+
+                // Move the file manually to the public storage
+                $path = $image->move(public_path('storage/products'), $filename);
+
+                // Create the database entry with the relative path
                 $product->images()->create([
-                    'image' => $image->store('products', 'public')
+                    'image' => 'products/' . $filename,
+                    'is_primary' => $setPrimaryForNew && $index == $primaryIndex,
+                    'sort_order' => $index
                 ]);
             }
         }
@@ -324,7 +416,6 @@ class ProductController extends Controller
 
             return redirect()->back()
                 ->with('success', 'Product and all related transactions deleted successfully.');
-
         } catch (\Exception $e) {
             DB::rollBack();
 
