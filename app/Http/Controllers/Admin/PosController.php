@@ -234,18 +234,20 @@ class PosController extends Controller
             'createdBy'
         ])->findOrFail($id);
 
+        // Group items by category
+        $itemsByCategory = $sale->saleItems->groupBy(function ($item) {
+            return $item->product->category->name ?? 'Uncategorized';
+        });
+
         // Calculate category subtotals
         $categoryTotals = [];
-        foreach ($sale->saleItems as $item) {
-            $categoryName = $item->product->category->name ?? 'Uncategorized';
-            if (!isset($categoryTotals[$categoryName])) {
-                $categoryTotals[$categoryName] = 0;
-            }
-            $categoryTotals[$categoryName] += $item->subtotal;
+        foreach ($itemsByCategory as $category => $items) {
+            $categoryTotals[$category] = $items->sum('subtotal');
         }
 
         $pdf = Pdf::loadView('pdf.receipt', [
             'sale' => $sale,
+            'itemsByCategory' => $itemsByCategory, // Pass the grouped items
             'categoryTotals' => $categoryTotals,
             'company' => [
                 'name' => config('app.name'),

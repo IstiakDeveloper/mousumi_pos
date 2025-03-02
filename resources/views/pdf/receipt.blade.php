@@ -1,94 +1,98 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A4 Invoice Receipt</title>
     <style>
+        /* মূল মার্জিন সেটিং - প্রতিটি পৃষ্ঠার জন্য */
         @page {
-            size: A4;
-            margin: 0;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            size: A4 portrait;
+            margin: 20mm 15mm 16mm 15mm; /* উপর, ডান, নিচে, বাম - কমানো হয়েছে */
         }
 
         body {
-            background: #f0f0f0;
             font-family: Arial, sans-serif;
+            line-height: 1.1; /* আরও কমানো হয়েছে */
+            font-size: 9pt; /* ফন্ট সাইজ কমানো */
+            margin: 0;
+            padding: 0;
+            color: #000;
+            background: #fff;
         }
 
-        .a4-container {
-            width: 210mm;
-            min-height: 297mm;
-            margin: 0 auto;
-            background: white;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .inner-content {
-            padding: 20mm;
+        /* টেবিল সাধারণ স্টাইল */
+        table {
             width: 100%;
-            max-width: 170mm;
-            margin: 0 auto;
+            border-collapse: collapse;
         }
 
-        /* Logo and Header */
-        .header {
-            margin-bottom: 15mm;
+        /* কোম্পানি হেডার */
+        .company-header {
+            text-align: center;
+            margin-bottom: 2mm;
         }
 
         .company-name {
-            font-size: 20px;
+            font-size: 14pt; /* কমানো হয়েছে */
             font-weight: bold;
-            margin-bottom: 3mm;
+            margin-bottom: 0mm;
         }
 
-        .company-info {
-            font-size: 10px;
-            line-height: 1.4;
+        .company-details {
+            font-size: 9pt; /* কমানো হয়েছে */
+            line-height: 1;
         }
 
-        /* Invoice Details */
+        /* ইনভয়েস ডিটেইলস */
         .invoice-section {
-            margin-bottom: 10mm;
             display: flex;
             justify-content: space-between;
+            margin: 2mm 0; /* কমানো হয়েছে */
         }
 
-        .invoice-details, .customer-details {
-            font-size: 10px;
-            line-height: 1.5;
+        .invoice-section .invoice-title {
+            margin: 1mm 0; /* কমানো হয়েছে */
+        }
+
+        .invoice-details,
+        .customer-details {
+            font-size: 9pt;
+            line-height: 1.1; /* কমানো হয়েছে */
         }
 
         .invoice-title {
-            font-size: 14px;
-            margin-bottom: 3mm;
+            font-size: 11pt; /* কমানো হয়েছে */
             font-weight: bold;
+            margin-bottom: 0mm;
         }
 
-        /* Items Table */
+        /* প্যারাগ্রাফ স্পেসিং */
+        p {
+            margin: 0;
+            margin-bottom: 0.5mm; /* কমানো হয়েছে */
+        }
+
+        /* আইটেম টেবিল */
         .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 10mm;
-            font-size: 10px;
+            margin-bottom: 5mm; /* কমানো হয়েছে */
         }
 
         .items-table th {
-            background: #f8f8f8;
-            padding: 2mm;
+            background: #f5f5f5;
+            padding: 2mm 1mm; /* কমানো হয়েছে */
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+            border-bottom: 0.5pt solid #000;
+            font-size: 9pt;
         }
 
         .items-table td {
-            padding: 2mm;
-            border-bottom: 1px solid #eee;
+            padding: 1mm; /* কমানো হয়েছে */
+            border-bottom: 0.2pt solid #ddd;
+            vertical-align: top;
+            font-size: 9pt;
         }
 
         .items-table .amount {
@@ -99,215 +103,198 @@
             text-align: center;
         }
 
-        /* Category Header */
-        .category-header {
-            background: #f0f0f0;
+        /* ক্যাটাগরি হেডার */
+        .category-header td {
+            background: #eaeaea;
             font-weight: bold;
-            border-bottom: 1px solid #ccc;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            padding: 1mm; /* কমানো হয়েছে */
+            font-size: 9pt;
+            border-bottom: 0.5pt solid #999;
         }
 
-        /* Category Subtotal */
-        .category-subtotal {
+        /* ক্যাটাগরি সাবটোটাল */
+        .category-subtotal td {
             background: #f8f8f8;
             font-weight: bold;
             font-style: italic;
-            border-bottom: 2px solid #ddd;
+            border-bottom: 0.5pt solid #666;
+            padding: 1mm; /* কমানো হয়েছে */
         }
 
-        /* Category Section */
-        .category-section {
-            margin-bottom: 8mm;
-        }
-
-        /* Totals Section */
+        /* টোটাল সেকশন */
         .totals-section {
             width: 60%;
             margin-left: auto;
-            margin-bottom: 10mm;
+            margin-bottom: 5mm; /* কমানো হয়েছে */
         }
 
         .totals-table {
             width: 100%;
-            font-size: 10px;
         }
 
         .totals-table td {
-            padding: 1mm 2mm;
+            padding: 1mm;
+            border: none;
         }
 
         .totals-table .right-align {
             text-align: right;
         }
 
-        .total-row {
+        .total-row td {
             font-weight: bold;
-            font-size: 12px;
-            border-top: 1px solid #ddd;
-            border-bottom: 1px solid #ddd;
+            font-size: 10pt; /* কমানো হয়েছে */
+            border-top: 0.5pt solid #000;
+            border-bottom: 0.5pt solid #000;
+            padding: 1mm; /* কমানো হয়েছে */
         }
 
-        /* Payment Info */
-        .payment-info {
-            margin-bottom: 10mm;
-            font-size: 10px;
-        }
-
-        /* Barcode */
+        /* বারকোড */
         .barcode {
             text-align: center;
-            margin: 5mm 0;
-            font-size: 16px;
+            margin: 3mm 0; /* কমানো হয়েছে */
+            font-size: 12pt; /* কমানো হয়েছে */
         }
 
-        /* Footer */
+        /* ফুটার */
         .footer {
             text-align: center;
-            font-size: 9px;
+            font-size: 8pt;
             color: #666;
-            margin-top: 10mm;
-            padding-top: 5mm;
-            border-top: 1px solid #eee;
+            margin-top: 3mm; /* কমানো হয়েছে */
+            padding-top: 2mm; /* কমানো হয়েছে */
+            border-top: 0.5pt solid #ddd;
         }
 
-        @media print {
-            body {
-                background: none;
-            }
+        /* মেইন কন্টেইনার - মার্জিন নিয়ন্ত্রণ শুধু DOMPDF এর জন্য */
+        .main-container {
+            width: 100%;
+        }
 
-            .a4-container {
-                width: 210mm;
-                height: 297mm;
-                margin: 0;
-                box-shadow: none;
-            }
+        /* ফুটার নিচে রাখার জন্য */
+        .page-container {
+            min-height: calc(100% - 30mm); /* পেজের উচ্চতা থেকে মার্জিন বাদ */
+            position: relative;
+        }
+
+        /* স্পেসার */
+        .spacer {
+            height: 2mm; /* কমানো হয়েছে */
+        }
+
+        /* ক্যাটাগরির মধ্যে স্পেসার কমানো */
+        tr.spacer-row td {
+            height: 2mm !important; /* কমানো হয়েছে */
+            border: none;
         }
     </style>
 </head>
+
 <body>
-    <div class="a4-container">
-        <div class="inner-content">
-            <!-- Header Section -->
-            <div class="company-header">
-                <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Departmental Store</div>
-                <div class="sub-company-name"></div>
-                <div class="company-details">
-                    Ukilpara, Naogaon Sadar, Naogaon.<br>
-                    Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
-                </div>
+    <div class="main-container">
+        <!-- কোম্পানি হেডার -->
+        <div class="company-header">
+            <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Departmental Store</div>
+            <div class="company-details">
+                Ukilpara, Naogaon Sadar, Naogaon.<br>
+                Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
             </div>
+        </div>
 
-            <!-- Invoice Details Section -->
-            <div class="invoice-section">
-                <div class="invoice-details">
-                    <div class="invoice-title">SALE INVOICE</div>
-                    <p><strong>Invoice No:</strong> {{ $sale->invoice_no }}</p>
-                    <p><strong>Date:</strong> {{ $sale->created_at->format('d/m/Y H:i') }}</p>
-                    <p><strong>Payment Method:</strong> {{ ucfirst($sale->payment_method) }}</p>
-                </div>
-                <div class="customer-details">
-                    <p><strong>Bill To:</strong> {{ $sale->customer ? $sale->customer->name : 'Walk-in Customer' }}</p>
-                </div>
+        <!-- ইনভয়েস ডিটেইলস সেকশন -->
+        <div class="invoice-section">
+            <div class="invoice-details">
+                <div class="invoice-title">SALE INVOICE</div>
+                <p><strong>Invoice No:</strong> {{ $sale->invoice_no }}</p>
+                <p><strong>Date:</strong> {{ $sale->created_at->format('d/m/Y H:i') }}</p>
+                <p><strong>Payment Method:</strong>
+                    {{ ucfirst($sale->payment_method) }}</p>
             </div>
+            <div class="customer-details">
+                <p><strong>Customer Name:</strong> {{ $sale->customer ? $sale->customer->name : 'Walk-in Customer' }}
+                </p>
+            </div>
+        </div>
 
-            <!-- Items Table Grouped by Category -->
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th style="width: 45%">Description</th>
-                        <th style="width: 15%" class="quantity">Qty</th>
-                        <th style="width: 20%" class="amount">Price</th>
-                        <th style="width: 20%" class="amount">Amount</th>
+        <!-- আইটেম টেবিল -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width: 45%">Description</th>
+                    <th style="width: 15%" class="quantity">Qty</th>
+                    <th style="width: 20%" class="amount">Price</th>
+                    <th style="width: 20%" class="amount">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($itemsByCategory as $categoryName => $items)
+                    <tr class="category-header">
+                        <td colspan="4">{{ $categoryName }}</td>
                     </tr>
-                </thead>
-                @php
-                    // Group items by category
-                    $itemsByCategory = $sale->saleItems->groupBy(function($item) {
-                        return $item->product->category->name ?? 'Uncategorized';
-                    });
 
-                    // Calculate totals per category
-                    $categoryTotals = [];
-                    foreach ($itemsByCategory as $category => $items) {
-                        $categoryTotals[$category] = $items->sum('subtotal');
-                    }
-                @endphp
-
-                    @foreach($itemsByCategory as $categoryName => $items)
-                        <tbody class="category-section">
-                            <!-- Category Header -->
-                            <tr class="category-header">
-                                <td colspan="4">{{ $categoryName }}</td>
-                            </tr>
-
-                            <!-- Items in this category -->
-                            @foreach($items as $item)
-                            <tr>
-                                <td>{{ $item->product->name }}</td>
-                                <td class="quantity">{{ $item->quantity }}</td>
-                                <td class="amount">{{ number_format($item->unit_price, 2) }}</td>
-                                <td class="amount">{{ number_format($item->subtotal, 2) }}</td>
-                            </tr>
-                            @endforeach
-
-                            <!-- Category Subtotal -->
-                            <tr class="category-subtotal">
-                                <td colspan="3" style="text-align: right; padding-right: 10mm;">{{ $categoryName }} Subtotal:</td>
-                                <td class="amount">{{ number_format($categoryTotals[$categoryName], 2) }}</td>
-                            </tr>
-
-                            <!-- Empty spacer row for margin -->
-                            <tr style="height: 5mm">
-                                <td colspan="4" style="border: none;"></td>
-                            </tr>
-                        </tbody>
+                    <!-- আইটেমস ইন দিস ক্যাটাগরি -->
+                    @foreach ($items as $item)
+                        <tr>
+                            <td>{{ $item->product->name }}</td>
+                            <td class="quantity">{{ $item->quantity }}</td>
+                            <td class="amount">{{ number_format($item->unit_price, 2) }}</td>
+                            <td class="amount">{{ number_format($item->subtotal, 2) }}</td>
+                        </tr>
                     @endforeach
-                </tbody>
+
+                    <!-- ক্যাটাগরি সাবটোটাল -->
+                    <tr class="category-subtotal">
+                        <td colspan="3" style="text-align: right">{{ $categoryName }} Subtotal:</td>
+                        <td class="amount">{{ number_format($categoryTotals[$categoryName], 2) }}</td>
+                    </tr>
+
+                    <!-- স্পেসার রো - কম উচ্চতা -->
+                    <tr class="spacer-row">
+                        <td colspan="4"></td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        <!-- টোটালস সেকশন -->
+        <div class="totals-section">
+            <table class="totals-table">
+                <tr>
+                    <td>Total:</td>
+                    <td class="right-align">{{ number_format($sale->subtotal, 2) }}</td>
+                </tr>
+                <tr>
+                    <td>Tax:</td>
+                    <td class="right-align">{{ number_format($sale->tax, 2) }}</td>
+                </tr>
+                <tr>
+                    <td>Discount:</td>
+                    <td class="right-align">{{ number_format($sale->discount, 2) }}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>Grand Total:</td>
+                    <td class="right-align">{{ number_format($sale->total, 2) }}</td>
+                </tr>
+                <tr>
+                    <td>Paid Amount:</td>
+                    <td class="right-align">{{ number_format($sale->paid, 2) }}</td>
+                </tr>
             </table>
+        </div>
 
-            <!-- Totals Section -->
-            <div class="totals-section">
-                <table class="totals-table">
-                    <tr>
-                        <td>Subtotal:</td>
-                        <td class="right-align">{{ number_format($sale->subtotal, 2) }}</td>
-                    </tr>
-                    <tr>
-                        <td>Tax:</td>
-                        <td class="right-align">{{ number_format($sale->tax, 2) }}</td>
-                    </tr>
-                    <tr>
-                        <td>Discount:</td>
-                        <td class="right-align">{{ number_format($sale->discount, 2) }}</td>
-                    </tr>
-                    <tr class="total-row">
-                        <td>Total Amount:</td>
-                        <td class="right-align">{{ number_format($sale->total, 2) }}</td>
-                    </tr>
-                    <tr>
-                        <td>Paid Amount:</td>
-                        <td class="right-align">{{ number_format($sale->paid, 2) }}</td>
-                    </tr>
-                    <tr>
-                        <td>Change:</td>
-                        <td class="right-align">{{ number_format(max(0, $sale->paid - $sale->total), 2) }}</td>
-                    </tr>
-                </table>
-            </div>
+        <!-- বারকোড -->
+        <div class="barcode">
+            *{{ $sale->invoice_no }}*
+        </div>
 
-            <!-- Barcode -->
-            <div class="barcode">
-                *{{ $sale->invoice_no }}*
-            </div>
-
-            <!-- Footer -->
-            <div class="footer">
-                <p>Thank you for your business!</p>
-                <p>Returns accepted within 7 days with original receipt</p>
-                <p>&copy; {{ date('Y') }} {{ $company['name'] }}</p>
-            </div>
+        <!-- ফুটার -->
+        <div class="footer">
+            <p>Thank you for your business!</p>
+            <p>Returns accepted within 7 days with original receipt</p>
+            <p>&copy; {{ date('Y') }} {{ $company['name'] }}</p>
         </div>
     </div>
 </body>
+
 </html>
