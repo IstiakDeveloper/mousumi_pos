@@ -207,8 +207,7 @@
                     <p><strong>Payment Method:</strong> {{ ucfirst($sale->payment_method) }}</p>
                 </div>
                 <div class="customer-details">
-                    <p><strong>Bill To:</strong></p>
-                    <p>{{ $sale->customer ? $sale->customer->name : 'Walk-in Customer' }}</p>
+                    <p><strong>Bill To:</strong> {{ $sale->customer ? $sale->customer->name : 'Walk-in Customer' }}</p>
                 </div>
             </div>
 

@@ -266,10 +266,10 @@
             <!-- Invoice Details Section -->
             <div class="invoice-section">
                 <div class="invoice-details">
-                    <div class="invoice-title">TAX INVOICE</div>
+                    <div class="invoice-title">SALE INVOICE</div>
                     <p><strong>Invoice No:</strong> {{ $sale->invoice_no }}</p>
                     <p><strong>Date:</strong> {{ $sale->created_at->format('d/m/Y H:i') }}</p>
-                    {{-- <p><strong>Payment Method:</strong> {{ ucfirst($sale->payment_method) }}</p> --}}
+                    <p><strong>Payment Method:</strong> {{ ucfirst($sale->payment_method) }}</p>
                 </div>
                 <div class="customer-details">
                     <p><strong>Bill To:</strong> {{ $sale->customer ? $sale->customer->name : 'Walk-in Customer' }}</p>
