@@ -212,12 +212,33 @@ class Product extends Model
 
     protected static function getTotalSaleAmountQuery($startDate, $endDate)
     {
-        return SaleItem::selectRaw('CAST(COALESCE(SUM(subtotal), 0) AS DECIMAL(15,6))')
-            ->whereColumn('product_id', 'products.id')
-            ->whereHas('sale', function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('created_at', [$startDate, $endDate])
-                    ->whereNull('deleted_at');
-            });
+        // Define cutoff date for when to start applying discount calculations
+        $discountCutoffDate = '2025-03-01';
+
+        // For date ranges that include March 2025 or later, use the discount-aware calculation
+        return DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->whereColumn('sale_items.product_id', 'products.id')
+            ->whereBetween('sales.created_at', [$startDate, $endDate])
+            ->whereNull('sales.deleted_at')
+            ->selectRaw('
+            CAST(
+                COALESCE(
+                    SUM(
+                        CASE
+                            -- Only apply discount calculation for sales on/after March 1, 2025
+                            WHEN sales.created_at >= ? AND sales.total > 0
+                            THEN ROUND(
+                                (sale_items.subtotal / sales.subtotal) * sales.paid,
+                                2
+                            )
+                            -- Use regular subtotal for earlier dates
+                            ELSE sale_items.subtotal
+                        END
+                    ), 0
+                ) AS DECIMAL(15,2)
+            )
+        ', [$discountCutoffDate]);
     }
 
     protected static function calculateProductMetrics($product, $index, $stockPositions, $beforeStockPositions)
