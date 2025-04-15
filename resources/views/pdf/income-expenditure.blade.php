@@ -149,7 +149,7 @@
     <div class="container">
         <!-- Company Header -->
         <div class="company-header">
-            <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Departmental Store</div>
+            <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Variety Store</div>
             <div class="sub-company-name"></div>
             <div class="company-details">
                 Ukilpara, Naogaon Sadar, Naogaon.<br>
