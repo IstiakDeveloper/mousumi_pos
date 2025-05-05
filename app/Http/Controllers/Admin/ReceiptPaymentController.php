@@ -168,10 +168,18 @@ class ReceiptPaymentController extends Controller
                 ];
             });
 
-        // Use current bank balance directly as closing balance
-        $closingCashAtBank = $bank->current_balance;
+        // Get the latest bank transaction on or before the end date
+        $latestTransaction = BankTransaction::where('bank_account_id', $this->bankAccountId)
+            ->where('date', '<=', $endDate)
+            ->whereNull('deleted_at')
+            ->orderBy('date', 'desc')
+            ->orderBy('id', 'desc')  // In case multiple transactions on same date
+            ->first();
 
-        // Calculate total payment including current bank balance
+        // Use the running balance from the latest transaction as closing balance
+        $closingCashAtBank = $latestTransaction ? $latestTransaction->running_balance : $bank->opening_balance;
+
+        // Calculate total payment including closing cash at bank
         $totalPayment = $purchaseAmount + $fundRefund + $expenses + $closingCashAtBank;
 
         return [
