@@ -53,6 +53,16 @@ class ReceiptPaymentController extends Controller
         ]);
     }
 
+    public function getTotalSalesFromInvoices($fromDate, $toDate)
+    {
+        return BankTransaction::where('transaction_type', 'in')
+            ->where('description', 'like', 'Payment received for invoice%')
+            ->whereBetween('date', [$fromDate, $toDate])
+            ->sum('amount');
+    }
+
+
+
     protected function getReceiptData($startDate, $endDate)
     {
         // Get the bank account
@@ -72,9 +82,7 @@ class ReceiptPaymentController extends Controller
 
 
         // Get sale collection for the period
-        $salePaid = Sale::whereBetween('created_at', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->sum('paid');
+        $salePaid = $this->getTotalSalesFromInvoices($startDate, $endDate);
 
         // Get extra income for the period
         $extraIncome = ExtraIncome::whereBetween('date', [$startDate, $endDate])
@@ -120,10 +128,20 @@ class ReceiptPaymentController extends Controller
         // Get the bank account with current balance
         $bank = BankAccount::findOrFail($this->bankAccountId);
 
-        // Purchase amount for the period
-        $purchaseAmount = ProductStock::whereBetween('created_at', [$startDate, $endDate])
-            ->where('type', 'purchase')
-            ->sum('total_cost');
+        // Get purchase amount for the period from bank transactions
+        $purchaseAmount = BankTransaction::where('transaction_type', 'out')
+            ->where('description', 'LIKE', "Stock purchase for product ID:%")
+            ->whereBetween('date', [$startDate, $endDate])
+            ->sum('amount');
+
+        // Get purchase refunds
+        $purchaseRefunds = BankTransaction::where('transaction_type', 'in')
+            ->where('description', 'LIKE', "Total refund for deleted product ID:%")
+            ->whereBetween('date', [$startDate, $endDate])
+            ->sum('amount');
+
+        // Calculate net purchase amount
+        $purchaseAmount = $purchaseAmount - $purchaseRefunds;
 
         // Fund refunds for the period
         $fundRefund = Fund::whereBetween('date', [$startDate, $endDate])
