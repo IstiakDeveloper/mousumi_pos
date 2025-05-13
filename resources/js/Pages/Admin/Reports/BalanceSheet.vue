@@ -1,12 +1,12 @@
 <template>
     <AdminLayout>
         <template #header>
-            <div class="flex justify-between items-center">
+            <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold text-gray-800">Balance Sheet</h2>
                 <div class="flex items-center space-x-4">
                     <!-- Year Selection -->
                     <select v-model="selectedYear" @change="handleDateChange"
-                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        class="border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                         <option v-for="year in years" :key="year" :value="year">
                             {{ year }}
                         </option>
@@ -14,20 +14,20 @@
 
                     <!-- Month Selection -->
                     <select v-model="selectedMonth" @change="handleDateChange"
-                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        class="border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                         <option v-for="month in months" :key="month.value" :value="month.value">
                             {{ month.label }}
                         </option>
                     </select>
 
                     <button @click="downloadPDF" :disabled="isDownloadDisabled"
-                        class="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">
-                        <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                        class="inline-flex items-center px-3 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">
+                        <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none"
                             viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
-                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 animate-spin" fill="none"
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 animate-spin" fill="none"
                             viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -39,34 +39,34 @@
         </template>
 
         <div class="py-6">
-            <div id="balance-sheet-content" class="max-w-7xl mx-auto">
+            <div id="balance-sheet-content" class="mx-auto max-w-7xl">
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
                     <!-- Fund & Liabilities -->
-                    <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-                        <div class="py-3 px-4 bg-gray-50 border-b">
+                    <div class="overflow-hidden bg-white border rounded-lg shadow-sm">
+                        <div class="px-4 py-3 border-b bg-gray-50">
                             <h3 class="text-lg font-semibold text-gray-800">Fund & Liabilities</h3>
                         </div>
                         <table class="w-full">
                             <thead>
                                 <tr class="border-b bg-gray-50">
-                                    <th class="text-left py-2 px-4 border-r">Description</th>
-                                    <th class="text-right py-2 px-4">Amount</th>
+                                    <th class="px-4 py-2 text-left border-r">Description</th>
+                                    <th class="px-4 py-2 text-right">Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <!-- Fund Row -->
                                 <tr class="border-b">
-                                    <td class="py-2 px-4 border-r">Fund</td>
-                                    <td class="py-2 px-4 text-right text-green-600">
+                                    <td class="px-4 py-2 border-r">Fund</td>
+                                    <td class="px-4 py-2 text-right text-green-600">
                                         {{ formatCurrency(fund_and_liabilities.fund.period) }}
                                     </td>
                                 </tr>
 
                                 <!-- Net Profit Row -->
                                 <tr class="border-b">
-                                    <td class="py-2 px-4 border-r font-semibold">Net Profit</td>
-                                    <td class="py-2 px-4 text-right" :class="{
+                                    <td class="px-4 py-2 font-semibold border-r">Net Profit</td>
+                                    <td class="px-4 py-2 text-right" :class="{
                                         'text-green-600': fund_and_liabilities.net_profit.period > 0,
                                         'text-red-600': fund_and_liabilities.net_profit.period < 0
                                     }">
@@ -76,18 +76,18 @@
 
                                 <!-- Empty Rows for Spacing -->
                                 <tr class="border-b">
-                                    <td class="py-5 px-4 border-r"></td>
-                                    <td class="py-5 px-4 text-right"></td>
+                                    <td class="px-4 py-5 border-r"></td>
+                                    <td class="px-4 py-5 text-right"></td>
                                 </tr>
                                 <tr class="border-b">
-                                    <td class="py-5 px-4 border-r"></td>
-                                    <td class="py-5 px-4 text-right"></td>
+                                    <td class="px-4 py-5 border-r"></td>
+                                    <td class="px-4 py-5 text-right"></td>
                                 </tr>
 
                                 <!-- Total Row -->
-                                <tr class="bg-gray-50 font-bold">
-                                    <td class="py-2 px-4 border-r">Total</td>
-                                    <td class="py-2 px-4 text-right">
+                                <tr class="font-bold bg-gray-50">
+                                    <td class="px-4 py-2 border-r">Total</td>
+                                    <td class="px-4 py-2 text-right">
                                         {{ formatCurrency(fund_and_liabilities.total) }}
                                     </td>
                                 </tr>
@@ -96,55 +96,55 @@
                     </div>
 
                     <!-- Property & Assets -->
-                    <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-                        <div class="py-3 px-4 bg-gray-50 border-b">
+                    <div class="overflow-hidden bg-white border rounded-lg shadow-sm">
+                        <div class="px-4 py-3 border-b bg-gray-50">
                             <h3 class="text-lg font-semibold text-gray-800">Property & Assets</h3>
                         </div>
                         <table class="w-full">
                             <thead>
                                 <tr class="border-b bg-gray-50">
-                                    <th class="text-left py-2 px-4 border-r">Description</th>
-                                    <th class="text-right py-2 px-4">Amount</th>
+                                    <th class="px-4 py-2 text-left border-r">Description</th>
+                                    <th class="px-4 py-2 text-right">Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <!-- Bank Balance Row -->
                                 <tr class="border-b">
-                                    <td class="py-2 px-4 border-r">Bank Balance</td>
-                                    <td class="py-2 px-4 text-right">
+                                    <td class="px-4 py-2 border-r">Bank Balance</td>
+                                    <td class="px-4 py-2 text-right">
                                         {{ formatCurrency(property_and_assets.bank_balance.period) }}
                                     </td>
                                 </tr>
 
                                 <!-- Customer Due Row -->
                                 <tr class="border-b">
-                                    <td class="py-2 px-4 border-r">Customer Due</td>
-                                    <td class="py-2 px-4 text-right">
+                                    <td class="px-4 py-2 border-r">Customer Due</td>
+                                    <td class="px-4 py-2 text-right">
                                         {{ formatCurrency(property_and_assets.customer_due.period) }}
                                     </td>
                                 </tr>
 
                                 <!-- Fixed Assets Row -->
                                 <tr class="border-b">
-                                    <td class="py-2 px-4 border-r">Fixed Assets</td>
-                                    <td class="py-2 px-4 text-right">
+                                    <td class="px-4 py-2 border-r">Fixed Assets</td>
+                                    <td class="px-4 py-2 text-right">
                                         {{ formatCurrency(property_and_assets.fixed_assets) }}
                                     </td>
                                 </tr>
 
                                 <!-- Stock Value Row -->
                                 <tr class="border-b">
-                                    <td class="py-2 px-4 border-r">Stock Value</td>
-                                    <td class="py-2 px-4 text-right">
+                                    <td class="px-4 py-2 border-r">Stock Value</td>
+                                    <td class="px-4 py-2 text-right">
                                         {{ formatCurrency(property_and_assets.stock_value.period) }}
                                     </td>
                                 </tr>
 
 
                                 <!-- Total Row -->
-                                <tr class="bg-gray-50 font-bold">
-                                    <td class="py-2 px-4 border-r">Total</td>
-                                    <td class="py-2 px-4 text-right">
+                                <tr class="font-bold bg-gray-50">
+                                    <td class="px-4 py-2 border-r">Total</td>
+                                    <td class="px-4 py-2 text-right">
                                         {{ formatCurrency(property_and_assets.total) }}
                                     </td>
                                 </tr>

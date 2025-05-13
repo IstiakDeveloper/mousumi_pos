@@ -1,12 +1,12 @@
 <template>
     <AdminLayout>
         <template #header>
-            <div class="flex justify-between items-center">
+            <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold text-gray-800">Income & Expenditure Statement</h2>
                 <div class="flex items-center space-x-4">
                     <!-- Year Selection -->
                     <select v-model="selectedYear" @change="handleDateChange"
-                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        class="border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                         <option v-for="year in years" :key="year" :value="year">
                             {{ year }}
                         </option>
@@ -14,20 +14,20 @@
 
                     <!-- Month Selection -->
                     <select v-model="selectedMonth" @change="handleDateChange"
-                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        class="border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                         <option v-for="month in months" :key="month.value" :value="month.value">
                             {{ month.label }}
                         </option>
                     </select>
 
                     <button @click="downloadPDF" :disabled="isDownloadDisabled"
-                        class="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">
-                        <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                        class="inline-flex items-center px-3 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">
+                        <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none"
                             viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
-                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 animate-spin" fill="none"
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 animate-spin" fill="none"
                             viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -40,34 +40,34 @@
         </template>
 
         <div class="py-6">
-            <div id="income-expenditure-content" class=" mx-auto">
+            <div id="income-expenditure-content" class="mx-auto ">
 
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
                     <!-- Income Section -->
-                    <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-                        <div class="py-3 px-4 bg-gray-50 border-b">
+                    <div class="overflow-hidden bg-white border rounded-lg shadow-sm">
+                        <div class="px-4 py-3 border-b bg-gray-50">
                             <h3 class="text-lg font-semibold text-gray-800">Income</h3>
                         </div>
                         <table class="w-full">
                             <thead>
                                 <tr class="border-b bg-gray-50">
-                                    <th class="text-left py-2 px-4 border-r">Description</th>
-                                    <th class="text-right py-2 px-4 border-r">Month</th>
-                                    <th class="text-right py-2 px-4">Cumulative</th>
+                                    <th class="px-4 py-2 text-left border-r">Description</th>
+                                    <th class="px-4 py-2 text-right border-r">Month</th>
+                                    <th class="px-4 py-2 text-right">Cumulative</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <!-- Sales Profit Row -->
                                 <tr class="border-b">
-                                    <td class="py-2 px-4 border-r font-semibold">Sales Profit</td>
-                                    <td class="py-2 px-4 text-right border-r" :class="{
+                                    <td class="px-4 py-2 font-semibold border-r">Sales Profit</td>
+                                    <td class="px-4 py-2 text-right border-r" :class="{
                                         'text-green-600': income.sales_profit.period > 0,
                                         'text-red-600': income.sales_profit.period < 0
                                     }">
                                         {{ formatCurrency(income.sales_profit.period) }}
                                     </td>
-                                    <td class="py-2 px-4 text-right" :class="{
+                                    <td class="px-4 py-2 text-right" :class="{
                                         'text-green-600': income.sales_profit.cumulative > 0,
                                         'text-red-600': income.sales_profit.cumulative < 0
                                     }">
@@ -78,33 +78,33 @@
                                 <!-- Extra Income Categories -->
                                 <template v-for="category in income.extra_income.categories" :key="category.name">
                                     <tr class="border-b">
-                                        <td class="py-2 px-4 border-r">
+                                        <td class="px-4 py-2 border-r">
                                             {{ category.name }} <span class="text-gray-500">(Others Income)</span>
                                         </td>
-                                        <td class="py-2 px-4 text-right border-r text-green-600">
+                                        <td class="px-4 py-2 text-right text-green-600 border-r">
                                             {{ formatCurrency(category.period) }}
                                         </td>
-                                        <td class="py-2 px-4 text-right text-green-600">
+                                        <td class="px-4 py-2 text-right text-green-600">
                                             {{ formatCurrency(category.cumulative) }}
                                         </td>
                                     </tr>
                                 </template>
 
                                 <!-- Total Income Row -->
-                                <tr class="border-b bg-gray-50 font-bold">
-                                    <td class="py-2 px-4 border-r">Total Income</td>
-                                    <td class="py-2 px-4 text-right border-r text-green-600">
+                                <tr class="font-bold border-b bg-gray-50">
+                                    <td class="px-4 py-2 border-r">Total Income</td>
+                                    <td class="px-4 py-2 text-right text-green-600 border-r">
                                         {{ formatCurrency(income.total.period) }}
                                     </td>
-                                    <td class="py-2 px-4 text-right text-green-600">
+                                    <td class="px-4 py-2 text-right text-green-600">
                                         {{ formatCurrency(income.total.cumulative) }}
                                     </td>
                                 </tr>
 
                                 <!-- Surplus Row -->
-                                <tr class="bg-gray-50 font-bold">
-                                    <td class="py-2 px-4 border-r">Surplus</td>
-                                    <td class="py-2 px-4 text-right border-r">
+                                <tr class="font-bold bg-gray-50">
+                                    <td class="px-4 py-2 border-r">Surplus</td>
+                                    <td class="px-4 py-2 text-right border-r">
                                         <span class="font-bold" :class="{
                                             'text-green-600': netResultPeriod > 0,
                                             'text-red-600': netResultPeriod < 0
@@ -112,7 +112,7 @@
                                             {{ formatCurrency(netResultPeriod) }}
                                         </span>
                                     </td>
-                                    <td class="py-2 px-4 text-right">
+                                    <td class="px-4 py-2 text-right">
                                         <span class="font-bold" :class="{
                                             'text-green-600': netResultCumulative > 0,
                                             'text-red-600': netResultCumulative < 0
@@ -121,12 +121,12 @@
                                         </span>
                                     </td>
                                 </tr>
-                                <tr class="border-b bg-gray-50 font-bold">
-                                    <td class="py-2 px-4 border-r">Grand Total</td>
-                                    <td class="py-2 px-4 text-right border-r text-red-600">
+                                <tr class="font-bold border-b bg-gray-50">
+                                    <td class="px-4 py-2 border-r">Grand Total</td>
+                                    <td class="px-4 py-2 text-right text-red-600 border-r">
                                         {{ formatCurrency(expenditure.total.period) }}
                                     </td>
-                                    <td class="py-2 px-4 text-right text-red-600">
+                                    <td class="px-4 py-2 text-right text-red-600">
                                         {{ formatCurrency(expenditure.total.cumulative) }}
                                     </td>
                                 </tr>
@@ -135,36 +135,36 @@
                     </div>
 
                     <!-- Expenditure Section -->
-                    <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-                        <div class="py-3 px-4 bg-gray-50 border-b">
+                    <div class="overflow-hidden bg-white border rounded-lg shadow-sm">
+                        <div class="px-4 py-3 border-b bg-gray-50">
                             <h3 class="text-lg font-semibold text-gray-800">Expenditure</h3>
                         </div>
                         <table class="w-full">
                             <thead>
                                 <tr class="border-b bg-gray-50">
-                                    <th class="text-left py-2 px-4 border-r">Description</th>
-                                    <th class="text-right py-2 px-4 border-r">Month</th>
-                                    <th class="text-right py-2 px-4">Cumulative</th>
+                                    <th class="px-4 py-2 text-left border-r">Description</th>
+                                    <th class="px-4 py-2 text-right border-r">Month</th>
+                                    <th class="px-4 py-2 text-right">Cumulative</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="category in expenditure.categories" :key="category.name" class="border-b">
-                                    <td class="py-2 px-4 border-r">{{ category.name }}</td>
-                                    <td class="py-2 px-4 text-right border-r text-red-600">
+                                    <td class="px-4 py-2 border-r">{{ category.name }}</td>
+                                    <td class="px-4 py-2 text-right text-red-600 border-r">
                                         {{ formatCurrency(category.period) }}
                                     </td>
-                                    <td class="py-2 px-4 text-right text-red-600">
+                                    <td class="px-4 py-2 text-right text-red-600">
                                         {{ formatCurrency(category.cumulative) }}
                                     </td>
                                 </tr>
 
                                 <!-- Total Expenses Row -->
-                                <tr class="border-b bg-gray-50 font-bold">
-                                    <td class="py-2 px-4 border-r">Total Expenditure</td>
-                                    <td class="py-2 px-4 text-right border-r text-red-600">
+                                <tr class="font-bold border-b bg-gray-50">
+                                    <td class="px-4 py-2 border-r">Total Expenditure</td>
+                                    <td class="px-4 py-2 text-right text-red-600 border-r">
                                         {{ formatCurrency(expenditure.total.period) }}
                                     </td>
-                                    <td class="py-2 px-4 text-right text-red-600">
+                                    <td class="px-4 py-2 text-right text-red-600">
                                         {{ formatCurrency(expenditure.total.cumulative) }}
                                     </td>
                                 </tr>
