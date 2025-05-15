@@ -323,3 +323,5 @@ class SaleReportController extends Controller
         ];
     }
 }
+
+

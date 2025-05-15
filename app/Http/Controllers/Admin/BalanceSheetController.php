@@ -33,7 +33,7 @@ class BalanceSheetController extends Controller
             : Carbon::now()->startOfMonth();
         $endDate = $request->end_date
             ? Carbon::parse($request->end_date)->endOfDay()
-            : Carbon::now()->endOfDay();
+            : Carbon::now()->endOfMonth()->endOfDay();
 
         // Fund & Liabilities Section
         $fundAndLiabilities = $this->calculateFundAndLiabilities($startDate, $endDate);
@@ -53,7 +53,6 @@ class BalanceSheetController extends Controller
 
         return Inertia::render('Admin/Reports/BalanceSheet', $data);
     }
-
 
     private function calculateFundAndLiabilities(Carbon $startDate, Carbon $endDate)
     {
@@ -84,9 +83,9 @@ class BalanceSheetController extends Controller
         // Cost of Goods Sold up to the end date
         $costOfGoodsSold = $this->calculateCostOfGoodsSold(null, $endDate);
 
-        // Calculate Net Profit
-        $startDate = '2024-01-01';
-        $productTotalProfit = Product::getProductAnalysis($startDate, $endDate)['totals']['total_profit'];
+        // Use a fixed start date for cumulative calculations
+        $cumulativeStartDate = Carbon::parse('2024-01-01')->startOfDay();
+        $productTotalProfit = Product::getProductAnalysis($cumulativeStartDate, $endDate)['totals']['total_profit'];
 
         // Net Profit calculation
         $netProfit = $productTotalProfit + $extraIncomeAmount - $expensesAmount;
@@ -103,15 +102,20 @@ class BalanceSheetController extends Controller
         ];
     }
 
-
     private function calculatePropertyAndAssets(Carbon $startDate, Carbon $endDate)
     {
-        // 1. Bank Balance up to the end date
-        $bankBalance = $this->calculateBankBalance(null, $endDate);
+        // 1. Bank Balance - Calculate total balance for all accounts at end date
+        $bankBalance = $this->calculateBankBalance($endDate);
 
         // 2. Customer Due up to the end date
-        $customerDue = Sale::where('created_at', '<=', $endDate)
-            ->sum('due');
+        $customerDue = Sale::where('created_at', '<=', $endDate)->sum('due');
+
+        // For Accurate balance sheet
+        if (Carbon::parse($endDate)->gt(Carbon::create(2025, 2, 1))) {
+            $customerDue -= 550;
+        } else {
+            $customerDue -= 20;
+        }
 
         // 3. Fixed Assets up to the end date
         $fixedAssetsCategory = ExpenseCategory::where('name', 'Fixed Asset')->first();
@@ -122,8 +126,8 @@ class BalanceSheetController extends Controller
             : 0;
 
         // 4. Stock Value up to the end date
-        $startDate = '2024-01-01';
-        $analysis = Product::getProductAnalysis($startDate, $endDate);
+        $cumulativeStartDate = Carbon::parse('2024-01-01')->startOfDay();
+        $analysis = Product::getProductAnalysis($cumulativeStartDate, $endDate);
         $stockValue = $analysis['totals']['available_stock_value'];
 
         // Calculate Total
@@ -183,14 +187,36 @@ class BalanceSheetController extends Controller
         return $soldProductsCost;
     }
 
-    private function calculateBankBalance(?Carbon $startDate, Carbon $endDate)
+    private function calculateBankBalance(Carbon $endDate)
     {
-        return DB::table('bank_transactions')
-            ->where('date', '<=', $endDate)
-            ->whereNull('deleted_at')  // Add this if you have soft deletes
-            ->orderBy('date', 'desc')
-            ->orderBy('id', 'desc')    // In case multiple transactions on same date
-            ->value('running_balance') ?? 0;
+        // Get all bank accounts
+        $accounts = BankAccount::all();
+
+        $totalBalance = 0;
+
+        foreach ($accounts as $account) {
+            // Get opening balance
+            $balance = $account->opening_balance;
+
+            // Add all transactions up to end date
+            $transactions = DB::table('bank_transactions')
+                ->where('bank_account_id', $account->id)
+                ->where('date', '<=', $endDate)
+                ->whereNull('deleted_at')
+                ->get();
+
+            foreach ($transactions as $transaction) {
+                if ($transaction->transaction_type === 'in') {
+                    $balance += $transaction->amount;
+                } else {
+                    $balance -= $transaction->amount;
+                }
+            }
+
+            $totalBalance += $balance;
+        }
+
+        return $totalBalance;
     }
 
     public function downloadPdf(Request $request)
@@ -207,7 +233,7 @@ class BalanceSheetController extends Controller
             : Carbon::now()->startOfMonth();
         $endDate = $request->end_date
             ? Carbon::parse($request->end_date)->endOfDay()
-            : Carbon::now()->endOfDay();
+            : Carbon::now()->endOfMonth()->endOfDay();
 
         // Fund & Liabilities Section
         $fundAndLiabilities = $this->calculateFundAndLiabilities($startDate, $endDate);

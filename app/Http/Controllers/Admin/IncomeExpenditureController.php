@@ -31,7 +31,7 @@ class IncomeExpenditureController extends Controller
             : Carbon::now()->startOfMonth();
         $endDate = $request->end_date
             ? Carbon::parse($request->end_date)->endOfDay()
-            : Carbon::now()->endOfDay();
+            : Carbon::now()->endOfMonth()->endOfDay();
 
         // Calculate Income Section
         $incomeData = $this->calculateIncome($startDate, $endDate);
@@ -54,6 +54,7 @@ class IncomeExpenditureController extends Controller
 
     private function calculateIncome(Carbon $startDate, Carbon $endDate)
     {
+        // Pass Carbon instances (not strings) to be consistent with Product model
         $productAnalysis = Product::getProductAnalysis($startDate, $endDate);
         $extraIncomeAnalysis = $this->calculateExtraIncome($startDate, $endDate);
 
@@ -78,7 +79,7 @@ class IncomeExpenditureController extends Controller
             ->whereNotNull('category_id')
             ->pluck('category_id');
 
-        // Get current period data
+        // Get current period data - Use whereBetween to match Product model
         $currentPeriodData = ExtraIncome::whereBetween('date', [$startDate, $endDate])
             ->select('category_id', DB::raw('SUM(amount) as total_amount'))
             ->groupBy('category_id')
@@ -111,7 +112,7 @@ class IncomeExpenditureController extends Controller
             }
         }
 
-        // Handle uncategorized income
+        // Handle uncategorized income - Use whereBetween to match Product model
         $uncategorizedPeriod = ExtraIncome::whereBetween('date', [$startDate, $endDate])
             ->whereNull('category_id')
             ->sum('amount');
@@ -151,14 +152,14 @@ class IncomeExpenditureController extends Controller
 
         // Prepare categories with their expenses
         $categoriesWithExpenses = $expenseCategories->map(function ($category) use ($startDate, $endDate) {
-            // Period expenses (current month)
+            // Period expenses - Use whereBetween to match Product model
             $periodExpenses = Expense::where('expense_category_id', $category->id)
                 ->whereBetween('date', [$startDate, $endDate])
                 ->sum('amount');
 
-            // Cumulative expenses (up to end date)
+            // Cumulative expenses
             $cumulativeExpenses = Expense::where('expense_category_id', $category->id)
-                ->where('date', '<=', Carbon::now()->endOfDay())
+                ->where('date', '<=', $endDate)
                 ->sum('amount');
 
             return [
@@ -168,7 +169,7 @@ class IncomeExpenditureController extends Controller
             ];
         });
 
-        // Calculate total expenses
+        // Calculate total expenses - Use whereBetween to match Product model
         $totalExpensesPeriod = Expense::when($fixedAssetsCategory, function ($query) use ($fixedAssetsCategory) {
             return $query->where('expense_category_id', '!=', $fixedAssetsCategory->id);
         })
@@ -178,7 +179,7 @@ class IncomeExpenditureController extends Controller
         $totalExpensesCumulative = Expense::when($fixedAssetsCategory, function ($query) use ($fixedAssetsCategory) {
             return $query->where('expense_category_id', '!=', $fixedAssetsCategory->id);
         })
-            ->where('date', '<=', Carbon::now()->endOfDay())
+            ->where('date', '<=', $endDate)
             ->sum('amount');
 
         return [
@@ -189,7 +190,6 @@ class IncomeExpenditureController extends Controller
             ],
         ];
     }
-
 
     public function downloadPdf(Request $request)
     {
@@ -210,26 +210,16 @@ class IncomeExpenditureController extends Controller
             $month = (int) $request->selected_month;
             $year = (int) $request->selected_year;
 
-            // Get the month name using Carbon
-            $monthName = Carbon::createFromDate($year, $month, 1)->format('F');
+            // Recreate dates based on selected month/year to avoid timezone issues
+            $startDate = Carbon::createFromDate($year, $month, 1)->startOfDay();
+            $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->endOfDay();
+
+            $monthName = $startDate->format('F');
         } else {
             // Fallback to extracting from the date
             $month = $startDate->month;
             $year = $startDate->year;
             $monthName = $startDate->format('F');
-        }
-
-        // Double-check that we have the correct month
-        // If the start date is the last day of the previous month due to timezone issues,
-        // adjust to use the first day of the intended month
-        if ($month != $startDate->month) {
-            // Adjust start date to be the first day of the intended month
-            $startDate = Carbon::createFromDate($year, $month, 1)->startOfDay();
-
-            // If end date also needs adjustment, set it to the last day of the intended month
-            if ($month != $endDate->month) {
-                $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->endOfDay();
-            }
         }
 
         // Calculate Income Section

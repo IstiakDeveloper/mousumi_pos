@@ -162,7 +162,6 @@ import { defineComponent } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { router } from '@inertiajs/vue3';
 import { formatCurrency } from '@/Utils';
-import axios from 'axios'; // Ensure axios is imported
 
 export default defineComponent({
     components: { AdminLayout },
@@ -193,7 +192,8 @@ export default defineComponent({
             years: [currentYear - 1, currentYear, currentYear + 1],
             selectedYear: this.extractYear(this.filters.start_date) || currentYear,
             selectedMonth: this.extractMonth(this.filters.start_date) || currentMonth,
-            isDownloading: false // Add a loading state for download
+            isDownloading: false,
+            isDownloadDisabled: false
         }
     },
     methods: {
@@ -203,76 +203,81 @@ export default defineComponent({
         },
         extractYear(dateString) {
             if (!dateString) return null;
-            return new Date(dateString).getFullYear();
+            // Add timezone handling to avoid date shifting
+            const date = new Date(dateString + 'T00:00:00');
+            return date.getFullYear();
         },
         extractMonth(dateString) {
             if (!dateString) return null;
-            return new Date(dateString).getMonth() + 1;
+            // Add timezone handling to avoid date shifting
+            const date = new Date(dateString + 'T00:00:00');
+            return date.getMonth() + 1;
         },
         handleDateChange() {
-            // Get first and last day of selected month
-            const startDate = new Date(this.selectedYear, this.selectedMonth - 1, 1);
-            const endDate = new Date(this.selectedYear, this.selectedMonth, 0);
+            // Create dates using local timezone to avoid date shifting
+            const year = this.selectedYear;
+            const month = this.selectedMonth;
+
+            // Get first day of selected month
+            const startDate = new Date(year, month - 1, 1);
+            // Get last day of selected month
+            const endDate = new Date(year, month, 0);
+
+            // Format dates as YYYY-MM-DD
+            const formatDate = (date) => {
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            };
 
             router.get(route('admin.reports.balance-sheet'), {
-                start_date: startDate.toISOString().split('T')[0],
-                end_date: endDate.toISOString().split('T')[0],
+                start_date: formatDate(startDate),
+                end_date: formatDate(endDate),
             }, {
                 preserveState: true,
                 preserveScroll: true,
             });
         },
         async downloadPDF() {
+            this.isDownloading = true;
+            this.isDownloadDisabled = true;
+
             try {
-                // Set downloading state
-                this.isDownloading = true;
+                // Get first and last day of selected month
+                const year = this.selectedYear;
+                const month = this.selectedMonth;
 
-                // Prepare the download URL
-                const url = route('admin.reports.balance-sheet.download', {
-                    start_date: this.filters.start_date,
-                    end_date: this.filters.end_date,
-                });
+                // Create start and end dates without timezone issues
+                const startDate = new Date(year, month - 1, 1);
+                const endDate = new Date(year, month, 0);
 
-                // Fetch the PDF
-                const response = await axios({
-                    url: url,
-                    method: 'GET',
-                    responseType: 'blob', // Important
-                });
+                // Format dates as YYYY-MM-DD
+                const formatDate = (date) => {
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                    const d = String(date.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${d}`;
+                };
 
-                // Create a link element to trigger download
-                const link = document.createElement('a');
-                const blob = new Blob([response.data], { type: 'application/pdf' });
+                // Create URL with query parameters
+                const url = route('admin.reports.balance-sheet.download') +
+                    `?start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}`;
 
-                // Generate filename
-                const startDate = new Date(this.filters.start_date);
-                const endDate = new Date(this.filters.end_date);
-                const filename = `balance-sheet-${startDate.toISOString().split('T')[0]}-to-${endDate.toISOString().split('T')[0]}.pdf`;
+                // Open in new window or redirect current window
+                window.location.href = url;
 
-                // Create download link
-                link.href = window.URL.createObjectURL(blob);
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-
-                // Clean up
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(link.href);
+                // Reset states after a brief delay to show loading state
+                setTimeout(() => {
+                    this.isDownloading = false;
+                    this.isDownloadDisabled = false;
+                }, 1500);
             } catch (error) {
-                console.error('PDF Download Error:', error);
-                // Optionally show an error toast/notification
-                this.$toast.error('Failed to download PDF');
-            } finally {
-                // Reset downloading state
+                console.error('Error downloading PDF:', error);
                 this.isDownloading = false;
+                this.isDownloadDisabled = false;
             }
         },
-    },
-    computed: {
-        // Optional: Disable download button while downloading
-        isDownloadDisabled() {
-            return this.isDownloading;
-        }
     }
 })
 </script>

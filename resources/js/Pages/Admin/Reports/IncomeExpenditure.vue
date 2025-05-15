@@ -41,8 +41,6 @@
 
         <div class="py-6">
             <div id="income-expenditure-content" class="mx-auto ">
-
-
                 <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
                     <!-- Income Section -->
                     <div class="overflow-hidden bg-white border rounded-lg shadow-sm">
@@ -172,7 +170,6 @@
                         </table>
                     </div>
                 </div>
-
             </div>
         </div>
     </AdminLayout>
@@ -183,7 +180,6 @@ import { defineComponent } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { router } from '@inertiajs/vue3';
 import { formatCurrency } from '@/Utils';
-import html2pdf from 'html2pdf.js';
 
 export default defineComponent({
     components: { AdminLayout },
@@ -230,28 +226,39 @@ export default defineComponent({
         formatCurrency,
         extractYear(dateString) {
             if (!dateString) return null;
-            return new Date(dateString).getFullYear();
+            // FIX: Parse the date properly to avoid timezone issues
+            const date = new Date(dateString + 'T00:00:00');
+            return date.getFullYear();
         },
         extractMonth(dateString) {
             if (!dateString) return null;
-            return new Date(dateString).getMonth() + 1;
+            // FIX: Parse the date properly to avoid timezone issues
+            const date = new Date(dateString + 'T00:00:00');
+            return date.getMonth() + 1;
         },
         getMonthName(monthNumber) {
             return this.months.find(m => m.value === monthNumber)?.label || '';
         },
-        formatDateRange(startDate, endDate) {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
-        },
         handleDateChange() {
-            // Get first and last day of selected month
-            const startDate = new Date(this.selectedYear, this.selectedMonth - 1, 1);
-            const endDate = new Date(this.selectedYear, this.selectedMonth, 0);
+            // FIX: Create dates using local timezone to avoid date shifting
+            const year = this.selectedYear;
+            const month = this.selectedMonth;
+
+            // Create start and end dates for the selected month
+            const startDate = new Date(year, month - 1, 1);
+            const endDate = new Date(year, month, 0); // Last day of the month
+
+            // Format dates as YYYY-MM-DD
+            const formatDate = (date) => {
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            };
 
             router.get(route('admin.reports.income-expenditure'), {
-                start_date: startDate.toISOString().split('T')[0],
-                end_date: endDate.toISOString().split('T')[0],
+                start_date: formatDate(startDate),
+                end_date: formatDate(endDate),
             }, {
                 preserveState: true,
                 preserveScroll: true,
@@ -262,22 +269,25 @@ export default defineComponent({
             this.isDownloadDisabled = true;
 
             try {
-                // Get first and last day of selected month with timezone safety
-                // Use Date.UTC to ensure consistent dates without timezone issues
-                const startDate = new Date(Date.UTC(this.selectedYear, this.selectedMonth - 1, 1));
-                const endDate = new Date(Date.UTC(this.selectedYear, this.selectedMonth, 0)); // Last day of month
+                // FIX: Create correct dates for the selected month
+                const year = this.selectedYear;
+                const month = this.selectedMonth;
 
-                // Format dates as YYYY-MM-DD ensuring we get the correct day
-                // Use local date methods rather than ISO string to avoid timezone shifts
-                const formattedStartDate = `${startDate.getUTCFullYear()}-${String(startDate.getUTCMonth() + 1).padStart(2, '0')}-${String(startDate.getUTCDate()).padStart(2, '0')}`;
-                const formattedEndDate = `${endDate.getUTCFullYear()}-${String(endDate.getUTCMonth() + 1).padStart(2, '0')}-${String(endDate.getUTCDate()).padStart(2, '0')}`;
+                // Create start and end dates without timezone issues
+                const startDate = new Date(year, month - 1, 1);
+                const endDate = new Date(year, month, 0);
 
-                // Also include the month directly as a parameter to ensure the controller has the correct month
-                const monthName = this.getMonthName(this.selectedMonth);
+                // Format dates as YYYY-MM-DD
+                const formatDate = (date) => {
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                    const d = String(date.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${d}`;
+                };
 
-                // Create URL with query parameters
+                // Create URL with properly formatted parameters
                 const url = route('admin.reports.income-expenditure.pdf') +
-                    `?start_date=${formattedStartDate}&end_date=${formattedEndDate}&selected_month=${this.selectedMonth}&selected_year=${this.selectedYear}`;
+                    `?start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&selected_month=${month}&selected_year=${year}`;
 
                 // Open in new window or redirect current window
                 window.location.href = url;
@@ -293,7 +303,6 @@ export default defineComponent({
                 this.isDownloadDisabled = false;
             }
         },
-
     }
 })
 </script>
@@ -315,7 +324,5 @@ export default defineComponent({
         top: 0;
         width: 100%;
     }
-
-
 }
 </style>

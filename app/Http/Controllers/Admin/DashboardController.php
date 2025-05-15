@@ -132,15 +132,54 @@ class DashboardController extends Controller
             ->setBindings([$previousEndDate, $previousEndDate, $previousEndDate])
             ->first();
 
-        // Get Bank data
+        // Get Bank data - FIXED to calculate proper balances
         $bankAccounts = BankAccount::where('status', true)
-            ->select('id', 'account_name', 'current_balance')
+            ->select('id', 'account_name', 'opening_balance')
             ->get();
 
-        $bankTransactions = BankTransaction::with(['bankAccount' => function ($query) {
-            $query->select('id', 'account_name', 'current_balance')
-                ->where('status', true);
-        }])
+        // Calculate actual bank balances up to end date
+        $bankSummary = $bankAccounts->map(function ($account) use ($endDate, $startDate) {
+            // Calculate balance at end date
+            $currentBalance = $account->opening_balance +
+                DB::table('bank_transactions')
+                    ->where('bank_account_id', $account->id)
+                    ->where('date', '<=', $endDate)
+                    ->whereNull('deleted_at')
+                    ->sum(DB::raw('CASE
+                        WHEN transaction_type = "in" THEN amount
+                        ELSE -amount
+                    END'));
+
+            // Get period transactions
+            $periodTransactionsIn = DB::table('bank_transactions')
+                ->where('bank_account_id', $account->id)
+                ->whereBetween('date', [$startDate, $endDate])
+                ->where('transaction_type', 'in')
+                ->whereNull('deleted_at')
+                ->sum('amount');
+
+            $periodTransactionsOut = DB::table('bank_transactions')
+                ->where('bank_account_id', $account->id)
+                ->whereBetween('date', [$startDate, $endDate])
+                ->where('transaction_type', 'out')
+                ->whereNull('deleted_at')
+                ->sum('amount');
+
+            return [
+                'id' => $account->id,
+                'name' => $account->account_name,
+                'balance' => $currentBalance,
+                'period_in' => $periodTransactionsIn,
+                'period_out' => $periodTransactionsOut
+            ];
+        });
+
+        $bankTransactions = BankTransaction::with([
+            'bankAccount' => function ($query) {
+                $query->select('id', 'account_name')
+                    ->where('status', true);
+            }
+        ])
             ->whereBetween('date', [$startDate, $endDate])
             ->select('id', 'bank_account_id', 'transaction_type', 'amount', 'date', 'description')
             ->whereHas('bankAccount', function ($query) {
@@ -205,15 +244,15 @@ class DashboardController extends Controller
                 'previous_period_profit' => $previousNetProfit
             ],
             'banking' => [
-                'total_balance' => $bankAccounts->sum('current_balance'),
-                'accounts' => $bankAccounts->map(function ($account) {
+                'total_balance' => $bankSummary->sum('balance'),
+                'accounts' => $bankSummary->map(function ($account) {
                     return [
-                        'name' => $account->account_name,
-                        'balance' => $account->current_balance
+                        'name' => $account['name'],
+                        'balance' => $account['balance']
                     ];
                 })->values(),
-                'total_transactions_in' => $bankTransactions->where('transaction_type', 'in')->sum('amount'),
-                'total_transactions_out' => $bankTransactions->where('transaction_type', 'out')->sum('amount')
+                'total_transactions_in' => $bankSummary->sum('period_in'),
+                'total_transactions_out' => $bankSummary->sum('period_out')
             ],
             'stock' => [
                 'current_value' => round($currentStockValue->total_value ?? 0, 2),
@@ -250,28 +289,54 @@ class DashboardController extends Controller
     {
         // First get all active bank accounts
         $bankAccounts = BankAccount::where('status', true)
-            ->select('id', 'account_name', 'current_balance')
+            ->select('id', 'account_name', 'opening_balance')
             ->get();
 
-        // Get transactions for the period
-        $transactions = BankTransaction::whereBetween('date', [$startDate, $endDate])
-            ->select('id', 'bank_account_id', 'transaction_type', 'amount', 'date')
-            ->get()
-            ->groupBy('bank_account_id');
+        return $bankAccounts->map(function ($account) use ($startDate, $endDate) {
+            // Calculate previous balance (before start date)
+            $previousBalance = $account->opening_balance +
+                DB::table('bank_transactions')
+                    ->where('bank_account_id', $account->id)
+                    ->where('date', '<', $startDate)
+                    ->whereNull('deleted_at')
+                    ->sum(DB::raw('CASE
+                    WHEN transaction_type = "in" THEN amount
+                    ELSE -amount
+                END'));
 
-        // Map bank accounts with their transactions
-        return $bankAccounts->map(function ($account) use ($transactions) {
-            $accountTransactions = $transactions[$account->id] ?? collect();
+            // Get current period transactions
+            $periodTransactionsIn = DB::table('bank_transactions')
+                ->where('bank_account_id', $account->id)
+                ->whereBetween('date', [$startDate, $endDate])
+                ->where('transaction_type', 'in')
+                ->whereNull('deleted_at')
+                ->sum('amount');
+
+            $periodTransactionsOut = DB::table('bank_transactions')
+                ->where('bank_account_id', $account->id)
+                ->whereBetween('date', [$startDate, $endDate])
+                ->where('transaction_type', 'out')
+                ->whereNull('deleted_at')
+                ->sum('amount');
+
+            // Calculate current balance (up to end date)
+            $currentBalance = $account->opening_balance +
+                DB::table('bank_transactions')
+                    ->where('bank_account_id', $account->id)
+                    ->where('date', '<=', $endDate)
+                    ->whereNull('deleted_at')
+                    ->sum(DB::raw('CASE
+                    WHEN transaction_type = "in" THEN amount
+                    ELSE -amount
+                END'));
 
             return [
                 'account_name' => $account->account_name,
-                'current_balance' => $account->current_balance,
-                'transactions_in' => $accountTransactions
-                    ->where('transaction_type', 'in')
-                    ->sum('amount'),
-                'transactions_out' => $accountTransactions
-                    ->where('transaction_type', 'out')
-                    ->sum('amount')
+                'previous_balance' => $previousBalance,
+                'current_balance' => $currentBalance,
+                'transactions_in' => $periodTransactionsIn,
+                'transactions_out' => $periodTransactionsOut,
+                'net_change' => $periodTransactionsIn - $periodTransactionsOut
             ];
         })->values();
     }

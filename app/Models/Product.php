@@ -82,21 +82,32 @@ class Product extends Model
         $stockPositions = static::getCurrentStockPositions($endDate);
 
         $products = static::with(['category', 'unit'])
+            ->where('status', true) // Only active products
             ->select('products.*')
             ->addSelect([
                 'all_time_buy_price' => static::getAllTimeBuyPriceQuery(),
                 'buy_quantity' => static::getBuyQuantityQuery($startDate, $endDate),
                 'total_buy_cost' => static::getTotalBuyCostQuery($startDate, $endDate),
                 'sale_quantity' => static::getSaleQuantityQuery($startDate, $endDate),
-                'total_sale_amount' => static::getTotalSaleAmountQuery($startDate, $endDate)
+                'total_sale_amount' => static::getTotalSaleAmountQuery($startDate, $endDate),
+                'sale_discount' => static::getTotalSaleDiscountQuery($startDate, $endDate),
+                'sale_amount_after_discount' => static::getSaleAmountAfterDiscountQuery($startDate, $endDate)
             ])
+            ->orderBy('products.name')
             ->get()
             ->map(function ($product, $index) use ($stockPositions, $beforeStockPositions) {
                 return static::calculateProductMetrics($product, $index, $stockPositions, $beforeStockPositions);
+            })
+            ->filter(function($product) {
+                // Filter out products with no activity (no before stock, buy, sale, or available)
+                return $product['before_quantity'] > 0 ||
+                       $product['buy_quantity'] > 0 ||
+                       $product['sale_quantity'] > 0 ||
+                       $product['available_quantity'] > 0;
             });
 
         return [
-            'products' => $products,
+            'products' => $products->values(), // Reset keys after filtering
             'totals' => static::calculateTotals($products)
         ];
     }
@@ -128,30 +139,48 @@ class Product extends Model
 
     protected static function getCurrentStockPositions($endDate)
     {
-        return DB::table('product_stocks as ps')
-            ->select('ps.product_id')
-            ->selectRaw('
-                CASE
-                    WHEN ps.id IN (
-                        SELECT MAX(id)
-                        FROM product_stocks
-                        WHERE product_id = ps.product_id
-                        AND created_at <= ?
-                        GROUP BY product_id
-                    )
-                    THEN ps.available_quantity
-                    ELSE 0
-                END as available_quantity
-            ', [$endDate])
-            ->selectRaw(static::getWeightedAvgCostQuery())
-            ->join('product_stocks as ps2', function ($join) use ($endDate) {
-                $join->on('ps2.product_id', '=', 'ps.product_id')
-                    ->where('ps2.created_at', '<=', $endDate);
+        // Get the latest stock position for each product up to the end date
+        $stockPositions = DB::table('product_stocks as ps')
+            ->select('ps.product_id', 'ps.available_quantity')
+            ->where('ps.created_at', '<=', $endDate)
+            ->whereIn('ps.id', function ($query) use ($endDate) {
+                $query->selectRaw('MAX(id)')
+                    ->from('product_stocks')
+                    ->where('created_at', '<=', $endDate)
+                    ->groupBy('product_id');
             })
-            ->groupBy('ps.product_id', 'ps.id', 'ps.available_quantity')
-            ->having('available_quantity', '>', 0)
             ->get()
             ->keyBy('product_id');
+
+        // If no stock entries found, calculate from purchases and sales
+        $productsWithNoStock = Product::whereNotIn('id', $stockPositions->pluck('product_id')->toArray())
+            ->pluck('id');
+
+        foreach ($productsWithNoStock as $productId) {
+            // Calculate total purchases up to end date
+            $totalPurchases = ProductStock::where('product_id', $productId)
+                ->where('type', 'purchase')
+                ->where('created_at', '<=', $endDate)
+                ->sum('quantity');
+
+            // Calculate total sales up to end date
+            $totalSales = DB::table('sale_items')
+                ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+                ->where('sale_items.product_id', $productId)
+                ->where('sales.created_at', '<=', $endDate)
+                ->whereNull('sales.deleted_at')
+                ->sum('sale_items.quantity');
+
+            $availableQty = $totalPurchases - $totalSales;
+
+            $stockPositions[$productId] = (object) [
+                'product_id' => $productId,
+                'available_quantity' => $availableQty,
+                'weighted_avg_cost' => 0
+            ];
+        }
+
+        return $stockPositions;
     }
 
     protected static function getWeightedAvgCostQuery()
@@ -203,42 +232,73 @@ class Product extends Model
 
     protected static function getSaleQuantityQuery($startDate, $endDate)
     {
-        return SaleItem::selectRaw('CAST(COALESCE(SUM(quantity), 0) AS DECIMAL(15,6))')
-            ->whereColumn('product_id', 'products.id')
-            ->whereHas('sale', function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('created_at', [$startDate, $endDate]);
-            });
+        return DB::table('sale_items')
+            ->selectRaw('CAST(COALESCE(SUM(sale_items.quantity), 0) AS DECIMAL(15,6))')
+            ->whereColumn('sale_items.product_id', 'products.id')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->whereBetween('sales.created_at', [$startDate, $endDate])
+            ->whereNull('sales.deleted_at');
     }
 
     protected static function getTotalSaleAmountQuery($startDate, $endDate)
     {
-        // Define cutoff date for when to start applying discount calculations
-        $discountCutoffDate = '2025-03-01';
-
-        // For date ranges that include March 2025 or later, use the discount-aware calculation
         return DB::table('sale_items')
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
             ->whereColumn('sale_items.product_id', 'products.id')
             ->whereBetween('sales.created_at', [$startDate, $endDate])
             ->whereNull('sales.deleted_at')
             ->selectRaw('
-            CAST(
-                COALESCE(
-                    SUM(
-                        CASE
-                            -- Only apply discount calculation for sales on/after March 1, 2025
-                            WHEN sales.created_at >= ? AND sales.total > 0
-                            THEN ROUND(
-                                (sale_items.subtotal / sales.subtotal) * sales.paid,
-                                2
-                            )
-                            -- Use regular subtotal for earlier dates
-                            ELSE sale_items.subtotal
-                        END
-                    ), 0
-                ) AS DECIMAL(15,2)
-            )
-        ', [$discountCutoffDate]);
+                CAST(
+                    COALESCE(
+                        SUM(sale_items.subtotal), 0
+                    ) AS DECIMAL(15,2)
+                )
+            ');
+    }
+
+    protected static function getTotalSaleDiscountQuery($startDate, $endDate)
+    {
+        return DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->whereColumn('sale_items.product_id', 'products.id')
+            ->whereBetween('sales.created_at', [$startDate, $endDate])
+            ->whereNull('sales.deleted_at')
+            ->selectRaw('
+                CAST(
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN sales.subtotal > 0
+                                THEN (sale_items.subtotal / sales.subtotal) * sales.discount
+                                ELSE 0
+                            END
+                        ), 0
+                    ) AS DECIMAL(15,2)
+                )
+            ');
+    }
+
+    protected static function getSaleAmountAfterDiscountQuery($startDate, $endDate)
+    {
+        return DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->whereColumn('sale_items.product_id', 'products.id')
+            ->whereBetween('sales.created_at', [$startDate, $endDate])
+            ->whereNull('sales.deleted_at')
+            ->selectRaw('
+                CAST(
+                    COALESCE(
+                        SUM(
+                            sale_items.subtotal -
+                            CASE
+                                WHEN sales.subtotal > 0
+                                THEN (sale_items.subtotal / sales.subtotal) * sales.discount
+                                ELSE 0
+                            END
+                        ), 0
+                    ) AS DECIMAL(15,2)
+                )
+            ');
     }
 
     protected static function calculateProductMetrics($product, $index, $stockPositions, $beforeStockPositions)
@@ -250,21 +310,31 @@ class Product extends Model
         $beforeAvgCost = $beforeStockPosition ? (float) $beforeStockPosition->before_avg_cost : 0;
         $beforeStockValue = $beforeQuantity * $beforeAvgCost;
 
-        $allTimeBuyPrice = (float) $product->all_time_buy_price;
-        $effectiveCost = $allTimeBuyPrice > 0 ? $allTimeBuyPrice : $beforeAvgCost;
+        $buyQuantity = (float) $product->buy_quantity;
+        $totalBuyCost = (float) $product->total_buy_cost;
+        $buyPrice = $buyQuantity > 0 ? $totalBuyCost / $buyQuantity : 0;
 
-        $salePrice = $product->sale_quantity > 0
-            ? (float) ($product->total_sale_amount / $product->sale_quantity)
-            : 0;
+        $saleQuantity = (float) $product->sale_quantity;
+        $totalSaleAmount = (float) $product->total_sale_amount;
+        $totalSaleDiscount = (float) ($product->sale_discount ?? 0);
+        $totalSaleAfterDiscount = (float) ($product->sale_amount_after_discount ?? $totalSaleAmount);
+        $salePrice = $saleQuantity > 0 ? $totalSaleAmount / $saleQuantity : 0;
+        $salePriceAfterDiscount = $saleQuantity > 0 ? $totalSaleAfterDiscount / $saleQuantity : 0;
 
+        // Get available quantity from stock position (either from stock_movements or product_stocks)
         $availableQuantity = $stockPosition ? (float) $stockPosition->available_quantity : 0;
 
-        $totalStockValue = $effectiveCost * ($beforeQuantity + $product->buy_quantity);
-        $totalSoldValue = $effectiveCost * $product->sale_quantity;
-        $availableStockValue = $totalStockValue - $totalSoldValue;
+        // Calculate effective cost for available stock value
+        // If we have history, use weighted average; otherwise use buy price
+        $totalQuantity = $beforeQuantity + $buyQuantity;
+        $totalCost = $beforeStockValue + $totalBuyCost;
+        $effectiveCost = $totalQuantity > 0 ? $totalCost / $totalQuantity : $buyPrice;
 
-        $profitPerUnit = $salePrice - $effectiveCost;
-        $totalProfit = $product->sale_quantity * $profitPerUnit;
+        // Use effective cost for available stock value
+        $availableStockValue = $availableQuantity * $effectiveCost;
+
+        $profitPerUnit = $salePriceAfterDiscount - $effectiveCost;
+        $totalProfit = $saleQuantity * $profitPerUnit;
 
         return [
             'serial' => $index + 1,
@@ -275,12 +345,14 @@ class Product extends Model
             'before_quantity' => $beforeQuantity,
             'before_price' => $beforeAvgCost,
             'before_value' => $beforeStockValue,
-            'buy_quantity' => (float) $product->buy_quantity,
-            'buy_price' => $allTimeBuyPrice,
-            'total_buy_price' => (float) $product->total_buy_cost,
-            'sale_quantity' => (float) $product->sale_quantity,
+            'buy_quantity' => $buyQuantity,
+            'buy_price' => $buyPrice,
+            'total_buy_price' => $totalBuyCost,
+            'sale_quantity' => $saleQuantity,
             'sale_price' => $salePrice,
-            'total_sale_price' => (float) $product->total_sale_amount,
+            'total_sale_price' => $totalSaleAmount,
+            'sale_discount' => $totalSaleDiscount,
+            'sale_after_discount' => $totalSaleAfterDiscount,
             'profit_per_unit' => $profitPerUnit,
             'total_profit' => $totalProfit,
             'available_quantity' => $availableQuantity,
@@ -297,6 +369,8 @@ class Product extends Model
             'total_buy_price' => (float) $products->sum('total_buy_price'),
             'sale_quantity' => (float) $products->sum('sale_quantity'),
             'total_sale_price' => (float) $products->sum('total_sale_price'),
+            'sale_discount' => (float) $products->sum('sale_discount'),
+            'sale_after_discount' => (float) $products->sum('sale_after_discount'),
             'total_profit' => (float) $products->sum('total_profit'),
             'available_quantity' => (float) $products->sum('available_quantity'),
             'available_stock_value' => (float) $products->sum('available_stock_value'),
@@ -332,5 +406,4 @@ class Product extends Model
             ];
         }
     }
-
 }
