@@ -29,7 +29,7 @@ class BankTransactionReportController extends Controller
         $selectedAccount = BankAccount::findOrFail($selectedBankAccount);
 
         // Get previous month's last transaction to get the closing balance
-        $previousMonthEnd = Carbon::create($selectedYear, $selectedMonth, 1)->subDay();
+        $previousMonthEnd = Carbon::create($selectedYear, $selectedMonth, )->subDay();
 
         $previousMonthBalance = BankTransaction::withTrashed()
             ->where('bank_account_id', $selectedBankAccount)
@@ -42,7 +42,7 @@ class BankTransactionReportController extends Controller
         $startOfMonth = Carbon::create($selectedYear, $selectedMonth, 1);
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
 
-        // Get daily transactions with categorization including soft deleted records and refunds
+        // Get daily transactions with categorization (WITHOUT extra income)
         $dailyTransactions = DB::table('bank_transactions')
             ->select('date')
             ->selectRaw('
@@ -52,9 +52,6 @@ class BankTransactionReportController extends Controller
         COALESCE(SUM(CASE
             WHEN transaction_type = "in" AND description LIKE "Payment received%" AND deleted_at IS NULL
             THEN amount ELSE 0 END), 0) as payment_receive,
-        COALESCE(SUM(CASE
-            WHEN transaction_type = "in" AND description LIKE "Extra Income%" AND deleted_at IS NULL
-            THEN amount ELSE 0 END), 0) as extra_income,
         COALESCE(SUM(CASE
             WHEN transaction_type = "in" AND deleted_at IS NULL AND (
                 description LIKE "%Refund%" OR
@@ -77,10 +74,23 @@ class BankTransactionReportController extends Controller
             ->whereMonth('date', $selectedMonth)
             ->groupBy('date')
             ->orderBy('date')
-            ->get();
+            ->get()
+            ->keyBy('date');
+
+        // Get extra incomes separately for the month
+        $extraIncomes = DB::table('extra_incomes')
+            ->select('date', DB::raw('SUM(amount) as total_amount'))
+            ->where('bank_account_id', $selectedBankAccount)
+            ->whereYear('date', $selectedYear)
+            ->whereMonth('date', $selectedMonth)
+            ->whereNull('deleted_at')
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
 
         // Log the transactions for debugging
         \Log::info('Daily Transactions:', $dailyTransactions->toArray());
+        \Log::info('Extra Incomes:', $extraIncomes->toArray());
 
         // Create an array for all dates in the month with running balance calculation
         $allDates = [];
@@ -89,57 +99,43 @@ class BankTransactionReportController extends Controller
 
         while ($currentDate <= $endOfMonth) {
             $dateStr = $currentDate->format('Y-m-d');
-            $dayTransaction = $dailyTransactions->firstWhere('date', $dateStr);
+            $dayTransaction = $dailyTransactions->get($dateStr);
+            $extraIncome = $extraIncomes->get($dateStr);
 
-            if ($dayTransaction) {
-                $totalIn = floatval($dayTransaction->fund_in) +
-                    floatval($dayTransaction->payment_receive) +
-                    floatval($dayTransaction->extra_income) +
-                    floatval($dayTransaction->refund);
+            // Get values from bank transactions
+            $fundIn = $dayTransaction ? floatval($dayTransaction->fund_in) : 0;
+            $paymentReceive = $dayTransaction ? floatval($dayTransaction->payment_receive) : 0;
+            $refund = $dayTransaction ? floatval($dayTransaction->refund) : 0;
+            $fundOut = $dayTransaction ? floatval($dayTransaction->fund_out) : 0;
+            $purchase = $dayTransaction ? floatval($dayTransaction->purchase) : 0;
+            $expense = $dayTransaction ? floatval($dayTransaction->expense) : 0;
 
-                $totalOut = floatval($dayTransaction->fund_out) +
-                    floatval($dayTransaction->purchase) +
-                    floatval($dayTransaction->expense);
+            // Get extra income amount
+            $extraIncomeAmount = $extraIncome ? floatval($extraIncome->total_amount) : 0;
 
-                // Calculate new running balance
-                $runningBalance = $runningBalance + $totalIn - $totalOut;
+            $totalIn = $fundIn + $paymentReceive + $extraIncomeAmount + $refund;
+            $totalOut = $fundOut + $purchase + $expense;
 
-                $allDates[] = [
-                    'date' => $dateStr,
-                    'in' => [
-                        'fund' => round(floatval($dayTransaction->fund_in), 2),
-                        'payment' => round(floatval($dayTransaction->payment_receive), 2),
-                        'extra' => round(floatval($dayTransaction->extra_income), 2),
-                        'refund' => round(floatval($dayTransaction->refund), 2),
-                        'total' => round($totalIn, 2)
-                    ],
-                    'out' => [
-                        'fund' => round(floatval($dayTransaction->fund_out), 2),
-                        'purchase' => round(floatval($dayTransaction->purchase), 2),
-                        'expense' => round(floatval($dayTransaction->expense), 2),
-                        'total' => round($totalOut, 2)
-                    ],
-                    'balance' => round($runningBalance, 2)
-                ];
-            } else {
-                $allDates[] = [
-                    'date' => $dateStr,
-                    'in' => [
-                        'fund' => 0,
-                        'payment' => 0,
-                        'extra' => 0,
-                        'refund' => 0,
-                        'total' => 0
-                    ],
-                    'out' => [
-                        'fund' => 0,
-                        'purchase' => 0,
-                        'expense' => 0,
-                        'total' => 0
-                    ],
-                    'balance' => round($runningBalance, 2)
-                ];
-            }
+            // Calculate new running balance
+            $runningBalance = $runningBalance + $totalIn - $totalOut;
+
+            $allDates[] = [
+                'date' => $dateStr,
+                'in' => [
+                    'fund' => round($fundIn, 2),
+                    'payment' => round($paymentReceive, 2),
+                    'extra' => round($extraIncomeAmount, 2),
+                    'refund' => round($refund, 2),
+                    'total' => round($totalIn, 2)
+                ],
+                'out' => [
+                    'fund' => round($fundOut, 2),
+                    'purchase' => round($purchase, 2),
+                    'expense' => round($expense, 2),
+                    'total' => round($totalOut, 2)
+                ],
+                'balance' => round($runningBalance, 2)
+            ];
 
             $currentDate->addDay();
         }
@@ -149,11 +145,11 @@ class BankTransactionReportController extends Controller
             'in' => [
                 'fund' => round($dailyTransactions->sum('fund_in'), 2),
                 'payment' => round($dailyTransactions->sum('payment_receive'), 2),
-                'extra' => round($dailyTransactions->sum('extra_income'), 2),
+                'extra' => round($extraIncomes->sum('total_amount'), 2),
                 'refund' => round($dailyTransactions->sum('refund'), 2),
                 'total' => round($dailyTransactions->sum('fund_in') +
                     $dailyTransactions->sum('payment_receive') +
-                    $dailyTransactions->sum('extra_income') +
+                    $extraIncomes->sum('total_amount') +
                     $dailyTransactions->sum('refund'), 2)
             ],
             'out' => [
@@ -205,42 +201,51 @@ class BankTransactionReportController extends Controller
         $startOfMonth = Carbon::create($selectedYear, $selectedMonth, 1);
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
 
-        // Get daily transactions with categorization including soft deleted records and refunds
+        // Get daily transactions with categorization (WITHOUT extra income)
         $dailyTransactions = DB::table('bank_transactions')
             ->select('date')
             ->selectRaw('
-                COALESCE(SUM(CASE
-                    WHEN transaction_type = "in" AND description LIKE "Fund in%" AND deleted_at IS NULL
-                    THEN amount ELSE 0 END), 0) as fund_in,
-                COALESCE(SUM(CASE
-                    WHEN transaction_type = "in" AND description LIKE "Payment received%" AND deleted_at IS NULL
-                    THEN amount ELSE 0 END), 0) as payment_receive,
-                COALESCE(SUM(CASE
-                    WHEN transaction_type = "in" AND description LIKE "Extra Income%" AND deleted_at IS NULL
-                    THEN amount ELSE 0 END), 0) as extra_income,
-                COALESCE(SUM(CASE
-                    WHEN transaction_type = "in" AND deleted_at IS NULL AND (
-                        description LIKE "%Refund%" OR
-                        description LIKE "%Stock purchase%" OR
-                        description LIKE "%cancelled%" OR
-                        description LIKE "%deleted%"
-                    )
-                    THEN amount ELSE 0 END), 0) as refund,
-                COALESCE(SUM(CASE
-                    WHEN transaction_type = "out" AND description LIKE "Fund out%" AND deleted_at IS NULL
-                    THEN amount ELSE 0 END), 0) as fund_out,
-                COALESCE(SUM(CASE
-                    WHEN transaction_type = "out" AND description LIKE "Stock purchase%" AND deleted_at IS NULL
-                    THEN amount ELSE 0 END), 0) as purchase,
-                COALESCE(SUM(CASE
-                    WHEN transaction_type = "out" AND description LIKE "Expense%" AND deleted_at IS NULL
-                    THEN amount ELSE 0 END), 0) as expense')
+        COALESCE(SUM(CASE
+            WHEN transaction_type = "in" AND description LIKE "Fund in%" AND deleted_at IS NULL
+            THEN amount ELSE 0 END), 0) as fund_in,
+        COALESCE(SUM(CASE
+            WHEN transaction_type = "in" AND description LIKE "Payment received%" AND deleted_at IS NULL
+            THEN amount ELSE 0 END), 0) as payment_receive,
+        COALESCE(SUM(CASE
+            WHEN transaction_type = "in" AND deleted_at IS NULL AND (
+                description LIKE "%Refund%" OR
+                description LIKE "%Stock purchase%" OR
+                description LIKE "%cancelled%" OR
+                description LIKE "%deleted%"
+            )
+            THEN amount ELSE 0 END), 0) as refund,
+        COALESCE(SUM(CASE
+            WHEN transaction_type = "out" AND description LIKE "Fund out%" AND deleted_at IS NULL
+            THEN amount ELSE 0 END), 0) as fund_out,
+        COALESCE(SUM(CASE
+            WHEN transaction_type = "out" AND description LIKE "Stock purchase%" AND deleted_at IS NULL
+            THEN amount ELSE 0 END), 0) as purchase,
+        COALESCE(SUM(CASE
+            WHEN transaction_type = "out" AND description LIKE "Expense%" AND deleted_at IS NULL
+            THEN amount ELSE 0 END), 0) as expense')
             ->where('bank_account_id', $selectedBankAccount)
             ->whereYear('date', $selectedYear)
             ->whereMonth('date', $selectedMonth)
             ->groupBy('date')
             ->orderBy('date')
-            ->get();
+            ->get()
+            ->keyBy('date');
+
+        // Get extra incomes separately for the month
+        $extraIncomes = DB::table('extra_incomes')
+            ->select('date', DB::raw('SUM(amount) as total_amount'))
+            ->where('bank_account_id', $selectedBankAccount)
+            ->whereYear('date', $selectedYear)
+            ->whereMonth('date', $selectedMonth)
+            ->whereNull('deleted_at')
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
 
         // Create an array for all dates in the month with running balance calculation
         $allDates = [];
@@ -249,57 +254,43 @@ class BankTransactionReportController extends Controller
 
         while ($currentDate <= $endOfMonth) {
             $dateStr = $currentDate->format('Y-m-d');
-            $dayTransaction = $dailyTransactions->firstWhere('date', $dateStr);
+            $dayTransaction = $dailyTransactions->get($dateStr);
+            $extraIncome = $extraIncomes->get($dateStr);
 
-            if ($dayTransaction) {
-                $totalIn = floatval($dayTransaction->fund_in) +
-                    floatval($dayTransaction->payment_receive) +
-                    floatval($dayTransaction->extra_income) +
-                    floatval($dayTransaction->refund);
+            // Get values from bank transactions
+            $fundIn = $dayTransaction ? floatval($dayTransaction->fund_in) : 0;
+            $paymentReceive = $dayTransaction ? floatval($dayTransaction->payment_receive) : 0;
+            $refund = $dayTransaction ? floatval($dayTransaction->refund) : 0;
+            $fundOut = $dayTransaction ? floatval($dayTransaction->fund_out) : 0;
+            $purchase = $dayTransaction ? floatval($dayTransaction->purchase) : 0;
+            $expense = $dayTransaction ? floatval($dayTransaction->expense) : 0;
 
-                $totalOut = floatval($dayTransaction->fund_out) +
-                    floatval($dayTransaction->purchase) +
-                    floatval($dayTransaction->expense);
+            // Get extra income amount
+            $extraIncomeAmount = $extraIncome ? floatval($extraIncome->total_amount) : 0;
 
-                // Calculate new running balance
-                $runningBalance = $runningBalance + $totalIn - $totalOut;
+            $totalIn = $fundIn + $paymentReceive + $extraIncomeAmount + $refund;
+            $totalOut = $fundOut + $purchase + $expense;
 
-                $allDates[] = [
-                    'date' => $dateStr,
-                    'in' => [
-                        'fund' => round(floatval($dayTransaction->fund_in), 2),
-                        'payment' => round(floatval($dayTransaction->payment_receive), 2),
-                        'extra' => round(floatval($dayTransaction->extra_income), 2),
-                        'refund' => round(floatval($dayTransaction->refund), 2),
-                        'total' => round($totalIn, 2)
-                    ],
-                    'out' => [
-                        'fund' => round(floatval($dayTransaction->fund_out), 2),
-                        'purchase' => round(floatval($dayTransaction->purchase), 2),
-                        'expense' => round(floatval($dayTransaction->expense), 2),
-                        'total' => round($totalOut, 2)
-                    ],
-                    'balance' => round($runningBalance, 2)
-                ];
-            } else {
-                $allDates[] = [
-                    'date' => $dateStr,
-                    'in' => [
-                        'fund' => 0,
-                        'payment' => 0,
-                        'extra' => 0,
-                        'refund' => 0,
-                        'total' => 0
-                    ],
-                    'out' => [
-                        'fund' => 0,
-                        'purchase' => 0,
-                        'expense' => 0,
-                        'total' => 0
-                    ],
-                    'balance' => round($runningBalance, 2)
-                ];
-            }
+            // Calculate new running balance
+            $runningBalance = $runningBalance + $totalIn - $totalOut;
+
+            $allDates[] = [
+                'date' => $dateStr,
+                'in' => [
+                    'fund' => round($fundIn, 2),
+                    'payment' => round($paymentReceive, 2),
+                    'extra' => round($extraIncomeAmount, 2),
+                    'refund' => round($refund, 2),
+                    'total' => round($totalIn, 2)
+                ],
+                'out' => [
+                    'fund' => round($fundOut, 2),
+                    'purchase' => round($purchase, 2),
+                    'expense' => round($expense, 2),
+                    'total' => round($totalOut, 2)
+                ],
+                'balance' => round($runningBalance, 2)
+            ];
 
             $currentDate->addDay();
         }
@@ -309,11 +300,11 @@ class BankTransactionReportController extends Controller
             'in' => [
                 'fund' => round($dailyTransactions->sum('fund_in'), 2),
                 'payment' => round($dailyTransactions->sum('payment_receive'), 2),
-                'extra' => round($dailyTransactions->sum('extra_income'), 2),
+                'extra' => round($extraIncomes->sum('total_amount'), 2),
                 'refund' => round($dailyTransactions->sum('refund'), 2),
                 'total' => round($dailyTransactions->sum('fund_in') +
                     $dailyTransactions->sum('payment_receive') +
-                    $dailyTransactions->sum('extra_income') +
+                    $extraIncomes->sum('total_amount') +
                     $dailyTransactions->sum('refund'), 2)
             ],
             'out' => [

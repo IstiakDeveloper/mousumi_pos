@@ -13,6 +13,7 @@ class BankTransaction extends Model
         'bank_account_id',
         'transaction_type',
         'amount',
+        'running_balance',
         'description',
         'date',
         'created_by'

@@ -406,4 +406,5 @@ class Product extends Model
             ];
         }
     }
+
 }

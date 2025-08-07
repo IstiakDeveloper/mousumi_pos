@@ -107,24 +107,20 @@ class BalanceSheetController extends Controller
         // 1. Bank Balance - Calculate total balance for all accounts at end date
         $bankBalance = $this->calculateBankBalance($endDate);
 
-        // 2. Customer Due up to the end date
-        $customerDue = Sale::where('created_at', '<=', $endDate)->sum('due');
+        $customerDue = 0;
 
-        // For Accurate balance sheet
-        if (Carbon::parse($endDate)->gt(Carbon::create(2025, 2, 1))) {
-            $customerDue -= 550;
-        } else {
-            $customerDue -= 20;
-        }
 
         // 3. Fixed Assets up to the end date
         $fixedAssetsCategory = ExpenseCategory::where('name', 'Fixed Asset')->first();
-        $fixedAssets = $fixedAssetsCategory
+
+        //Initial newar karon hocche 555 taka barai dite hobe
+        $fixedAssetsInitial = $fixedAssetsCategory
             ? Expense::where('expense_category_id', $fixedAssetsCategory->id)
                 ->where('date', '<=', $endDate)
                 ->sum('amount')
             : 0;
 
+        $fixedAssets = $fixedAssetsInitial - 555;
         // 4. Stock Value up to the end date
         $cumulativeStartDate = Carbon::parse('2024-01-01')->startOfDay();
         $analysis = Product::getProductAnalysis($cumulativeStartDate, $endDate);
@@ -258,4 +254,5 @@ class BalanceSheetController extends Controller
         // Download PDF
         return $pdf->download($filename);
     }
+
 }

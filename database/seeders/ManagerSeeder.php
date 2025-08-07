@@ -15,43 +15,37 @@ class ManagerSeeder extends Seeder
      */
     public function run(): void
     {
-        Role::create([
-            'name' => 'Manager',
-            'slug' => 'manager',
-            'permissions' => null,
-        ]);
+        // Role::create([
+        //     'name' => 'Manager',
+        //     'slug' => 'manager',
+        //     'permissions' => null,
+        // ]);
 
-        $role = Role::where('slug', 'manager')->first();
+        // $role = Role::where('slug', 'manager')->first();
 
-        // Create the Manager user
-        User::create([
-            'name' => 'Zahid Hasan',
-            'email' => 'zahidhasan1la@gmail.com',
-            'password' => Hash::make('Zahid1la$'),
-            'role_id' => $role->id,
-            'phone' => null,
-            'address' => null,
-            'status' => 1,
-        ]);
+        // // Create the Manager user
+        // User::create([
+        //     'name' => 'Zahid Hasan',
+        //     'email' => 'zahidhasan1la@gmail.com',
+        //     'password' => Hash::make('Zahid1la$'),
+        //     'role_id' => $role->id,
+        //     'phone' => null,
+        //     'address' => null,
+        //     'status' => 1,
+        // ]);
 
-
-        Role::create([
-            'name' => 'Super Admin',
-            'slug' => 'super-admin',
-            'permissions' => null,
-        ]);
 
         $role = Role::where('slug', 'super-admin')->first();
 
         // Create the Manager user
         User::create([
             'name' => 'Arun Kumar',
-            'email' => 'arun@mail.com',
+            'email' => 'arunkumar@mail.com',
             'password' => Hash::make('Arun001$'),
             'role_id' => $role->id,
             'phone' => null,
             'address' => null,
-            'status' => 1,  // Use integer 1 for active status
+            'status' => 1,  
         ]);
     }
 }

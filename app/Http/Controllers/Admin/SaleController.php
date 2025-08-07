@@ -8,6 +8,7 @@ use App\Models\Sale;
 use App\Models\Customer;
 use App\Models\ProductStock;
 use App\Models\SaleItem;
+use App\Models\StockMovement;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -131,111 +132,186 @@ class SaleController extends Controller
             ],
         ]);
     }
+
+
     public function edit($id)
     {
-        $sale = Sale::with([
-            'customer:id,name,phone,balance,credit_limit',  // Add balance and credit_limit
-            'saleItems.product',
-            'createdBy'
-        ])->findOrFail($id);
+        try {
+            $sale = Sale::with([
+                'customer:id,name,phone,balance,credit_limit',
+                'saleItems.product',
+                'createdBy'
+            ])->findOrFail($id);
 
-        // Get active customers for selection
-        $customers = Customer::active()
-            ->select('id', 'name', 'phone', 'balance', 'credit_limit')  // Add these fields
-            ->get();
+            // Get active customers for selection
+            $customers = Customer::active()
+                ->select('id', 'name', 'phone', 'balance', 'credit_limit')
+                ->get()
+                ->map(function ($customer) {
+                    return [
+                        'id' => $customer->id,
+                        'name' => $customer->name,
+                        'phone' => $customer->phone,
+                        'balance' => (string) $customer->balance,
+                        'credit_limit' => (string) $customer->credit_limit,
+                    ];
+                });
 
-        // Get bank accounts for payment
-        $bankAccounts = BankAccount::active()
-            ->select('id', 'account_name', 'account_number', 'current_balance')
-            ->get();
+            // Get bank accounts for payment
+            $bankAccounts = BankAccount::active()
+                ->select('id', 'bank_name', 'account_number', 'current_balance')
+                ->get();
 
-        return Inertia::render('Admin/Sales/Edit', [
-            'sale' => [
-                'id' => $sale->id,
-                'invoice_no' => $sale->invoice_no,
-                'customer_id' => $sale->customer_id,
-                'customer' => $sale->customer ? [  // Add customer details
-                    'id' => $sale->customer->id,
-                    'name' => $sale->customer->name,
-                    'phone' => $sale->customer->phone,
-                    'balance' => $sale->customer->balance,
-                    'credit_limit' => $sale->customer->credit_limit,
-                ] : null,
-                'items' => $sale->saleItems->map(fn($item) => [
-                    'id' => $item->id,
-                    'product_id' => $item->product_id,
-                    'product' => [
-                        'id' => $item->product->id,
-                        'name' => $item->product->name,
-                        'sku' => $item->product->sku,
-                        'selling_price' => $item->product->selling_price,
-                    ],
-                    'quantity' => $item->quantity,
-                    'unit_price' => $item->unit_price,
-                    'subtotal' => $item->subtotal,
-                ]),
-                'subtotal' => $sale->subtotal,
-                'discount' => $sale->discount,
-                'total' => $sale->total,
-                'paid' => $sale->paid,
-                'due' => $sale->due,
-                'payment_status' => $sale->payment_status,
-                'note' => $sale->note,
-                'bank_account_id' => $sale->bank_account_id,  // Add this
-            ],
-            'customers' => $customers,
-            'bankAccounts' => $bankAccounts,
-        ]);
+            return Inertia::render('Admin/Sales/Edit', [
+                'sale' => [
+                    'id' => $sale->id,
+                    'invoice_no' => $sale->invoice_no,
+                    'customer_id' => $sale->customer_id,
+                    'customer' => $sale->customer ? [
+                        'id' => $sale->customer->id,
+                        'name' => $sale->customer->name,
+                        'phone' => $sale->customer->phone,
+                        'balance' => (string) $sale->customer->balance,
+                        'credit_limit' => (string) $sale->customer->credit_limit,
+                    ] : null,
+                    'items' => $sale->saleItems->map(fn($item) => [
+                        'id' => $item->id,
+                        'product_id' => $item->product_id,
+                        'product' => [
+                            'id' => $item->product->id,
+                            'name' => $item->product->name,
+                            'sku' => $item->product->sku,
+                            'selling_price' => (string) $item->product->selling_price,
+                        ],
+                        'quantity' => (string) $item->quantity,
+                        'unit_price' => (string) $item->unit_price,
+                        'subtotal' => (string) $item->subtotal,
+                    ]),
+                    'subtotal' => (string) $sale->subtotal,
+                    'discount' => (string) $sale->discount,
+                    'total' => (string) $sale->total,
+                    'paid' => (string) $sale->paid,
+                    'due' => (string) $sale->due,
+                    'payment_status' => $sale->payment_status,
+                    'note' => $sale->note,
+                    'bank_account_id' => $sale->bank_account_id,
+                ],
+                'customers' => $customers,
+                'bankAccounts' => $bankAccounts,
+            ]);
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Sale not found or cannot be edited.']);
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|numeric|min:1',
-            'items.*.unit_price' => 'required|numeric|min:0',
-            'subtotal' => 'required|numeric|min:0',
-            'discount' => 'required|numeric|min:0',
-            'total' => 'required|numeric|min:0',
-            'paid' => 'required|numeric|min:0',
-            'customer_id' => 'nullable|exists:customers,id',
-        ]);
-
         try {
-            DB::beginTransaction();
-
-            $sale = Sale::with(['saleItems', 'customer'])->findOrFail($id);
-
-            // Check if sale is within 7 days
-            if ($sale->created_at->diffInDays(now()) > 7) {
-                throw new \Exception('Sales older than 7 days cannot be edited.');
-            }
-
-            // Restore original stock quantities
-            foreach ($sale->saleItems as $item) {
-                $stock = ProductStock::firstOrCreate([
-                    'product_id' => $item->product_id
-                ]);
-                $stock->increment('quantity', $item->quantity);
-            }
-
-            // Update sale details
-            $sale->update([
-                'customer_id' => $request->customer_id,
-                'subtotal' => $request->subtotal,
-                'discount' => $request->discount,
-                'total' => $request->total,
-                'paid' => $request->paid,
-                'due' => $request->total - $request->paid,
-                'payment_status' => $request->paid >= $request->total ? 'paid' : ($request->paid > 0 ? 'partial' : 'due'),
-                'note' => $request->note,
+            $request->validate([
+                'items' => 'required|array|min:1',
+                'items.*.product_id' => 'required|exists:products,id',
+                'items.*.quantity' => 'required|numeric|min:1',
+                'items.*.unit_price' => 'required|numeric|min:0',
+                'subtotal' => 'required|numeric|min:0',
+                'discount' => 'required|numeric|min:0',
+                'total' => 'required|numeric|min:0',
+                'paid' => 'required|numeric|min:0',
+                'customer_id' => 'nullable|exists:customers,id',
+                'bank_account_id' => 'nullable|exists:bank_accounts,id',
+                'note' => 'nullable|string|max:1000',
             ]);
 
-            // Delete old items and create new ones
+            DB::beginTransaction();
+
+            $sale = Sale::with(['saleItems', 'customer', 'bankAccount'])->findOrFail($id);
+
+            // Store original values for reversal
+            $originalCustomerId = $sale->customer_id;
+            $originalPaid = $sale->paid;
+            $originalDue = $sale->due;
+            $originalBankAccountId = $sale->bank_account_id;
+
+            // Step 1: Reverse all original stock movements
+            foreach ($sale->saleItems as $item) {
+                // Get current stock
+                $currentStock = ProductStock::where('product_id', $item->product_id)
+                    ->orderBy('id', 'desc')
+                    ->first();
+
+                $beforeQuantity = $currentStock ? $currentStock->available_quantity : 0;
+                $afterQuantity = $beforeQuantity + $item->quantity; // Add back the sold quantity
+
+                // Create new stock record to reverse the sale
+                ProductStock::create([
+                    'product_id' => $item->product_id,
+                    'quantity' => $item->quantity, // positive for reversal
+                    'available_quantity' => $afterQuantity,
+                    'type' => 'sale_reversal',
+                    'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
+                    'total_cost' => $currentStock ? ($currentStock->unit_cost * $item->quantity) : 0,
+                    'created_by' => auth()->id(),
+                ]);
+
+                // Record stock movement for reversal
+                StockMovement::create([
+                    'product_id' => $item->product_id,
+                    'reference_type' => 'sale_update',
+                    'reference_id' => $sale->id,
+                    'quantity' => $item->quantity,
+                    'before_quantity' => $beforeQuantity,
+                    'after_quantity' => $afterQuantity,
+                    'type' => 'in', // Stock coming back in
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            // Step 2: Reverse customer balance if there was due amount
+            if ($originalCustomerId && $originalDue > 0) {
+                $originalCustomer = Customer::find($originalCustomerId);
+                if ($originalCustomer) {
+                    $originalCustomer->decrement('balance', $originalDue);
+                }
+            }
+
+            // Step 3: Reverse bank transaction if there was payment
+            if ($originalPaid > 0 && $originalBankAccountId) {
+                $originalBankAccount = BankAccount::find($originalBankAccountId);
+                if ($originalBankAccount) {
+                    $originalBankAccount->transactions()->create([
+                        'transaction_type' => 'out',
+                        'amount' => $originalPaid,
+                        'date' => now(),
+                        'description' => "Reversed payment for updated invoice {$sale->invoice_no}",
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    $originalBankAccount->decrement('current_balance', $originalPaid);
+                }
+            }
+
+            // Step 4: Delete old sale items
             $sale->saleItems()->delete();
 
+            // Step 5: Calculate new values
+            $due = $request->total - $request->paid;
+            $paymentStatus = $request->paid >= $request->total ? 'paid' : ($request->paid > 0 ? 'partial' : 'due');
+
+            // Step 6: Process new items and check stock
             foreach ($request->items as $item) {
+                // Check stock availability for new quantity
+                $currentStock = ProductStock::where('product_id', $item['product_id'])
+                    ->orderBy('id', 'desc')
+                    ->first();
+
+                $beforeQuantity = $currentStock ? $currentStock->available_quantity : 0;
+                $afterQuantity = $beforeQuantity - $item['quantity'];
+
+                // Check if stock is available
+                if ($afterQuantity < 0) {
+                    throw new \Exception("Insufficient stock for product ID: {$item['product_id']}, Available: {$beforeQuantity}, Requested: {$item['quantity']}");
+                }
+
+                // Create new sale item
                 SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $item['product_id'],
@@ -244,36 +320,112 @@ class SaleController extends Controller
                     'subtotal' => $item['quantity'] * $item['unit_price'],
                 ]);
 
-                // Update stock with new quantities
-                $stock = ProductStock::firstOrCreate([
-                    'product_id' => $item['product_id']
+                // Create new stock record
+                ProductStock::create([
+                    'product_id' => $item['product_id'],
+                    'quantity' => -$item['quantity'], // negative for sales
+                    'available_quantity' => $afterQuantity,
+                    'type' => 'sale',
+                    'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
+                    'total_cost' => $currentStock ? ($currentStock->unit_cost * $item['quantity']) : 0,
+                    'created_by' => auth()->id(),
                 ]);
-                $stock->decrement('quantity', $item['quantity']);
+
+                // Record stock movement
+                StockMovement::create([
+                    'product_id' => $item['product_id'],
+                    'reference_type' => 'sale',
+                    'reference_id' => $sale->id,
+                    'quantity' => $item['quantity'],
+                    'before_quantity' => $beforeQuantity,
+                    'after_quantity' => $afterQuantity,
+                    'type' => 'out',
+                    'created_by' => auth()->id(),
+                ]);
             }
 
-            // Update customer balance
-            if ($sale->customer) {
-                // Remove old due amount
-                $sale->customer->decrement('balance', $sale->getOriginal('due'));
+            // Step 7: Update customer balance with new due amount
+            if ($request->customer_id && $due > 0) {
+                $customer = Customer::findOrFail($request->customer_id);
 
-                // Add new due amount if exists
-                if ($sale->due > 0) {
-                    $newBalance = $sale->customer->balance + $sale->due;
-                    if ($newBalance > $sale->customer->credit_limit) {
-                        throw new \Exception('This sale would exceed the customer\'s credit limit.');
-                    }
-                    $sale->customer->increment('balance', $sale->due);
+                // Check credit limit
+                $newBalance = $customer->balance + $due;
+                if ($newBalance > $customer->credit_limit) {
+                    throw new \Exception("This sale would exceed the customer's credit limit. Current balance: {$customer->balance}, Credit limit: {$customer->credit_limit}, New due: {$due}");
                 }
+
+                $customer->increment('balance', $due);
             }
+
+            // Step 8: Handle payment difference
+            $paymentDifference = $request->paid - $originalPaid;
+
+            if ($paymentDifference != 0 && $request->bank_account_id) {
+                $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+
+                if ($paymentDifference > 0) {
+                    // Payment increased - add to bank
+                    $bankAccount->transactions()->create([
+                        'transaction_type' => 'in',
+                        'amount' => $paymentDifference,
+                        'date' => now(),
+                        'description' => "Additional payment for updated invoice {$sale->invoice_no}",
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    $bankAccount->increment('current_balance', $paymentDifference);
+                } else {
+                    // Payment decreased - deduct from bank
+                    $decreaseAmount = abs($paymentDifference);
+
+                    $bankAccount->transactions()->create([
+                        'transaction_type' => 'out',
+                        'amount' => $decreaseAmount,
+                        'date' => now(),
+                        'description' => "Payment reduction for updated invoice {$sale->invoice_no}",
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    $bankAccount->decrement('current_balance', $decreaseAmount);
+                }
+            } else if ($request->paid > 0 && $request->bank_account_id && $originalPaid == 0) {
+                // First time payment
+                $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+                $bankAccount->transactions()->create([
+                    'transaction_type' => 'in',
+                    'amount' => $request->paid,
+                    'date' => now(),
+                    'description' => "Payment received for updated invoice {$sale->invoice_no}",
+                    'created_by' => auth()->id(),
+                ]);
+
+                $bankAccount->increment('current_balance', $request->paid);
+            }
+
+            // Step 9: Update sale record
+            $sale->update([
+                'customer_id' => $request->customer_id,
+                'subtotal' => $request->subtotal,
+                'discount' => $request->discount,
+                'total' => $request->total,
+                'paid' => $request->paid,
+                'due' => $due,
+                'payment_status' => $paymentStatus,
+                'note' => $request->note,
+                'bank_account_id' => $request->bank_account_id,
+                'updated_by' => auth()->id(),
+            ]);
 
             DB::commit();
 
             return redirect()->route('admin.sales.show', $sale->id)
                 ->with('success', 'Sale updated successfully.');
-
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => $e->getMessage()]);
+            return back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
     }
 
@@ -326,7 +478,6 @@ class SaleController extends Controller
             DB::commit();
 
             session()->flash('success', 'Sale deleted successfully.');
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -347,7 +498,7 @@ class SaleController extends Controller
         ])->findOrFail($id);
 
         // Group items by category
-        $itemsByCategory = $sale->saleItems->groupBy(function($item) {
+        $itemsByCategory = $sale->saleItems->groupBy(function ($item) {
             return $item->product->category->name ?? 'Uncategorized';
         });
 

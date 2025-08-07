@@ -24,7 +24,7 @@ class SuperAdminSeeder extends Seeder
             [
                 'name' => 'Super Admin',
                 'email' => 'superadmin@example.com',
-                'password' => Hash::make('password123'), // Change this to a secure password
+                'password' => Hash::make('password123'),
                 'role_id' => $role->id,
                 'phone' => null,
                 'address' => null,

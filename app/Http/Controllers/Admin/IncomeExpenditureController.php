@@ -56,27 +56,36 @@ class IncomeExpenditureController extends Controller
     {
         // Pass Carbon instances (not strings) to be consistent with Product model
         $productAnalysis = Product::getProductAnalysis($startDate, $endDate);
+
+        // FIX: Calculate cumulative sales profit up to endDate
+        $cumulativeAnalysis = Product::getProductAnalysis(
+            Carbon::now()->startOfCentury(),
+            $endDate
+        );
+        $cumulativeSalesProfit = $cumulativeAnalysis['totals']['total_profit'] ?? 0;
+
         $extraIncomeAnalysis = $this->calculateExtraIncome($startDate, $endDate);
 
         return [
             'sales_profit' => [
                 'period' => (float) $productAnalysis['totals']['total_profit'],
-                'cumulative' => (float) Product::getCumulativeTotals()['total_profit']['cumulative'],
+                'cumulative' => (float) $cumulativeSalesProfit,
             ],
             'extra_income' => $extraIncomeAnalysis,
             'total' => [
                 'period' => (float) $productAnalysis['totals']['total_profit'] + $extraIncomeAnalysis['total']['period'],
-                'cumulative' => (float) Product::getCumulativeTotals()['total_profit']['cumulative'] + $extraIncomeAnalysis['total']['cumulative'],
+                'cumulative' => (float) $cumulativeSalesProfit + $extraIncomeAnalysis['total']['cumulative'],
             ],
         ];
     }
 
     private function calculateExtraIncome(Carbon $startDate, Carbon $endDate)
     {
-        // Get all category IDs that have ever had a transaction
+        // Get all category IDs that have ever had a transaction up to endDate
         $allCategoryIds = ExtraIncome::select('category_id')
             ->distinct()
             ->whereNotNull('category_id')
+            ->where('date', '<=', $endDate) // FIX: Only consider categories with transactions up to endDate
             ->pluck('category_id');
 
         // Get current period data - Use whereBetween to match Product model
@@ -94,7 +103,7 @@ class IncomeExpenditureController extends Controller
             $category = ExtraIncomeCategory::find($categoryId);
             $categoryName = $category ? $category->name : 'Uncategorized';
 
-            // Calculate cumulative amount
+            // FIX: Calculate cumulative amount up to endDate only
             $cumulative = ExtraIncome::where('category_id', $categoryId)
                 ->where('date', '<=', $endDate)
                 ->sum('amount');
@@ -112,7 +121,7 @@ class IncomeExpenditureController extends Controller
             }
         }
 
-        // Handle uncategorized income - Use whereBetween to match Product model
+        // FIX: Handle uncategorized income - only up to endDate
         $uncategorizedPeriod = ExtraIncome::whereBetween('date', [$startDate, $endDate])
             ->whereNull('category_id')
             ->sum('amount');
@@ -157,7 +166,7 @@ class IncomeExpenditureController extends Controller
                 ->whereBetween('date', [$startDate, $endDate])
                 ->sum('amount');
 
-            // Cumulative expenses
+            // FIX: Cumulative expenses up to endDate only
             $cumulativeExpenses = Expense::where('expense_category_id', $category->id)
                 ->where('date', '<=', $endDate)
                 ->sum('amount');
@@ -169,7 +178,7 @@ class IncomeExpenditureController extends Controller
             ];
         });
 
-        // Calculate total expenses - Use whereBetween to match Product model
+        // FIX: Calculate total expenses up to endDate only
         $totalExpensesPeriod = Expense::when($fixedAssetsCategory, function ($query) use ($fixedAssetsCategory) {
             return $query->where('expense_category_id', '!=', $fixedAssetsCategory->id);
         })
@@ -250,4 +259,5 @@ class IncomeExpenditureController extends Controller
         // Download PDF
         return $pdf->download($filename);
     }
+
 }

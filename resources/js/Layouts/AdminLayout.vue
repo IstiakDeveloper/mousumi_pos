@@ -11,27 +11,27 @@
             <!-- Fixed Header -->
             <div class="flex-shrink-0">
                 <div
-                    class="h-16 flex items-center justify-between px-6 bg-indigo-800/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                    class="flex items-center justify-between h-16 px-6 bg-indigo-800/50 dark:bg-gray-800/50 backdrop-blur-sm">
                     <Link href="/admin/dashboard" class="flex items-center space-x-3">
-                    <div class="p-2 bg-white/10 dark:bg-gray-700 rounded-lg backdrop-blur-sm">
-                        <img src="/logo.svg" alt="Logo" class="h-8 w-8" />
+                    <div class="p-2 rounded-lg bg-white/10 dark:bg-gray-700 backdrop-blur-sm">
+                        <img src="/logo.svg" alt="Logo" class="w-8 h-8" />
                     </div>
                     <span
-                        class="text-xl font-bold bg-gradient-to-r from-white to-indigo-200 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
+                        class="text-xl font-bold text-transparent bg-gradient-to-r from-white to-indigo-200 dark:from-gray-100 dark:to-gray-400 bg-clip-text">
                         Admin Panel
                     </span>
                     </Link>
                     <button
-                        class="lg:hidden p-2 rounded-lg hover:bg-white/10 dark:hover:bg-gray-700 text-white/80 dark:text-gray-400 hover:text-white transition-colors"
+                        class="p-2 transition-colors rounded-lg lg:hidden hover:bg-white/10 dark:hover:bg-gray-700 text-white/80 dark:text-gray-400 hover:text-white"
                         @click="toggleSidebar">
-                        <i class="fas fa-times text-xl"></i>
+                        <i class="text-xl fas fa-times"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Scrollable Navigation -->
             <div class="flex-1 overflow-y-auto">
-                <nav class="mt-6 px-4">
+                <nav class="px-4 mt-6">
                     <div class="space-y-2">
                         <!-- Single Items -->
                         <Link v-for="item in filteredSingleNavItems" :key="item.name" :href="item.href" :class="[
@@ -86,7 +86,7 @@
                                 leave="transition-all duration-200 ease-in-out"
                                 leave-from="transform opacity-100 scale-100 translate-y-0"
                                 leave-to="transform opacity-0 scale-95 -translate-y-2">
-                                <div class="pl-4 ml-3 border-l-2 border-indigo-500/30 dark:border-gray-700 space-y-1">
+                                <div class="pl-4 ml-3 space-y-1 border-l-2 border-indigo-500/30 dark:border-gray-700">
                                     <Link v-for="subItem in group.items" :key="subItem.name" :href="subItem.href"
                                         :class="[
                                             'flex items-center px-4 py-2.5 text-sm rounded-lg transition-all duration-200',
@@ -109,15 +109,15 @@
                     </div>
 
                     <!-- Quick Actions -->
-                    <!-- <div class="mt-8 pt-6 border-t border-indigo-500/20 mb-20">
-                        <h3 class="px-4 text-xs font-semibold text-indigo-200 uppercase tracking-wider">
+                    <!-- <div class="pt-6 mt-8 mb-20 border-t border-indigo-500/20">
+                        <h3 class="px-4 text-xs font-semibold tracking-wider text-indigo-200 uppercase">
                             Quick Actions
                         </h3>
                         <div class="mt-4 space-y-2">
                             <button v-for="action in quickActions" :key="action.name" @click="action.handler"
                                 class="w-full flex items-center px-4 py-2.5 text-sm text-indigo-100 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200 group">
                                 <div
-                                    class="p-2 bg-white/10 rounded-lg mr-3 group-hover:bg-white/15 transition-all duration-200">
+                                    class="p-2 mr-3 transition-all duration-200 rounded-lg bg-white/10 group-hover:bg-white/15">
                                     <i :class="['fas', action.icon, 'w-4 h-4']"></i>
                                 </div>
                                 <span class="font-medium">{{ action.name }}</span>
@@ -131,19 +131,19 @@
             <div class="flex-shrink-0 p-4 border-t border-indigo-500/20">
                 <Menu as="div" class="relative">
                     <MenuButton
-                        class="w-full flex items-center p-3 rounded-xl hover:bg-white/10 transition-all duration-200">
+                        class="flex items-center w-full p-3 transition-all duration-200 rounded-xl hover:bg-white/10">
                         <div class="relative">
                             <img :src="user.avatar || '/default-avatar.png'"
-                                class="h-10 w-10 rounded-lg border-2 border-white/20" alt="User Avatar" />
+                                class="w-10 h-10 border-2 rounded-lg border-white/20" alt="User Avatar" />
                             <div
-                                class="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-indigo-900">
+                                class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-indigo-900 rounded-full">
                             </div>
                         </div>
-                        <div class="ml-3 flex-1 text-left">
+                        <div class="flex-1 ml-3 text-left">
                             <p class="text-sm font-medium text-white">{{ user.name }}</p>
                             <p class="text-xs text-indigo-200">{{ user.role.name || 'Administrator' }}</p>
                         </div>
-                        <i class="fas fa-chevron-up ml-2 text-indigo-200"></i>
+                        <i class="ml-2 text-indigo-200 fas fa-chevron-up"></i>
                     </MenuButton>
 
                     <transition enter-active-class="transition duration-200 ease-out"
@@ -152,7 +152,7 @@
                         leave-from-class="transform scale-100 opacity-100"
                         leave-to-class="transform scale-95 opacity-0">
                         <MenuItems
-                            class="absolute bottom-full left-0 w-full mb-2 bg-white rounded-xl shadow-xl shadow-indigo-900/20 backdrop-blur-sm overflow-hidden">
+                            class="absolute left-0 w-full mb-2 overflow-hidden bg-white shadow-xl bottom-full rounded-xl shadow-indigo-900/20 backdrop-blur-sm">
                             <div class="px-3 py-2 bg-indigo-50">
                                 <p class="text-sm font-medium text-indigo-900">Signed in as</p>
                                 <p class="text-sm text-indigo-700">{{ user.email }}</p>
@@ -163,20 +163,20 @@
                                     'flex items-center px-4 py-2.5 text-sm rounded-lg transition-colors',
                                     active ? 'bg-indigo-50 text-indigo-900' : 'text-gray-700 hover:bg-gray-50'
                                 ]">
-                                <i class="fas fa-user-circle mr-3 text-indigo-500"></i>
+                                <i class="mr-3 text-indigo-500 fas fa-user-circle"></i>
                                 Your Profile
                                 </Link>
                                 </MenuItem>
                                 <MenuItem v-slot="{ active }">
 
                                 </MenuItem>
-                                <div class="border-t border-gray-100 my-1"></div>
+                                <div class="my-1 border-t border-gray-100"></div>
                                 <MenuItem v-slot="{ active }">
                                 <Link href="/logout" method="post" as="button" class="w-full" :class="[
                                     'flex items-center px-4 py-2.5 text-sm rounded-lg transition-colors',
                                     active ? 'bg-red-50 text-red-900' : 'text-red-600 hover:bg-red-50'
                                 ]">
-                                <i class="fas fa-sign-out-alt mr-3"></i>
+                                <i class="mr-3 fas fa-sign-out-alt"></i>
                                 Sign out
                                 </Link>
                                 </MenuItem>
@@ -191,19 +191,19 @@
         <div :class="['lg:pl-72 min-h-screen flex flex-col', isOpen && 'overflow-hidden']">
             <!-- Top Navigation -->
             <header
-                class="sticky top-0 z-40 bg-white/80 dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
+                class="sticky top-0 z-40 border-b border-gray-200 bg-white/80 dark:bg-gray-800 backdrop-blur-sm dark:border-gray-700">
                 <div class="h-16 px-4 sm:px-6 lg:px-8">
                     <div class="flex items-center justify-between h-full">
                         <!-- Left Side -->
                         <div class="flex items-center space-x-4">
                             <button
-                                class="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                                class="p-2 text-gray-600 rounded-lg lg:hidden hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                                 @click="toggleSidebar">
-                                <i class="fas fa-bars text-xl"></i>
+                                <i class="text-xl fas fa-bars"></i>
                             </button>
 
                             <!-- Breadcrumbs -->
-                            <nav class="hidden sm:flex items-center space-x-2">
+                            <nav class="items-center hidden space-x-2 sm:flex">
                                 <Link v-for="(crumb, index) in breadcrumbs" :key="crumb.name" :href="crumb.href" :class="[
                                     'text-sm font-medium transition-colors',
                                     index === breadcrumbs.length - 1
@@ -225,7 +225,7 @@
                             <div class="hidden md:block">
                                 <div class="relative">
                                     <input type="text" placeholder="Search..."
-                                        class="w-64 pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50/50 dark:bg-gray-700 dark:text-white" />
+                                        class="w-64 py-2 pl-10 pr-4 border border-gray-200 rounded-lg dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50/50 dark:bg-gray-700 dark:text-white" />
                                     <i
                                         class="fas fa-search absolute left-3 top-2.5 text-gray-400 dark:text-gray-500"></i>
                                 </div>
@@ -233,33 +233,33 @@
 
                             <!-- POS Quick Access -->
                             <Link href="/admin/pos"
-                                class="flex items-center px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white transition-colors duration-150 ease-in-out">
-                            <i class="fas fa-cash-register mr-2"></i>
+                                class="flex items-center px-4 py-2 text-white transition-colors duration-150 ease-in-out bg-indigo-600 rounded-lg hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">
+                            <i class="mr-2 fas fa-cash-register"></i>
                             <span class="font-medium">POS</span>
                             </Link>
 
                             <!-- Notifications -->
                             <Menu as="div" class="relative">
                                 <MenuButton
-                                    class="relative p-2 text-gray-600 dark:text-gray-300 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                                    class="relative p-2 text-gray-600 transition-colors rounded-lg dark:text-gray-300 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-gray-700">
                                     <span class="sr-only">View notifications</span>
-                                    <i class="fas fa-bell text-xl"></i>
-                                    <span class="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+                                    <i class="text-xl fas fa-bell"></i>
+                                    <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
                                 </MenuButton>
 
-                                <transition enter-active-class="transition ease-out duration-100"
-                                    enter-from-class="transform opacity-0 scale-95"
-                                    enter-to-class="transform opacity-100 scale-100"
-                                    leave-active-class="transition ease-in duration-75"
-                                    leave-from-class="transform opacity-100 scale-100"
-                                    leave-to-class="transform opacity-0 scale-95">
+                                <transition enter-active-class="transition duration-100 ease-out"
+                                    enter-from-class="transform scale-95 opacity-0"
+                                    enter-to-class="transform scale-100 opacity-100"
+                                    leave-active-class="transition duration-75 ease-in"
+                                    leave-from-class="transform scale-100 opacity-100"
+                                    leave-to-class="transform scale-95 opacity-0">
                                     <MenuItems
-                                        class="absolute right-0 mt-2 w-80 origin-top-right bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 focus:outline-none">
+                                        class="absolute right-0 py-1 mt-2 origin-top-right bg-white rounded-lg shadow-lg w-80 dark:bg-gray-800 focus:outline-none">
                                         <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
                                             <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
                                                 Notifications</h3>
                                         </div>
-                                        <div class="max-h-96 overflow-y-auto">
+                                        <div class="overflow-y-auto max-h-96">
                                             <MenuItem v-for="notification in notifications" :key="notification.id"
                                                 v-slot="{ active }">
                                             <a :href="notification.href" :class="[
@@ -272,7 +272,7 @@
                                                         <i
                                                             :class="['fas', notification.icon, 'text-indigo-500 dark:text-indigo-400 mt-0.5']"></i>
                                                     </div>
-                                                    <div class="ml-3 w-0 flex-1">
+                                                    <div class="flex-1 w-0 ml-3">
                                                         <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
                                                             {{ notification.title }}
                                                         </p>
@@ -299,8 +299,8 @@
 
                             <!-- Settings -->
                             <button @click="switchTheme"
-                                class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                                <i class="fa-solid fa-circle-half-stroke text-xl"></i>
+                                class="p-2 text-gray-500 rounded-lg hover:text-gray-700 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <i class="text-xl fa-solid fa-circle-half-stroke"></i>
                             </button>
                         </div>
                     </div>
@@ -308,7 +308,7 @@
             </header>
 
             <!-- Main Content -->
-            <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8">
+            <main class="flex-1 px-4 py-8 sm:px-6 lg:px-8">
                 <!-- Page Header -->
                 <div v-if="$slots.header" class="mb-8">
                     <slot name="header" />
@@ -321,8 +321,8 @@
             </main>
 
             <!-- Footer -->
-            <footer class="mt-auto border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-                <div class="mx-auto px-4 sm:px-6 lg:px-8">
+            <footer class="mt-auto bg-white border-t border-gray-200 dark:border-gray-700 dark:bg-gray-800">
+                <div class="px-4 mx-auto sm:px-6 lg:px-8">
                     <div class="py-4 text-center sm:text-left">
                         <p class="text-sm text-gray-500 dark:text-gray-400">
                             © {{ new Date().getFullYear() }} Mousumi Prokashon. All rights reserved.
@@ -334,7 +334,7 @@
         </div>
 
         <!-- Mobile Sidebar Overlay -->
-        <div v-if="isOpen" class="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden transition-opacity"
+        <div v-if="isOpen" class="fixed inset-0 z-40 transition-opacity bg-gray-600 bg-opacity-75 lg:hidden"
             @click="toggleSidebar"></div>
     </div>
 
@@ -419,7 +419,7 @@ const dropdownNavItems = [
     {
         name: 'Expenses',
         icon: 'fa-receipt',
-        allowedRoles: ['admin'],
+        allowedRoles: ['admin', 'manager'],
         items: [
             { name: 'Expenses', href: '/admin/expenses', icon: 'fa-file-invoice-dollar', allowedRoles: ['admin', 'manager'] },
             { name: 'Categories', href: '/admin/expense-categories', icon: 'fa-folder', allowedRoles: ['admin'] }
