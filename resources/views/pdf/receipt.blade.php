@@ -6,187 +6,266 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A4 Invoice Receipt</title>
     <style>
-        /* মূল মার্জিন সেটিং - প্রতিটি পৃষ্ঠার জন্য */
         @page {
             size: A4 portrait;
-            margin: 20mm 15mm 16mm 15mm; /* উপর, ডান, নিচে, বাম - কমানো হয়েছে */
+            margin: 15mm 12mm 12mm 12mm;
         }
 
         body {
             font-family: Arial, sans-serif;
-            line-height: 1.1; /* আরও কমানো হয়েছে */
-            font-size: 9pt; /* ফন্ট সাইজ কমানো */
+            line-height: 1.1;
+            font-size: 8pt;
             margin: 0;
             padding: 0;
             color: #000;
             background: #fff;
         }
 
-        /* টেবিল সাধারণ স্টাইল */
         table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        /* কোম্পানি হেডার */
+        /* কোম্পানি হেডার - শুধু নিচে বর্ডার */
         .company-header {
             text-align: center;
-            margin-bottom: 2mm;
+            margin-bottom: 4mm;
+            padding: 3mm 0;
+            border-bottom: 2px solid #000;
         }
 
         .company-name {
-            font-size: 14pt; /* কমানো হয়েছে */
+            font-size: 12pt;
             font-weight: bold;
-            margin-bottom: 0mm;
+            margin-bottom: 1mm;
+            text-transform: uppercase;
         }
 
         .company-details {
-            font-size: 9pt; /* কমানো হয়েছে */
-            line-height: 1;
+            font-size: 8pt;
+            line-height: 1.2;
+            color: #333;
         }
 
-        /* ইনভয়েস ডিটেইলস */
+        /* ইনভয়েস ডিটেইলস - হালকা বর্ডার */
         .invoice-section {
-            display: flex;
-            justify-content: space-between;
-            margin: 2mm 0; /* কমানো হয়েছে */
+            display: table;
+            width: 100%;
+            margin: 3mm 0;
+            border: 1px solid #ccc;
+            background: #f9f9f9;
         }
 
-        .invoice-section .invoice-title {
-            margin: 1mm 0; /* কমানো হয়েছে */
+        .invoice-left,
+        .invoice-right {
+            display: table-cell;
+            width: 50%;
+            padding: 3mm;
+            vertical-align: top;
+            font-size: 8pt;
         }
 
-        .invoice-details,
-        .customer-details {
-            font-size: 9pt;
-            line-height: 1.1; /* কমানো হয়েছে */
+        .invoice-left {
+            border-right: 1px solid #ccc;
         }
 
         .invoice-title {
-            font-size: 11pt; /* কমানো হয়েছে */
+            font-size: 9pt;
             font-weight: bold;
-            margin-bottom: 0mm;
+            margin-bottom: 2mm;
+            text-transform: uppercase;
+            color: #333;
         }
 
-        /* প্যারাগ্রাফ স্পেসিং */
-        p {
-            margin: 0;
-            margin-bottom: 0.5mm; /* কমানো হয়েছে */
+        .invoice-details p,
+        .customer-details p {
+            margin: 1mm 0;
         }
 
-        /* আইটেম টেবিল */
+        /* আইটেম টেবিল - কম বর্ডার */
         .items-table {
-            margin-bottom: 5mm; /* কমানো হয়েছে */
+            margin: 3mm 0;
+            border: 1px solid #333;
         }
 
         .items-table th {
-            background: #f5f5f5;
-            padding: 2mm 1mm; /* কমানো হয়েছে */
+            background: #f0f0f0;
+            padding: 2mm 1mm;
             text-align: left;
             font-weight: bold;
-            border-bottom: 0.5pt solid #000;
-            font-size: 9pt;
+            border-bottom: 1px solid #333;
+            font-size: 8pt;
+            text-transform: uppercase;
         }
 
         .items-table td {
-            padding: 1mm; /* কমানো হয়েছে */
-            border-bottom: 0.2pt solid #ddd;
+            padding: 1.5mm 1mm;
+            border-bottom: 1px solid #ddd;
             vertical-align: top;
-            font-size: 9pt;
+            font-size: 8pt;
         }
 
         .items-table .amount {
             text-align: right;
+            font-weight: 500;
         }
 
         .items-table .quantity {
             text-align: center;
+            font-weight: 500;
         }
 
-        /* ক্যাটাগরি হেডার */
+        /* ক্যাটাগরি হেডার - হালকা */
         .category-header td {
-            background: #eaeaea;
+            background: #e8e8e8;
             font-weight: bold;
             text-transform: uppercase;
-            padding: 1mm; /* কমানো হয়েছে */
-            font-size: 9pt;
-            border-bottom: 0.5pt solid #999;
+            padding: 2mm 1mm;
+            font-size: 8pt;
+            text-align: left;
+            border-bottom: 1px solid #999;
         }
 
         /* ক্যাটাগরি সাবটোটাল */
         .category-subtotal td {
-            background: #f8f8f8;
+            background: #f5f5f5;
             font-weight: bold;
             font-style: italic;
-            border-bottom: 0.5pt solid #666;
-            padding: 1mm; /* কমানো হয়েছে */
+            padding: 1.5mm 1mm;
+            font-size: 8pt;
+            border-bottom: 1px solid #bbb;
         }
 
-        /* টোটাল সেকশন */
+        /* টোটাল সেকশন - minimal border */
         .totals-section {
-            width: 60%;
-            margin-left: auto;
-            margin-bottom: 5mm; /* কমানো হয়েছে */
+            width: 55%;
+            margin: 3mm 0 3mm auto;
         }
 
         .totals-table {
-            width: 100%;
+            border: 1px solid #333;
         }
 
         .totals-table td {
-            padding: 1mm;
-            border: none;
+            padding: 1.5mm;
+            font-size: 8pt;
+            border-bottom: 1px solid #ddd;
         }
 
         .totals-table .right-align {
             text-align: right;
+            font-weight: 600;
         }
 
         .total-row td {
             font-weight: bold;
-            font-size: 10pt; /* কমানো হয়েছে */
-            border-top: 0.5pt solid #000;
-            border-bottom: 0.5pt solid #000;
-            padding: 1mm; /* কমানো হয়েছে */
+            font-size: 9pt;
+            background: #f0f0f0;
+            text-transform: uppercase;
+            border-bottom: 2px solid #333;
         }
 
-        /* বারকোড */
+        /* Amount in Words - clean design */
+        /* Amount in Words - one line */
+        .amount-in-words {
+            margin: 3mm 0;
+            padding: 2mm;
+            background: #f9f9f9;
+            border: 1px solid #ccc;
+            font-size: 8pt;
+        }
+
+        .amount-in-words strong {
+            font-weight: bold;
+            text-transform: capitalize;
+            color: #333;
+        }
+
+        .amount-in-words-text {
+            font-weight: 800;
+            text-transform: capitalize;
+            font-style: italic;
+            color: #131010;
+        }
+
+
+        /* বারকোড - সিম্পল */
         .barcode {
             text-align: center;
-            margin: 3mm 0; /* কমানো হয়েছে */
-            font-size: 12pt; /* কমানো হয়েছে */
+            margin: 3mm 0;
+            padding: 2mm;
+            border-top: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
         }
 
-        /* ফুটার */
+        .barcode-text {
+            font-size: 10pt;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            color: #333;
+        }
+
+        /* ফুটার - minimal */
         .footer {
             text-align: center;
-            font-size: 8pt;
+            font-size: 7pt;
+            margin-top: 3mm;
+            padding-top: 3mm;
+            border-top: 1px solid #ccc;
             color: #666;
-            margin-top: 3mm; /* কমানো হয়েছে */
-            padding-top: 2mm; /* কমানো হয়েছে */
-            border-top: 0.5pt solid #ddd;
         }
 
-        /* মেইন কন্টেইনার - মার্জিন নিয়ন্ত্রণ শুধু DOMPDF এর জন্য */
+        .footer p {
+            margin: 1mm 0;
+        }
+
+        .footer .thank-you {
+            font-size: 8pt;
+            font-weight: bold;
+            margin-bottom: 2mm;
+            color: #333;
+        }
+
+        /* মেইন কন্টেইনার */
         .main-container {
             width: 100%;
-        }
-
-        /* ফুটার নিচে রাখার জন্য */
-        .page-container {
-            min-height: calc(100% - 30mm); /* পেজের উচ্চতা থেকে মার্জিন বাদ */
-            position: relative;
+            max-width: 210mm;
+            margin: 0 auto;
         }
 
         /* স্পেসার */
-        .spacer {
-            height: 2mm; /* কমানো হয়েছে */
+        tr.spacer-row td {
+            height: 1.5mm;
+            border: none;
+            background: transparent;
         }
 
-        /* ক্যাটাগরির মধ্যে স্পেসার কমানো */
-        tr.spacer-row td {
-            height: 2mm !important; /* কমানো হয়েছে */
-            border: none;
+        /* Strong text styling */
+        strong {
+            font-weight: 700;
+        }
+
+        /* Currency formatting */
+        .currency {
+            font-family: Arial, sans-serif;
+            font-weight: 500;
+        }
+
+        /* Compact spacing */
+        p {
+            margin: 0;
+            margin-bottom: 0.5mm;
+        }
+
+        /* Remove unnecessary borders */
+        .items-table td:last-child {
+            border-right: none;
+        }
+
+        .totals-table td {
+            border-left: none;
+            border-right: none;
         }
     </style>
 </head>
@@ -195,7 +274,7 @@
     <div class="main-container">
         <!-- কোম্পানি হেডার -->
         <div class="company-header">
-            <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Variety Store</div>
+            <div class="company-name">{{ config('app.name', 'Your Company Name') }} / Variety Store</div>
             <div class="company-details">
                 Ukilpara, Naogaon Sadar, Naogaon.<br>
                 Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
@@ -204,16 +283,25 @@
 
         <!-- ইনভয়েস ডিটেইলস সেকশন -->
         <div class="invoice-section">
-            <div class="invoice-details">
-                <div class="invoice-title">SALE INVOICE</div>
-                <p><strong>Invoice No:</strong> {{ $sale->invoice_no }}</p>
-                <p><strong>Date:</strong> {{ $sale->created_at->format('d/m/Y H:i') }}</p>
-                <p><strong>Payment Method:</strong>
-                    {{ ucfirst($sale->payment_method) }}</p>
+            <div class="invoice-left">
+                <div class="invoice-title">Sale Invoice</div>
+                <div class="invoice-details">
+                    <p><strong>Invoice No:</strong> {{ $sale->invoice_no }}</p>
+                    <p><strong>Date:</strong> {{ $sale->created_at->format('d/m/Y H:i') }}</p>
+                    <p><strong>Payment Method:</strong> {{ ucfirst($sale->payment_method) }}</p>
+                </div>
             </div>
-            <div class="customer-details">
-                <p><strong>Customer Name:</strong> {{ $sale->customer ? $sale->customer->name : 'Walk-in Customer' }}
-                </p>
+            <div class="invoice-right">
+                <div class="customer-details">
+                    <p><strong>Customer Information:</strong></p>
+                    <p><strong>Name:</strong> {{ $sale->customer ? $sale->customer->name : 'Walk-in Customer' }}</p>
+                    @if ($sale->customer && $sale->customer->address)
+                        <p><strong>Address:</strong> {{ $sale->customer->address }}</p>
+                    @endif
+                    @if ($sale->customer && $sale->customer->phone)
+                        <p><strong>Phone:</strong> {{ $sale->customer->phone }}</p>
+                    @endif
+                </div>
             </div>
         </div>
 
@@ -221,37 +309,38 @@
         <table class="items-table">
             <thead>
                 <tr>
+                    <th style="width: 5%">SL</th>
                     <th style="width: 45%">Description</th>
-                    <th style="width: 15%" class="quantity">Qty</th>
-                    <th style="width: 20%" class="amount">Price</th>
-                    <th style="width: 20%" class="amount">Amount</th>
+                    <th style="width: 10%">Qty</th>
+                    <th style="width: 20%">Unit Price</th>
+                    <th style="width: 20%">Amount</th>
                 </tr>
             </thead>
             <tbody>
+                @php $serialNo = 1; @endphp
                 @foreach ($itemsByCategory as $categoryName => $items)
                     <tr class="category-header">
-                        <td colspan="4">{{ $categoryName }}</td>
+                        <td colspan="5">{{ strtoupper($categoryName) }}</td>
                     </tr>
 
-                    <!-- আইটেমস ইন দিস ক্যাটাগরি -->
                     @foreach ($items as $item)
                         <tr>
+                            <td style="text-align: center;">{{ $serialNo++ }}</td>
                             <td>{{ $item->product->name }}</td>
-                            <td class="quantity">{{ $item->quantity }}</td>
-                            <td class="amount">{{ number_format($item->unit_price, 2) }}</td>
-                            <td class="amount">{{ number_format($item->subtotal, 2) }}</td>
+                            <td class="quantity">{{ number_format($item->quantity) }}</td>
+                            <td class="amount currency">{{ number_format($item->unit_price, 2) }}</td>
+                            <td class="amount currency">{{ number_format($item->subtotal, 2) }}</td>
                         </tr>
                     @endforeach
 
-                    <!-- ক্যাটাগরি সাবটোটাল -->
                     <tr class="category-subtotal">
-                        <td colspan="3" style="text-align: right">{{ $categoryName }} Subtotal:</td>
-                        <td class="amount">{{ number_format($categoryTotals[$categoryName], 2) }}</td>
+                        <td colspan="4" style="text-align: right; font-weight: bold;">{{ $categoryName }} Subtotal:
+                        </td>
+                        <td class="amount currency">{{ number_format($categoryTotals[$categoryName], 2) }}</td>
                     </tr>
 
-                    <!-- স্পেসার রো - কম উচ্চতা -->
                     <tr class="spacer-row">
-                        <td colspan="4"></td>
+                        <td colspan="5"></td>
                     </tr>
                 @endforeach
             </tbody>
@@ -261,38 +350,51 @@
         <div class="totals-section">
             <table class="totals-table">
                 <tr>
-                    <td>Total:</td>
-                    <td class="right-align">{{ number_format($sale->subtotal, 2) }}</td>
+                    <td><strong>Subtotal:</strong></td>
+                    <td class="right-align currency">{{ number_format($sale->subtotal, 2) }}</td>
                 </tr>
                 <tr>
-                    <td>Tax:</td>
-                    <td class="right-align">{{ number_format($sale->tax, 2) }}</td>
+                    <td><strong>Tax:</strong></td>
+                    <td class="right-align currency">{{ number_format($sale->tax, 2) }}</td>
                 </tr>
                 <tr>
-                    <td>Discount:</td>
-                    <td class="right-align">{{ number_format($sale->discount, 2) }}</td>
+                    <td><strong>Discount:</strong></td>
+                    <td class="right-align currency">{{ number_format($sale->discount, 2) }}</td>
                 </tr>
                 <tr class="total-row">
-                    <td>Grand Total:</td>
-                    <td class="right-align">{{ number_format($sale->total, 2) }}</td>
+                    <td><strong>Grand Total:</strong></td>
+                    <td class="right-align currency">{{ number_format($sale->total, 2) }}</td>
                 </tr>
                 <tr>
-                    <td>Paid Amount:</td>
-                    <td class="right-align">{{ number_format($sale->paid, 2) }}</td>
+                    <td><strong>Paid Amount:</strong></td>
+                    <td class="right-align currency">{{ number_format($sale->paid, 2) }}</td>
                 </tr>
+                @if ($sale->paid < $sale->total)
+                    <tr>
+                        <td><strong>Due Amount:</strong></td>
+                        <td class="right-align currency">{{ number_format($sale->total - $sale->paid, 2) }}</td>
+                    </tr>
+                @endif
             </table>
+        </div>
+
+        <!-- Amount in Words -->
+        <div class="amount-in-words">
+            <strong>In Words:</strong> <span
+                class="amount-in-words-text">{{ $amountInWords ?? 'One Thousand Two Hundred Fifty Taka Only' }}</span>
         </div>
 
         <!-- বারকোড -->
         <div class="barcode">
-            *{{ $sale->invoice_no }}*
+            <div class="barcode-text">{{ $sale->invoice_no }}</div>
         </div>
 
         <!-- ফুটার -->
         <div class="footer">
-            <p>Thank you for your business!</p>
+            <p class="thank-you">Thank You For Your Business!</p>
             <p>Returns accepted within 7 days with original receipt</p>
-            <p>&copy; {{ date('Y') }} {{ $company['name'] }}</p>
+            <p>For any queries, contact us at mou.prokashon@gmail.com</p>
+            <p>&copy; {{ date('Y') }} {{ $company['name'] ?? 'Your Company Name' }} - All Rights Reserved</p>
         </div>
     </div>
 </body>

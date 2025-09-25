@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
+use NumberFormatter;
 
 class PosController extends Controller
 {
@@ -293,10 +294,14 @@ class PosController extends Controller
             $categoryTotals[$category] = $items->sum('subtotal');
         }
 
+        $f = new NumberFormatter("en", NumberFormatter::SPELLOUT);
+        $amountInWords = ucfirst($f->format($sale->total)) . " taka only";
+
         $pdf = Pdf::loadView('pdf.receipt', [
             'sale' => $sale,
             'itemsByCategory' => $itemsByCategory, // Pass the grouped items
             'categoryTotals' => $categoryTotals,
+            'amountInWords' => $amountInWords,
             'company' => [
                 'name' => config('app.name'),
                 'address' => config('app.address'),

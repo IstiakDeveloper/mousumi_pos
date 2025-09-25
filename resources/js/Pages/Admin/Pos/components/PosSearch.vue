@@ -1,27 +1,27 @@
 <template>
-    <div class="mb-4">
-        <div class="flex space-x-4">
-            <div class="flex-1 relative">
+    <div class="mb-2">
+        <div class="flex space-x-2">
+            <div class="relative flex-1">
                 <input v-model="searchQuery"
                     type="text"
-                    class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200"
+                    class="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200"
                     placeholder="Search products by name, SKU, or scan barcode..."
                     @input="handleManualSearch"
                     @keydown.enter.prevent="handleEnter"
                     ref="searchInput" />
-                <div class="absolute right-3 top-3 text-gray-400">
-                    <QrCodeIcon class="w-5 h-5" />
+                <div class="absolute text-gray-400 right-3 top-2.5">
+                    <QrCodeIcon class="w-4 h-4" />
                 </div>
             </div>
         </div>
 
-        <!-- Categories -->
-        <div class="mt-4 flex space-x-2 overflow-x-auto pb-2">
+        <!-- Categories with custom scrollbar -->
+        <div class="flex pb-1 mt-2 space-x-1 overflow-x-auto custom-scrollbar">
             <button @click="$emit('filter', null)" :class="[
-                'px-4 py-2 rounded-lg whitespace-nowrap',
+                'px-3 py-1.5 text-xs rounded-md whitespace-nowrap font-medium transition-colors duration-200',
                 !selectedCategory
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-300'
+                    ? 'bg-blue-500 text-white shadow-sm'
+                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800'
             ]">
                 All Products
             </button>
@@ -29,10 +29,10 @@
                     :key="category.id"
                     @click="$emit('filter', category.id)"
                     :class="[
-                        'px-4 py-2 rounded-lg whitespace-nowrap',
+                        'px-3 py-1.5 text-xs rounded-md whitespace-nowrap font-medium transition-colors duration-200',
                         selectedCategory === category.id
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-300'
+                            ? 'bg-blue-500 text-white shadow-sm'
+                            : 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800'
                     ]">
                 {{ category.name }}
             </button>
@@ -173,3 +173,39 @@ onMounted(() => {
     searchInput.value?.focus()
 })
 </script>
+
+<style scoped>
+/* Custom thin scrollbar for categories */
+.custom-scrollbar {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: #cbd5e0 transparent; /* Firefox */
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.custom-scrollbar::-webkit-scrollbar {
+    height: 4px; /* Make scrollbar thinner */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0; /* Light gray */
+    border-radius: 2px;
+    transition: background-color 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #a0aec0; /* Darker gray on hover */
+}
+
+/* Dark mode scrollbar */
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #4a5568;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #718096;
+}
+</style>

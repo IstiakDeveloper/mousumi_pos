@@ -1,5 +1,5 @@
 <template>
-    <div class="h-full flex flex-col bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+    <div class="flex flex-col h-full bg-white border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-700">
         <!-- Cart Header -->
         <div class="p-4 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between">
@@ -16,31 +16,30 @@
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-400">
                             Product
                         </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-xs font-medium tracking-wider text-right text-gray-500 uppercase dark:text-gray-400">
                             Price
                         </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-xs font-medium tracking-wider text-right text-gray-500 uppercase dark:text-gray-400">
                             Qty
                         </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-xs font-medium tracking-wider text-right text-gray-500 uppercase dark:text-gray-400">
                             Subtotal
                         </th>
                         <th class="px-6 py-3"></th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
                     <tr v-for="(item, index) in items"
                         :key="index"
-                        class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
+                        class="transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <div class="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-600 rounded-lg
-                                            flex items-center justify-center overflow-hidden">
+                                <div class="flex items-center justify-center flex-shrink-0 w-10 h-10 overflow-hidden bg-gray-100 rounded-lg dark:bg-gray-600">
                                     <img v-if="item.image" :src="item.image" :alt="item.name"
-                                         class="w-full h-full object-cover" />
+                                         class="object-cover w-full h-full" />
                                     <span v-else class="text-gray-400">
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -58,40 +57,36 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+                        <td class="px-6 py-4 text-sm text-right text-gray-500 whitespace-nowrap dark:text-gray-400">
                             ৳{{ formatNumber(item.unit_price) }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center justify-end space-x-2">
                                 <button @click="decrementQuantity(index)"
-                                    class="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600
-                                           text-gray-500 dark:text-gray-400">
+                                    class="p-1 text-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-400">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
                                     </svg>
                                 </button>
                                 <input type="number"
                                     v-model.number="item.quantity"
-                                    class="w-16 text-center border rounded p-1 dark:bg-gray-700 dark:border-gray-600
-                                           dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500"
+                                    class="w-16 p-1 text-center border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500"
                                     min="1"
                                     @change="$emit('update-quantity', index, item.quantity)" />
                                 <button @click="incrementQuantity(index)"
-                                    class="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600
-                                           text-gray-500 dark:text-gray-400">
+                                    class="p-1 text-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-400">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                     </svg>
                                 </button>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-200">
+                        <td class="px-6 py-4 text-sm font-medium text-right text-gray-900 whitespace-nowrap dark:text-gray-200">
                             ৳{{ formatNumber(item.quantity * item.unit_price) }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <td class="px-6 py-4 text-sm text-right whitespace-nowrap">
                             <button @click="$emit('remove-item', index)"
-                                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300
-                                       transition-colors duration-150">
+                                class="text-red-600 transition-colors duration-150 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                           d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -112,10 +107,10 @@
                 </tbody>
                 <tfoot v-if="items.length > 0" class="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                        <td colspan="3" class="px-6 py-3 text-right text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <td colspan="3" class="px-6 py-3 text-sm font-medium text-right text-gray-500 dark:text-gray-400">
                             Total Items: {{ items.length }}
                         </td>
-                        <td class="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-gray-200">
+                        <td class="px-6 py-3 text-sm font-medium text-right text-gray-900 dark:text-gray-200">
                             ৳{{ formatNumber(totalAmount) }}
                         </td>
                         <td></td>
