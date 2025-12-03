@@ -5,17 +5,17 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Picqer\Barcode\BarcodeGeneratorPNG;
-use Illuminate\Support\Facades\Storage;
 
 class BarcodeController extends Controller
 {
     public function generate(Product $product)
     {
-        $generator = new BarcodeGeneratorPNG();
+        $generator = new BarcodeGeneratorPNG;
 
-        if (!$product->barcode) {
+        if (! $product->barcode) {
             $product->barcode = $this->generateUniqueBarcode();
             $product->save();
         }
@@ -30,7 +30,7 @@ class BarcodeController extends Controller
         );
 
         // Store barcode image
-        $path = 'barcodes/' . $product->barcode . '.png';
+        $path = 'barcodes/'.$product->barcode.'.png';
         Storage::disk('public')->makeDirectory('barcodes');
 
         // Add small white padding
@@ -60,7 +60,7 @@ class BarcodeController extends Controller
         return response()->json([
             'barcode' => $product->barcode,
             'image_url' => Storage::disk('public')->url($path),
-            'product' => $product->only(['id', 'name', 'sku', 'selling_price'])
+            'product' => $product->only(['id', 'name', 'sku', 'selling_price']),
         ]);
     }
 
@@ -80,9 +80,9 @@ class BarcodeController extends Controller
         for ($i = 0; $i < 12; $i++) {
             $sum += intval($barcode[$i]) * ($i % 2 ? 3 : 1);
         }
+
         return (10 - ($sum % 10)) % 10;
     }
-
 
     public function print(Request $request)
     {
@@ -90,7 +90,7 @@ class BarcodeController extends Controller
             'products' => 'required|array',
             'products.*.id' => 'required|exists:products,id',
             'products.*.copies' => 'required|integer|min:1|max:100',
-            'paperSize' => 'required|in:A4,Letter,80mm'
+            'paperSize' => 'required|in:A4,Letter,80mm',
         ]);
 
         $products = Product::whereIn('id', collect($request->products)->pluck('id'))
@@ -101,7 +101,7 @@ class BarcodeController extends Controller
                     ->firstWhere('id', $product->id);
 
                 // Generate barcode if it doesn't exist
-                if (!$product->barcode) {
+                if (! $product->barcode) {
                     $this->generate($product);
                 }
 
@@ -112,15 +112,13 @@ class BarcodeController extends Controller
                     'sku' => $product->sku,
                     'price' => $product->selling_price,
                     'copies' => $productRequest['copies'],
-                    'image_url' => Storage::disk('public')->url('barcodes/' . $product->barcode . '.png')
+                    'image_url' => Storage::disk('public')->url('barcodes/'.$product->barcode.'.png'),
                 ];
             });
 
         return Inertia::render('Admin/Products/BarcodePrint', [
             'products' => $products,
-            'paperSize' => $request->paperSize
+            'paperSize' => $request->paperSize,
         ]);
     }
-
-
 }

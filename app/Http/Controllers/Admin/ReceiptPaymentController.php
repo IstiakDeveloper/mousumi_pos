@@ -5,16 +5,15 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
-use App\Models\ExtraIncome;
 use App\Models\Expense;
+use App\Models\ExtraIncome;
 use App\Models\Fund;
-use App\Models\ProductStock;
 use App\Models\Sale;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class ReceiptPaymentController extends Controller
 {
@@ -35,7 +34,7 @@ class ReceiptPaymentController extends Controller
 
         \Log::info('Date Range', [
             'start_date' => $startDate,
-            'end_date' => $endDate
+            'end_date' => $endDate,
         ]);
 
         $receiptData = $this->getReceiptData($startDate, $endDate);
@@ -97,7 +96,7 @@ class ReceiptPaymentController extends Controller
             ->map(function ($income) {
                 return [
                     'category' => $income->category ? $income->category->name : 'Uncategorized',
-                    'amount' => (float) $income->total_amount
+                    'amount' => (float) $income->total_amount,
                 ];
             });
 
@@ -117,7 +116,7 @@ class ReceiptPaymentController extends Controller
             'sale_collection' => (float) $salePaid,
             'extra_income' => [
                 'total' => (float) $extraIncome,
-                'categories' => $extraIncomeByCategory
+                'categories' => $extraIncomeByCategory,
             ],
             'fund_receive' => (float) $fundReceive,
             'total' => (float) $totalReceipt,
@@ -132,7 +131,7 @@ class ReceiptPaymentController extends Controller
         // Get purchase amount from bank transactions (same as BankTransactionReport)
         $purchaseAmount = BankTransaction::where('transaction_type', 'out')
             ->where('bank_account_id', $this->bankAccountId)
-            ->where('description', 'LIKE', "Stock purchase%")
+            ->where('description', 'LIKE', 'Stock purchase%')
             ->whereBetween('date', [$startDate, $endDate])
             ->whereNull('deleted_at')
             ->sum('amount');
@@ -140,10 +139,10 @@ class ReceiptPaymentController extends Controller
         // Get purchase refunds from bank transactions (same as BankTransactionReport)
         $purchaseRefunds = BankTransaction::where('transaction_type', 'in')
             ->where('bank_account_id', $this->bankAccountId)
-            ->where(function($query) {
-                $query->where('description', 'LIKE', "%Refund%")
-                      ->orWhere('description', 'LIKE', "%cancelled%")
-                      ->orWhere('description', 'LIKE', "%deleted%");
+            ->where(function ($query) {
+                $query->where('description', 'LIKE', '%Refund%')
+                    ->orWhere('description', 'LIKE', '%cancelled%')
+                    ->orWhere('description', 'LIKE', '%deleted%');
             })
             ->whereBetween('date', [$startDate, $endDate])
             ->whereNull('deleted_at')
@@ -177,7 +176,7 @@ class ReceiptPaymentController extends Controller
             ->map(function ($expense) {
                 return [
                     'category' => $expense->category ? $expense->category->name : 'Uncategorized',
-                    'amount' => (float) $expense->total_amount
+                    'amount' => (float) $expense->total_amount,
                 ];
             });
 
@@ -192,7 +191,7 @@ class ReceiptPaymentController extends Controller
             'fund_refund' => (float) $fundRefund,
             'expenses' => [
                 'total' => (float) $expenses,
-                'categories' => $expensesByCategory
+                'categories' => $expensesByCategory,
             ],
             'closing_cash_at_bank' => (float) $closingCashAtBank,
             'total' => (float) $totalPayment,
@@ -300,7 +299,7 @@ class ReceiptPaymentController extends Controller
             // Add detailed logging at the start
             \Log::info('PDF Download Request:', [
                 'year' => $request->year,
-                'month' => $request->month
+                'month' => $request->month,
             ]);
 
             // Validate input
@@ -315,7 +314,7 @@ class ReceiptPaymentController extends Controller
 
             \Log::info('Date Range:', [
                 'start' => $startDate->toDateString(),
-                'end' => $endDate->toDateString()
+                'end' => $endDate->toDateString(),
             ]);
 
             // Get data
@@ -324,7 +323,7 @@ class ReceiptPaymentController extends Controller
 
             \Log::info('Data Retrieved:', [
                 'receiptTotal' => $receiptData['total'],
-                'paymentTotal' => $paymentData['total']
+                'paymentTotal' => $paymentData['total'],
             ]);
 
             // Generate PDF with error handling
@@ -338,30 +337,32 @@ class ReceiptPaymentController extends Controller
             } catch (\Exception $e) {
                 \Log::error('PDF Generation Failed:', [
                     'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
+                    'trace' => $e->getTraceAsString(),
                 ]);
-                throw new \Exception('PDF generation failed: ' . $e->getMessage());
+                throw new \Exception('PDF generation failed: '.$e->getMessage());
             }
 
             return $pdf->download("receipt-payment-{$validatedData['year']}-{$validatedData['month']}.pdf");
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Validation Failed:', [
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ]);
+
             return response()->json([
                 'error' => 'Validation failed',
-                'details' => $e->errors()
+                'details' => $e->errors(),
             ], 422);
 
         } catch (\Exception $e) {
             \Log::error('PDF Download Failed:', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json([
                 'error' => 'Failed to generate PDF',
-                'details' => $e->getMessage()
+                'details' => $e->getMessage(),
             ], 500);
         }
     }

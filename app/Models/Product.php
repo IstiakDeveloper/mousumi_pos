@@ -24,14 +24,14 @@ class Product extends Model
         'alert_quantity',
         'description',
         'specifications',
-        'status'
+        'status',
     ];
 
     protected $casts = [
         'specifications' => 'array',
         'status' => 'boolean',
         'cost_price' => 'decimal:2',
-        'selling_price' => 'decimal:2'
+        'selling_price' => 'decimal:2',
     ];
 
     // Existing Relationships
@@ -91,15 +91,16 @@ class Product extends Model
                 'sale_quantity' => static::getSaleQuantityQuery($startDate, $endDate),
                 'total_sale_amount' => static::getTotalSaleAmountQuery($startDate, $endDate),
                 'sale_discount' => static::getTotalSaleDiscountQuery($startDate, $endDate),
-                'sale_amount_after_discount' => static::getSaleAmountAfterDiscountQuery($startDate, $endDate)
+                'sale_amount_after_discount' => static::getSaleAmountAfterDiscountQuery($startDate, $endDate),
             ])
             ->orderBy('products.name')
             ->get()
-            ->map(function ($product, $index) use ($stockPositions, $beforeStockPositions) {
-                return static::calculateProductMetrics($product, $index, $stockPositions, $beforeStockPositions);
+            ->map(function ($product, $index) use ($stockPositions, $beforeStockPositions, $endDate) {
+                return static::calculateProductMetrics($product, $index, $stockPositions, $beforeStockPositions, $endDate);
             })
-            ->filter(function($product) {
-                // Filter out products with no activity (no before stock, buy, sale, or available)
+            ->filter(function ($product) {
+                // Include products with any activity: before stock, purchases, sales, or current stock
+                // Even if sold out (available = 0), include if there were purchases or sales
                 return $product['before_quantity'] > 0 ||
                        $product['buy_quantity'] > 0 ||
                        $product['sale_quantity'] > 0 ||
@@ -108,7 +109,7 @@ class Product extends Model
 
         return [
             'products' => $products->values(), // Reset keys after filtering
-            'totals' => static::calculateTotals($products)
+            'totals' => static::calculateTotals($products),
         ];
     }
 
@@ -139,28 +140,18 @@ class Product extends Model
 
     protected static function getCurrentStockPositions($endDate)
     {
-        // Get the latest stock position for each product up to the end date
-        $stockPositions = DB::table('product_stocks as ps')
-            ->select('ps.product_id', 'ps.available_quantity')
-            ->where('ps.created_at', '<=', $endDate)
-            ->whereIn('ps.id', function ($query) use ($endDate) {
-                $query->selectRaw('MAX(id)')
-                    ->from('product_stocks')
-                    ->where('created_at', '<=', $endDate)
-                    ->groupBy('product_id');
-            })
-            ->get()
-            ->keyBy('product_id');
+        // ALWAYS calculate from purchases - sales for accuracy
+        // Don't rely on product_stocks.available_quantity which may have discrepancies
 
-        // If no stock entries found, calculate from purchases and sales
-        $productsWithNoStock = Product::whereNotIn('id', $stockPositions->pluck('product_id')->toArray())
-            ->pluck('id');
+        $products = Product::where('status', true)->pluck('id');
+        $stockPositions = collect();
 
-        foreach ($productsWithNoStock as $productId) {
+        foreach ($products as $productId) {
             // Calculate total purchases up to end date
             $totalPurchases = ProductStock::where('product_id', $productId)
                 ->where('type', 'purchase')
                 ->where('created_at', '<=', $endDate)
+                ->whereNull('deleted_at')
                 ->sum('quantity');
 
             // Calculate total sales up to end date
@@ -175,8 +166,7 @@ class Product extends Model
 
             $stockPositions[$productId] = (object) [
                 'product_id' => $productId,
-                'available_quantity' => $availableQty,
-                'weighted_avg_cost' => 0
+                'available_quantity' => max(0, $availableQty), // Ensure non-negative
             ];
         }
 
@@ -301,7 +291,7 @@ class Product extends Model
             ');
     }
 
-    protected static function calculateProductMetrics($product, $index, $stockPositions, $beforeStockPositions)
+    protected static function calculateProductMetrics($product, $index, $stockPositions, $beforeStockPositions, $endDate)
     {
         $stockPosition = $stockPositions[$product->id] ?? null;
         $beforeStockPosition = $beforeStockPositions[$product->id] ?? null;
@@ -324,17 +314,35 @@ class Product extends Model
         // Get available quantity from stock position (either from stock_movements or product_stocks)
         $availableQuantity = $stockPosition ? (float) $stockPosition->available_quantity : 0;
 
-        // Calculate effective cost for available stock value
-        // If we have history, use weighted average; otherwise use buy price
-        $totalQuantity = $beforeQuantity + $buyQuantity;
-        $totalCost = $beforeStockValue + $totalBuyCost;
-        $effectiveCost = $totalQuantity > 0 ? $totalCost / $totalQuantity : $buyPrice;
+        // Calculate weighted average cost for ALL purchases up to end date
+        // This is needed for accurate profit calculation
+        $allTimePurchases = ProductStock::where('product_id', $product->id)
+            ->where('type', 'purchase')
+            ->where('created_at', '<=', $endDate)
+            ->selectRaw('
+                CASE
+                    WHEN SUM(quantity) > 0
+                    THEN SUM(total_cost) / SUM(quantity)
+                    ELSE 0
+                END as weighted_avg_cost
+            ')
+            ->first();
 
-        // Use effective cost for available stock value
-        $availableStockValue = $availableQuantity * $effectiveCost;
+        $weightedAvgCost = $allTimePurchases ? (float) $allTimePurchases->weighted_avg_cost : 0;
+        $effectiveCost = $weightedAvgCost > 0 ? $weightedAvgCost : ($beforeAvgCost > 0 ? $beforeAvgCost : $buyPrice);
 
-        $profitPerUnit = $salePriceAfterDiscount - $effectiveCost;
-        $totalProfit = $saleQuantity * $profitPerUnit;
+        // Calculate monthly stock value flow:
+        // Available Stock Value = Before Stock Value + Monthly Purchases - Monthly Sales Cost
+        // Sales Cost = Sale Quantity × Effective Cost (weighted average)
+        $monthlySalesCost = $saleQuantity * $effectiveCost;
+        $availableStockValue = $beforeStockValue + $totalBuyCost - $monthlySalesCost;
+
+        // Ensure non-negative stock value (shouldn't be negative but just in case)
+        $availableStockValue = max(0, $availableStockValue);
+
+        // Profit calculation: Sale Amount (after discount) - Sales Cost
+        $totalProfit = $totalSaleAfterDiscount - $monthlySalesCost;
+        $profitPerUnit = $saleQuantity > 0 ? $totalProfit / $saleQuantity : 0;
 
         return [
             'serial' => $index + 1,
@@ -356,7 +364,7 @@ class Product extends Model
             'profit_per_unit' => $profitPerUnit,
             'total_profit' => $totalProfit,
             'available_quantity' => $availableQuantity,
-            'available_stock_value' => $availableStockValue
+            'available_stock_value' => $availableStockValue,
         ];
     }
 
@@ -394,17 +402,16 @@ class Product extends Model
             return [
                 'total_profit' => [
                     'period' => 0.0,
-                    'cumulative' => (float) ($productAnalysis['totals']['total_profit'] ?? 0)
-                ]
+                    'cumulative' => (float) ($productAnalysis['totals']['total_profit'] ?? 0),
+                ],
             ];
         } catch (\Exception $e) {
             return [
                 'total_profit' => [
                     'period' => 0.0,
-                    'cumulative' => 0.0
-                ]
+                    'cumulative' => 0.0,
+                ],
             ];
         }
     }
-
 }

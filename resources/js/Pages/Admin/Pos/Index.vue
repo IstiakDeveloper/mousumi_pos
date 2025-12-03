@@ -95,7 +95,9 @@
                                                             </button>
                                                             <input type="number" v-model.number="item.quantity"
                                                                 class="w-10 text-center border rounded text-xs p-0.5 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
-                                                                min="1" @change="updateCartItemQuantity(index, item.quantity)" />
+                                                                min="1" :max="item.max_stock"
+                                                                @change="updateCartItemQuantity(index, item.quantity)"
+                                                                @blur="updateCartItemQuantity(index, item.quantity)" />
                                                             <button @click="incrementQuantity(index)"
                                                                 class="flex items-center justify-center w-5 h-5 text-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-600">
                                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -370,21 +372,39 @@ const handleCategoryFilter = async (categoryId) => {
 };
 
 const addToCart = (product) => {
-    const beepSound = new Howl({ src: ['/sounds/beep.mp3'] })
-    beepSound.play()
+    // Check if product has stock
+    if (!product.stock || product.stock <= 0) {
+        const errorSound = new Howl({ src: ['/sounds/error.mp3'] })
+        errorSound.play()
+        alert(`❌ ${product.name} is out of stock!`)
+        return
+    }
 
     const existingItem = cartItems.value.find(item => item.product_id === product.id)
+
     if (existingItem) {
+        // Check if we can increment quantity
+        if (existingItem.quantity >= product.stock) {
+            const errorSound = new Howl({ src: ['/sounds/error.mp3'] })
+            errorSound.play()
+            alert(`⚠️ Only ${product.stock} units available for ${product.name}`)
+            return
+        }
         existingItem.quantity++
+        existingItem.max_stock = product.stock // Track max available
     } else {
         cartItems.value.push({
             product_id: product.id,
             name: product.name,
             sku: product.sku,
             unit_price: Number(product.selling_price),
-            quantity: 1
+            quantity: 1,
+            max_stock: product.stock // Track max available
         })
     }
+
+    const beepSound = new Howl({ src: ['/sounds/beep.mp3'] })
+    beepSound.play()
 }
 
 const handleScannedProduct = (product) => {
@@ -392,13 +412,34 @@ const handleScannedProduct = (product) => {
 };
 
 const updateCartItemQuantity = (index, quantity) => {
-    if (quantity > 0) {
-        cartItems.value[index].quantity = quantity
+    const item = cartItems.value[index]
+
+    if (quantity <= 0) {
+        alert('❌ Quantity must be at least 1')
+        item.quantity = 1
+        return
     }
+
+    if (quantity > item.max_stock) {
+        alert(`⚠️ Only ${item.max_stock} units available for ${item.name}`)
+        item.quantity = item.max_stock
+        return
+    }
+
+    item.quantity = quantity
 }
 
 const incrementQuantity = (index) => {
-    cartItems.value[index].quantity++
+    const item = cartItems.value[index]
+
+    if (item.quantity >= item.max_stock) {
+        const errorSound = new Howl({ src: ['/sounds/error.mp3'] })
+        errorSound.play()
+        alert(`⚠️ Only ${item.max_stock} units available for ${item.name}`)
+        return
+    }
+
+    item.quantity++
 }
 
 const decrementQuantity = (index) => {

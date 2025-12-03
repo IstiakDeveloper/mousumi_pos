@@ -3,17 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Sale;
-use App\Models\Product;
-use App\Models\Expense;
-use App\Models\BankTransaction;
-use App\Models\ExtraIncome;
-use App\Models\ProductStock;
 use App\Models\BankAccount;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
+use App\Models\BankTransaction;
+use App\Models\Expense;
+use App\Models\ExtraIncome;
+use App\Models\Sale;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
@@ -40,6 +38,7 @@ class DashboardController extends Controller
         $salesProfit = $salesData->sum(function ($sale) {
             return $sale->saleItems->sum(function ($item) {
                 $costPrice = $item->product->cost_price ?? 0;
+
                 return ($item->unit_price - $costPrice) * $item->quantity;
             });
         });
@@ -50,6 +49,7 @@ class DashboardController extends Controller
             ->sum(function ($sale) {
                 return $sale->saleItems->sum(function ($item) {
                     $costPrice = $item->product->cost_price ?? 0;
+
                     return ($item->unit_price - $costPrice) * $item->quantity;
                 });
             });
@@ -121,7 +121,7 @@ class DashboardController extends Controller
                 )
                 ELSE 0
                 END
-            ), 0) as total_value')
+            ), 0) as total_value'),
             ]);
 
         $currentStockValue = $stockValueQuery->clone()
@@ -170,7 +170,7 @@ class DashboardController extends Controller
                 'name' => $account->account_name,
                 'balance' => $currentBalance,
                 'period_in' => $periodTransactionsIn,
-                'period_out' => $periodTransactionsOut
+                'period_out' => $periodTransactionsOut,
             ];
         });
 
@@ -178,7 +178,7 @@ class DashboardController extends Controller
             'bankAccount' => function ($query) {
                 $query->select('id', 'account_name')
                     ->where('status', true);
-            }
+            },
         ])
             ->whereBetween('date', [$startDate, $endDate])
             ->select('id', 'bank_account_id', 'transaction_type', 'amount', 'date', 'description')
@@ -241,18 +241,18 @@ class DashboardController extends Controller
                 'extra_income' => $extraIncomeTotal,
                 'operating_expenses' => $operatingExpenses,
                 'net_profit' => $currentNetProfit,
-                'previous_period_profit' => $previousNetProfit
+                'previous_period_profit' => $previousNetProfit,
             ],
             'banking' => [
                 'total_balance' => $bankSummary->sum('balance'),
                 'accounts' => $bankSummary->map(function ($account) {
                     return [
                         'name' => $account['name'],
-                        'balance' => $account['balance']
+                        'balance' => $account['balance'],
                     ];
                 })->values(),
                 'total_transactions_in' => $bankSummary->sum('period_in'),
-                'total_transactions_out' => $bankSummary->sum('period_out')
+                'total_transactions_out' => $bankSummary->sum('period_out'),
             ],
             'stock' => [
                 'current_value' => round($currentStockValue->total_value ?? 0, 2),
@@ -260,13 +260,13 @@ class DashboardController extends Controller
                 'total_products' => $currentStockValue->total_products,
                 'low_stock_count' => $lowStockCount,
                 'potential_value' => round($stockWorth->potential_value ?? 0, 2),
-                'potential_profit' => round($stockWorth->potential_profit ?? 0, 2)
+                'potential_profit' => round($stockWorth->potential_profit ?? 0, 2),
             ],
             'period' => [
                 'start_date' => $startDate->format('Y-m-d'),
                 'end_date' => $endDate->format('Y-m-d'),
-                'days' => $daysDiff + 1
-            ]
+                'days' => $daysDiff + 1,
+            ],
         ];
 
         return Inertia::render('Admin/Dashboard/Index', [
@@ -278,12 +278,10 @@ class DashboardController extends Controller
             'dailySummary' => $dailySummary,
             'filters' => [
                 'startDate' => $startDate->toDateString(),
-                'endDate' => $endDate->toDateString()
-            ]
+                'endDate' => $endDate->toDateString(),
+            ],
         ]);
     }
-
-
 
     private function calculateBankingSummary($startDate, $endDate)
     {
@@ -336,7 +334,7 @@ class DashboardController extends Controller
                 'current_balance' => $currentBalance,
                 'transactions_in' => $periodTransactionsIn,
                 'transactions_out' => $periodTransactionsOut,
-                'net_change' => $periodTransactionsIn - $periodTransactionsOut
+                'net_change' => $periodTransactionsIn - $periodTransactionsOut,
             ];
         })->values();
     }
@@ -360,12 +358,12 @@ class DashboardController extends Controller
             ->get();
     }
 
-
     private function calculateSalesProfit($salesData)
     {
         return $salesData->sum(function ($sale) {
             return $sale->saleItems->sum(function ($item) {
                 $costPrice = $item->product->cost_price ?? 0;
+
                 return ($item->unit_price - $costPrice) * $item->quantity;
             });
         });
@@ -413,15 +411,15 @@ class DashboardController extends Controller
         // Calculate previous period stock value
         $previousStockValue = $this->calculateStockValue($previousEndDate);
 
-
         return [
             'sales_profit' => $previousSalesProfit,
             'extra_income' => $previousExtraIncome,
             'expenses' => $previousExpenses,
             'net_profit' => $previousSalesProfit + $previousExtraIncome - $previousExpenses,
-            'stock_value' => $previousStockValue
+            'stock_value' => $previousStockValue,
         ];
     }
+
     private function calculateStockValue()
     {
         return DB::table('products as p')
@@ -449,12 +447,11 @@ class DashboardController extends Controller
                     SELECT SUM(quantity)
                     FROM product_stocks
                     WHERE product_id = p.id
-                ), 0) <= p.alert_quantity THEN 1 END) as low_stock_count')
+                ), 0) <= p.alert_quantity THEN 1 END) as low_stock_count'),
             ])
             ->where('p.status', true)
             ->first();
     }
-
 
     private function calculateStockWorth()
     {
@@ -505,7 +502,7 @@ class DashboardController extends Controller
                     )
                     ELSE 0
                     END
-                ), 0) as potential_profit')
+                ), 0) as potential_profit'),
             ])
             ->first();
     }

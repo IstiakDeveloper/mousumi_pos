@@ -20,8 +20,12 @@ class ProductStock extends Model
         'created_by',
         'available_quantity',
         'type',
-        'bank_account_id'  // Add this
+        'bank_account_id',
+        'date'  // Add date field
+    ];
 
+    protected $casts = [
+        'date' => 'date',
     ];
 
     public function product()

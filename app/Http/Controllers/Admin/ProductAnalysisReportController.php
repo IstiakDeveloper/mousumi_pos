@@ -4,15 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
-use App\Models\ProductStock;
-use App\Models\Sale;
-use App\Models\SaleItem;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class ProductAnalysisReportController extends Controller
 {
@@ -47,7 +43,7 @@ class ProductAnalysisReportController extends Controller
                 'start_date' => $startDate->format('Y-m-d'),
                 'end_date' => $endDate->format('Y-m-d'),
             ],
-            'totals' => $analysis['totals']
+            'totals' => $analysis['totals'],
         ]);
     }
 
@@ -72,7 +68,7 @@ class ProductAnalysisReportController extends Controller
             // Validate date range
             if ($endDate->lt($startDate)) {
                 return response()->json([
-                    'message' => 'End date must be after start date'
+                    'message' => 'End date must be after start date',
                 ], 422);
             }
 
@@ -106,16 +102,16 @@ class ProductAnalysisReportController extends Controller
                 'margin-right' => 10,
             ]);
 
-            $filename = 'product-analysis-' . $startDate->format('Y-m-d') . '-to-' . $endDate->format('Y-m-d') . '.pdf';
+            $filename = 'product-analysis-'.$startDate->format('Y-m-d').'-to-'.$endDate->format('Y-m-d').'.pdf';
 
             return $pdf->download($filename);
 
         } catch (\Exception $e) {
-            Log::error('PDF Generation Error: ' . $e->getMessage());
+            Log::error('PDF Generation Error: '.$e->getMessage());
             Log::error($e->getTraceAsString());
 
             return response()->json([
-                'message' => 'Error generating PDF. Please try again later.'
+                'message' => 'Error generating PDF. Please try again later.',
             ], 500);
         }
     }
@@ -157,7 +153,7 @@ class ProductAnalysisReportController extends Controller
             'Profit Per Unit',
             'Total Profit',
             'Available Stock',
-            'Stock Value'
+            'Stock Value',
         ];
 
         $data = array_merge([$headers], $analysis['products']->map(function ($product) {
@@ -205,9 +201,9 @@ class ProductAnalysisReportController extends Controller
             number_format($analysis['totals']['available_stock_value'], 2),
         ];
 
-        $filename = 'product-analysis-' . $startDate->format('Y-m-d') . '-to-' . $endDate->format('Y-m-d') . '.csv';
+        $filename = 'product-analysis-'.$startDate->format('Y-m-d').'-to-'.$endDate->format('Y-m-d').'.csv';
 
-        $callback = function() use ($data) {
+        $callback = function () use ($data) {
             $file = fopen('php://output', 'w');
             foreach ($data as $row) {
                 fputcsv($file, $row);
@@ -217,7 +213,7 @@ class ProductAnalysisReportController extends Controller
 
         return response()->stream($callback, 200, [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 }

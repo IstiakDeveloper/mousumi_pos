@@ -3,18 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
+use App\Models\BankAccount;
+use App\Models\Category;
 use App\Models\Customer;
+use App\Models\Product;
+use App\Models\ProductStock;
 use App\Models\Sale;
 use App\Models\SaleItem;
-use App\Models\BankAccount;
-use App\Models\ProductStock;
-use App\Models\Category;
 use App\Models\StockMovement;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-use Barryvdh\DomPDF\Facade\Pdf;
 use NumberFormatter;
 
 class PosController extends Controller
@@ -41,6 +41,7 @@ class PosController extends Controller
             ->get()
             ->map(function ($product) {
                 $latestStock = $product->productStocks->sortByDesc('id')->first();
+
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
@@ -63,6 +64,7 @@ class PosController extends Controller
 
         return $query->get()->map(function ($product) {
             $latestStock = $product->productStocks->sortByDesc('id')->first();
+
             return [
                 'id' => $product->id,
                 'name' => $product->name,
@@ -90,6 +92,7 @@ class PosController extends Controller
 
         return $query->take(10)->get()->map(function ($product) {
             $latestStock = $product->productStocks->sortByDesc('id')->first();
+
             return [
                 'id' => $product->id,
                 'name' => $product->name,
@@ -113,7 +116,7 @@ class PosController extends Controller
 
     public function store(Request $request)
     {
-        \Log::info('POS Store Request: ' . json_encode($request->all()));
+        \Log::info('POS Store Request: '.json_encode($request->all()));
 
         try {
             $request->validate([
@@ -142,12 +145,12 @@ class PosController extends Controller
             do {
                 $attempt++;
                 $count = Sale::where('invoice_no', 'like', "INV-{$date}-%")->count();
-                $invoiceNumber = 'INV-' . $date . '-' . str_pad($count + $attempt, 4, '0', STR_PAD_LEFT);
+                $invoiceNumber = 'INV-'.$date.'-'.str_pad($count + $attempt, 4, '0', STR_PAD_LEFT);
                 $exists = Sale::where('invoice_no', $invoiceNumber)->exists();
             } while ($exists && $attempt < 10); // Limit attempts to prevent infinite loop
 
             if ($attempt >= 10) {
-                throw new \Exception("Failed to generate a unique invoice number after multiple attempts");
+                throw new \Exception('Failed to generate a unique invoice number after multiple attempts');
             }
 
             // Create sale with the new unique invoice number
@@ -164,14 +167,16 @@ class PosController extends Controller
                 'created_by' => auth()->id(),
             ]);
 
-            \Log::info('Sale created with ID: ' . $sale->id);
+            \Log::info('Sale created with ID: '.$sale->id);
 
             // Process each item
             foreach ($request->items as $index => $item) {
-                \Log::info("Processing item {$index}: " . json_encode($item));
+                \Log::info("Processing item {$index}: ".json_encode($item));
 
                 // Check stock before attempting to create the sale item
+                // Use lockForUpdate to prevent race conditions
                 $currentStock = ProductStock::where('product_id', $item['product_id'])
+                    ->lockForUpdate()
                     ->orderBy('id', 'desc')
                     ->first();
 
@@ -202,6 +207,7 @@ class PosController extends Controller
                     'quantity' => -$item['quantity'], // negative for sales
                     'available_quantity' => $afterQuantity,
                     'type' => 'sale',
+                    'date' => now()->toDateString(),
                     'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
                     'total_cost' => $currentStock ? ($currentStock->unit_cost * $item['quantity']) : 0,
                     'created_by' => auth()->id(),
@@ -256,7 +262,7 @@ class PosController extends Controller
                 ]);
 
                 $bankAccount->increment('current_balance', $request->paid);
-                \Log::info("Bank account balance updated");
+                \Log::info('Bank account balance updated');
             }
 
             DB::commit();
@@ -265,11 +271,13 @@ class PosController extends Controller
             return to_route('admin.pos.index')->with('sale', $sale);
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
-            \Log::error('POS Validation Error: ' . json_encode($e->errors()));
+            \Log::error('POS Validation Error: '.json_encode($e->errors()));
+
             return back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('POS Error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            \Log::error('POS Error: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine());
+
             return back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
     }
@@ -280,7 +288,7 @@ class PosController extends Controller
         $sale = Sale::with([
             'saleItems.product.category', // Include product category relationship
             'customer',
-            'createdBy'
+            'createdBy',
         ])->findOrFail($id);
 
         // Group items by category
@@ -294,8 +302,8 @@ class PosController extends Controller
             $categoryTotals[$category] = $items->sum('subtotal');
         }
 
-        $f = new NumberFormatter("en", NumberFormatter::SPELLOUT);
-        $amountInWords = ucfirst($f->format($sale->total)) . " taka only";
+        $f = new NumberFormatter('en', NumberFormatter::SPELLOUT);
+        $amountInWords = ucfirst($f->format($sale->total)).' taka only';
 
         $pdf = Pdf::loadView('pdf.receipt', [
             'sale' => $sale,
@@ -307,7 +315,7 @@ class PosController extends Controller
                 'address' => config('app.address'),
                 'phone' => config('app.phone'),
                 'email' => config('app.email'),
-            ]
+            ],
         ]);
 
         return $pdf->stream("receipt-{$sale->invoice_no}.pdf");

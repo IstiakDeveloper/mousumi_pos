@@ -12,11 +12,11 @@ class UnitController extends Controller
     public function index(Request $request)
     {
         $units = Unit::query()
-            ->when($request->search, function($query, $search) {
+            ->when($request->search, function ($query, $search) {
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('short_name', 'like', "%{$search}%");
             })
-            ->when($request->status !== null, function($query) use ($request) {
+            ->when($request->status !== null, function ($query) use ($request) {
                 $query->where('status', $request->status);
             })
             ->latest()
@@ -25,7 +25,7 @@ class UnitController extends Controller
 
         return Inertia::render('Admin/Units/Index', [
             'units' => $units,
-            'filters' => $request->only(['search', 'status'])
+            'filters' => $request->only(['search', 'status']),
         ]);
     }
 
@@ -35,14 +35,14 @@ class UnitController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255|unique:units',
                 'short_name' => 'required|string|max:50|unique:units',
-                'status' => 'boolean'
+                'status' => 'boolean',
             ]);
 
             Unit::create($validated);
 
             return redirect()->back()->with('success', 'Unit created successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to create unit: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to create unit: '.$e->getMessage());
         }
     }
 
@@ -50,16 +50,16 @@ class UnitController extends Controller
     {
         try {
             $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:units,name,' . $unit->id,
-                'short_name' => 'required|string|max:50|unique:units,short_name,' . $unit->id,
-                'status' => 'boolean'
+                'name' => 'required|string|max:255|unique:units,name,'.$unit->id,
+                'short_name' => 'required|string|max:50|unique:units,short_name,'.$unit->id,
+                'status' => 'boolean',
             ]);
 
             $unit->update($validated);
 
             return redirect()->back()->with('success', 'Unit updated successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to update unit: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to update unit: '.$e->getMessage());
         }
     }
 
@@ -74,7 +74,7 @@ class UnitController extends Controller
 
             return redirect()->back()->with('success', 'Unit deleted successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to delete unit: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to delete unit: '.$e->getMessage());
         }
     }
 }

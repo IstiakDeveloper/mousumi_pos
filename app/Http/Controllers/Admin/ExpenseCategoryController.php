@@ -12,8 +12,9 @@ class ExpenseCategoryController extends Controller
     public function index()
     {
         $categories = ExpenseCategory::latest()->paginate(10);
+
         return Inertia::render('Admin/ExpenseCategories/Index', [
-            'categories' => $categories
+            'categories' => $categories,
         ]);
     }
 
@@ -22,7 +23,7 @@ class ExpenseCategoryController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:expense_categories',
             'description' => 'nullable|string',
-            'status' => 'boolean'
+            'status' => 'boolean',
         ]);
 
         ExpenseCategory::create($validated);
@@ -33,9 +34,9 @@ class ExpenseCategoryController extends Controller
     public function update(Request $request, ExpenseCategory $category)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:expense_categories,name,' . $category->id,
+            'name' => 'required|string|max:255|unique:expense_categories,name,'.$category->id,
             'description' => 'nullable|string',
-            'status' => 'boolean'
+            'status' => 'boolean',
         ]);
 
         $category->update($validated);

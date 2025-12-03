@@ -6,10 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class BankReportController extends Controller
 {
@@ -77,7 +77,7 @@ class BankReportController extends Controller
                 'description' => $transaction->description,
                 'amount' => $transaction->amount,
                 'running_total' => $runningTotal,
-                'created_by' => $transaction->createdBy->name
+                'created_by' => $transaction->createdBy->name,
             ];
         });
 
@@ -85,7 +85,7 @@ class BankReportController extends Controller
             'total_purchases' => $transactions->where('transaction_type', 'out')->sum('amount'),
             'total_refunds' => $transactions->where('transaction_type', 'in')->sum('amount'),
             'net_amount' => $transactions->where('transaction_type', 'out')->sum('amount') -
-                $transactions->where('transaction_type', 'in')->sum('amount')
+                $transactions->where('transaction_type', 'in')->sum('amount'),
         ];
 
         return Inertia::render('Admin/Reports/ProductTransactions', [
@@ -95,7 +95,7 @@ class BankReportController extends Controller
                 'to_date' => $toDate->format('Y-m-d'),
             ],
             'transactions' => $formattedTransactions,
-            'summary' => $summary
+            'summary' => $summary,
         ]);
     }
 
@@ -106,7 +106,6 @@ class BankReportController extends Controller
             ->whereBetween('date', [$fromDate, $toDate])
             ->sum('amount');
     }
-
 
     public function index(Request $request)
     {
@@ -131,9 +130,10 @@ class BankReportController extends Controller
             // Get previous balance (before from_date)
             $previousBalance = $account->opening_balance +
                 DB::table('bank_transactions')
-                ->where('bank_account_id', $account->id)
-                ->where('date', '<', $fromDate)
-                ->sum(DB::raw('CASE
+                    ->where('bank_account_id', $account->id)
+                    ->where('date', '<', $fromDate)
+                    ->whereNull('deleted_at')
+                    ->sum(DB::raw('CASE
                         WHEN transaction_type = "in" THEN amount
                         ELSE -amount
                     END'));
@@ -156,9 +156,10 @@ class BankReportController extends Controller
                         'description' => $transaction->description,
                         'amount' => $transaction->amount,
                         'created_by' => $transaction->createdBy->name,
-                        'running_balance' => $balance
+                        'running_balance' => $balance,
                     ];
                     $previousBalance = $balance;
+
                     return $result;
                 });
 
@@ -174,7 +175,7 @@ class BankReportController extends Controller
                     'inflows' => $inflows,
                     'outflows' => $outflows,
                     'net' => $inflows - $outflows,
-                    'transaction_count' => $monthTransactions->count()
+                    'transaction_count' => $monthTransactions->count(),
                 ];
             })->values();
 
@@ -189,7 +190,7 @@ class BankReportController extends Controller
                 'previous_balance' => $previousBalance,
                 'current_balance' => $account->current_balance,
                 'monthly_summary' => $monthlySummary,
-                'transactions' => $transactions
+                'transactions' => $transactions,
             ];
         });
 
@@ -199,29 +200,35 @@ class BankReportController extends Controller
             'total_sales_from_invoices' => $this->getTotalSalesFromInvoices($fromDate, $toDate),
             'total_inflows' => BankTransaction::where('transaction_type', 'in')
                 ->whereBetween('date', [$fromDate, $toDate])
+                ->whereNull('deleted_at')
                 ->sum('amount'),
             'total_outflows' => BankTransaction::where('transaction_type', 'out')
                 ->whereBetween('date', [$fromDate, $toDate])
+                ->whereNull('deleted_at')
                 ->sum('amount'),
-            'total_transactions' => BankTransaction::whereBetween('date', [$fromDate, $toDate])->count(),
+            'total_transactions' => BankTransaction::whereBetween('date', [$fromDate, $toDate])->whereNull('deleted_at')->count(),
 
             // Add these new fields
             'total_product_purchases' => BankTransaction::where('transaction_type', 'out')
                 ->where('description', 'LIKE', 'Stock purchase for product ID:%')
                 ->whereBetween('date', [$fromDate, $toDate])
+                ->whereNull('deleted_at')
                 ->sum('amount'),
             'total_product_refunds' => BankTransaction::where('transaction_type', 'in')
                 ->where('description', 'LIKE', 'Total refund for deleted product ID:%')
                 ->whereBetween('date', [$fromDate, $toDate])
+                ->whereNull('deleted_at')
                 ->sum('amount'),
             'net_product_amount' => BankTransaction::where('transaction_type', 'out')
                 ->where('description', 'LIKE', 'Stock purchase for product ID:%')
                 ->whereBetween('date', [$fromDate, $toDate])
+                ->whereNull('deleted_at')
                 ->sum('amount') -
                 BankTransaction::where('transaction_type', 'in')
-                ->where('description', 'LIKE', 'Total refund for deleted product ID:%')
-                ->whereBetween('date', [$fromDate, $toDate])
-                ->sum('amount')
+                    ->where('description', 'LIKE', 'Total refund for deleted product ID:%')
+                    ->whereBetween('date', [$fromDate, $toDate])
+                    ->whereNull('deleted_at')
+                    ->sum('amount'),
         ];
 
         return Inertia::render('Admin/Reports/BankReport', [
@@ -232,7 +239,7 @@ class BankReportController extends Controller
                 'to_date' => $toDate->format('Y-m-d'),
             ],
             'reports' => $reports,
-            'summary' => $summary
+            'summary' => $summary,
         ]);
     }
 
@@ -257,9 +264,10 @@ class BankReportController extends Controller
             // Get previous balance before from_date
             $previousBalance = $account->opening_balance +
                 DB::table('bank_transactions')
-                ->where('bank_account_id', $account->id)
-                ->where('date', '<', $fromDate)
-                ->sum(DB::raw('CASE WHEN transaction_type = "in" THEN amount ELSE -amount END'));
+                    ->where('bank_account_id', $account->id)
+                    ->where('date', '<', $fromDate)
+                    ->whereNull('deleted_at')
+                    ->sum(DB::raw('CASE WHEN transaction_type = "in" THEN amount ELSE -amount END'));
 
             // Get all transactions with details
             $allTransactions = BankTransaction::where('bank_account_id', $account->id)
@@ -288,7 +296,7 @@ class BankReportController extends Controller
                         'type' => $transaction->transaction_type,
                         'inflow' => $transaction->transaction_type == 'in' ? $transaction->amount : 0,
                         'outflow' => $transaction->transaction_type == 'out' ? $transaction->amount : 0,
-                        'balance' => $runningBalance
+                        'balance' => $runningBalance,
                     ];
                 }
 
@@ -303,8 +311,8 @@ class BankReportController extends Controller
                         'inflows' => $monthlyInflows,
                         'outflows' => $monthlyOutflows,
                         'net' => $monthlyInflows - $monthlyOutflows,
-                        'ending_balance' => $runningBalance
-                    ]
+                        'ending_balance' => $runningBalance,
+                    ],
                 ];
             }
 
@@ -312,12 +320,12 @@ class BankReportController extends Controller
                 'account' => [
                     'name' => $account->account_name,
                     'bank' => $account->bank_name,
-                    'number' => $account->account_number
+                    'number' => $account->account_number,
                 ],
                 'opening_balance' => $account->opening_balance,
                 'previous_balance' => $previousBalance,
                 'current_balance' => $runningBalance,
-                'monthly_data' => $monthlyData
+                'monthly_data' => $monthlyData,
             ];
         });
 
@@ -327,9 +335,11 @@ class BankReportController extends Controller
             'total_balance' => $accounts->sum('current_balance'),
             'total_inflows' => BankTransaction::where('transaction_type', 'in')
                 ->whereBetween('date', [$fromDate, $toDate])
+                ->whereNull('deleted_at')
                 ->sum('amount'),
             'total_outflows' => BankTransaction::where('transaction_type', 'out')
                 ->whereBetween('date', [$fromDate, $toDate])
+                ->whereNull('deleted_at')
                 ->sum('amount'),
         ];
 
@@ -338,13 +348,13 @@ class BankReportController extends Controller
             'summary' => $summary,
             'date_range' => [
                 'from' => $fromDate->format('d M, Y'),
-                'to' => $toDate->format('d M, Y')
-            ]
+                'to' => $toDate->format('d M, Y'),
+            ],
         ];
 
         $pdf = PDF::loadView('reports.bank-report-pdf', $data);
         $pdf->setPaper('a4', 'landscape');
 
-        return $pdf->download('bank-report-' . now()->format('Y-m-d') . '.pdf');
+        return $pdf->download('bank-report-'.now()->format('Y-m-d').'.pdf');
     }
 }

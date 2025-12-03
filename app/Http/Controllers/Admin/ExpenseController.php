@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Expense;
-use App\Models\ExpenseCategory;
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
+use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -20,10 +20,10 @@ class ExpenseController extends Controller
 
         // Apply filters
         $filteredExpenses = $query
-            ->when($request->category_id, fn($q) => $q->where('expense_category_id', $request->category_id))
-            ->when($request->bank_id, fn($q) => $q->where('bank_account_id', $request->bank_id))
-            ->when($request->from_date, fn($q) => $q->whereDate('date', '>=', $request->from_date))
-            ->when($request->to_date, fn($q) => $q->whereDate('date', '<=', $request->to_date));
+            ->when($request->category_id, fn ($q) => $q->where('expense_category_id', $request->category_id))
+            ->when($request->bank_id, fn ($q) => $q->where('bank_account_id', $request->bank_id))
+            ->when($request->from_date, fn ($q) => $q->whereDate('date', '>=', $request->from_date))
+            ->when($request->to_date, fn ($q) => $q->whereDate('date', '<=', $request->to_date));
 
         // Pagination
         $expenses = $filteredExpenses
@@ -46,8 +46,8 @@ class ExpenseController extends Controller
             'filters' => $request->only(['category_id', 'bank_id', 'from_date', 'to_date']),
             'summary' => [
                 'totalExpenses' => $totalExpenses,
-                'fixedAssetExpenses' => $fixedAssetExpenses
-            ]
+                'fixedAssetExpenses' => $fixedAssetExpenses,
+            ],
         ]);
     }
 
@@ -60,7 +60,7 @@ class ExpenseController extends Controller
             'description' => 'nullable|string',
             'reference_no' => 'nullable|string',
             'date' => 'required|date',
-            'attachment' => 'nullable|file|max:2048'
+            'attachment' => 'nullable|file|max:2048',
         ]);
 
         DB::beginTransaction();
@@ -83,7 +83,7 @@ class ExpenseController extends Controller
                 'amount' => $validated['amount'],
                 'description' => "Expense: {$validated['description']}",
                 'date' => $validated['date'],
-                'created_by' => auth()->id()
+                'created_by' => auth()->id(),
             ]);
 
             // Update bank balance
@@ -92,9 +92,11 @@ class ExpenseController extends Controller
             $bankAccount->save();
 
             DB::commit();
+
             return redirect()->back()->with('success', 'Expense created successfully');
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()->with('error', 'Failed to create expense');
         }
     }
@@ -108,7 +110,7 @@ class ExpenseController extends Controller
             'description' => 'nullable|string',
             'reference_no' => 'nullable|string',
             'date' => 'required|date',
-            'attachment' => 'nullable|file|max:2048'
+            'attachment' => 'nullable|file|max:2048',
         ]);
 
         DB::beginTransaction();
@@ -131,8 +133,8 @@ class ExpenseController extends Controller
                 'bank_account_id' => $oldBankAccountId,
                 'transaction_type' => 'out',
                 'amount' => $oldAmount,
-                'date' => $expense->date
-            ])->where('description', 'LIKE', 'Expense: ' . $expense->description)
+                'date' => $expense->date,
+            ])->where('description', 'LIKE', 'Expense: '.$expense->description)
                 ->first();
 
             // Update expense
@@ -162,7 +164,7 @@ class ExpenseController extends Controller
                     'amount' => $validated['amount'],
                     'description' => "Expense: {$validated['description']}",
                     'date' => $validated['date'],
-                    'created_by' => auth()->id()
+                    'created_by' => auth()->id(),
                 ]);
             } else {
                 // Update bank balance for amount change
@@ -177,7 +179,7 @@ class ExpenseController extends Controller
                     $bankTransaction->update([
                         'amount' => $validated['amount'],
                         'description' => "Expense: {$validated['description']}",
-                        'date' => $validated['date']
+                        'date' => $validated['date'],
                     ]);
                 } else {
                     // Create new transaction if not found
@@ -187,15 +189,17 @@ class ExpenseController extends Controller
                         'amount' => $validated['amount'],
                         'description' => "Expense: {$validated['description']}",
                         'date' => $validated['date'],
-                        'created_by' => auth()->id()
+                        'created_by' => auth()->id(),
                     ]);
                 }
             }
 
             DB::commit();
+
             return redirect()->back()->with('success', 'Expense updated successfully');
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()->with('error', 'Failed to update expense');
         }
     }
@@ -213,9 +217,11 @@ class ExpenseController extends Controller
             $expense->delete();
 
             DB::commit();
+
             return redirect()->back()->with('success', 'Expense deleted successfully');
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()->with('error', 'Failed to delete expense');
         }
     }
@@ -235,9 +241,11 @@ class ExpenseController extends Controller
             $expense->restore();
 
             DB::commit();
+
             return redirect()->back()->with('success', 'Expense restored successfully');
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()->with('error', 'Failed to restore expense');
         }
     }

@@ -26,7 +26,7 @@ class BrandController extends Controller
 
         return Inertia::render('Admin/Brands/Index', [
             'brands' => $brands,
-            'filters' => $request->only(['search', 'status'])
+            'filters' => $request->only(['search', 'status']),
         ]);
     }
 
@@ -36,7 +36,7 @@ class BrandController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255|unique:brands',
                 'logo' => 'nullable|image|max:1024',
-                'status' => 'boolean'
+                'status' => 'boolean',
             ]);
 
             $validated['slug'] = Str::slug($request->name);
@@ -49,7 +49,7 @@ class BrandController extends Controller
 
             return redirect()->back()->with('success', 'Brand created successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to create brand: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to create brand: '.$e->getMessage());
         }
     }
 
@@ -57,9 +57,9 @@ class BrandController extends Controller
     {
         try {
             $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:brands,name,' . $brand->id,
+                'name' => 'required|string|max:255|unique:brands,name,'.$brand->id,
                 'logo' => 'nullable|image|max:1024',
-                'status' => 'boolean'
+                'status' => 'boolean',
             ]);
 
             $validated['slug'] = Str::slug($request->name);
@@ -72,7 +72,7 @@ class BrandController extends Controller
             }
 
             // Don't override existing logo if no new logo is uploaded
-            if (!$request->hasFile('logo')) {
+            if (! $request->hasFile('logo')) {
                 unset($validated['logo']);
             }
 
@@ -80,7 +80,7 @@ class BrandController extends Controller
 
             return redirect()->back()->with('success', 'Brand updated successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to update brand: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to update brand: '.$e->getMessage());
         }
     }
 
@@ -99,7 +99,7 @@ class BrandController extends Controller
 
             return redirect()->back()->with('success', 'Brand deleted successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to delete brand: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to delete brand: '.$e->getMessage());
         }
     }
 }

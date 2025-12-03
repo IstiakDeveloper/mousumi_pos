@@ -48,16 +48,16 @@ class ExtraIncomeController extends Controller
             DB::raw('SUM(extra_incomes.amount) as total_amount'),
             DB::raw('COUNT(*) as transaction_count')
         )
-        ->leftJoin('extra_income_categories as categories', 'extra_incomes.category_id', '=', 'categories.id')
-        ->groupBy(DB::raw('COALESCE(categories.id, 0)'), DB::raw('COALESCE(categories.name, "Uncategorized")'))
-        ->get()
-        ->map(function ($stat) {
-            return [
-                'category' => $stat->category_name,
-                'total_amount' => $stat->total_amount,
-                'transaction_count' => $stat->transaction_count,
-            ];
-        });
+            ->leftJoin('extra_income_categories as categories', 'extra_incomes.category_id', '=', 'categories.id')
+            ->groupBy(DB::raw('COALESCE(categories.id, 0)'), DB::raw('COALESCE(categories.name, "Uncategorized")'))
+            ->get()
+            ->map(function ($stat) {
+                return [
+                    'category' => $stat->category_name,
+                    'total_amount' => $stat->total_amount,
+                    'transaction_count' => $stat->transaction_count,
+                ];
+            });
 
         $statistics = [
             'totalIncome' => ExtraIncome::sum('amount'),
@@ -94,14 +94,14 @@ class ExtraIncomeController extends Controller
             'amount' => 'required|numeric|min:0',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'date' => 'required|date'
+            'date' => 'required|date',
         ]);
 
-        DB::transaction(function () use ($validated, $request) {
+        DB::transaction(function () use ($validated) {
             // Create extra income record
             $extraIncome = ExtraIncome::create([
                 ...$validated,
-                'created_by' => auth()->id()
+                'created_by' => auth()->id(),
             ]);
 
             // Get category name for description
@@ -114,7 +114,7 @@ class ExtraIncomeController extends Controller
                 'amount' => $validated['amount'],
                 'description' => "Extra Income ({$categoryName}): {$validated['title']}",
                 'date' => $validated['date'],
-                'created_by' => auth()->id()
+                'created_by' => auth()->id(),
             ]);
 
             // Update bank account balance
@@ -132,7 +132,7 @@ class ExtraIncomeController extends Controller
         return Inertia::render('Admin/ExtraIncome/Edit', [
             'extraIncome' => $extraIncome->load(['bankAccount', 'category']),
             'bankAccounts' => BankAccount::where('status', true)->get(),
-            'categories' => ExtraIncomeCategory::where('status', true)->get()
+            'categories' => ExtraIncomeCategory::where('status', true)->get(),
         ]);
     }
 
@@ -144,7 +144,7 @@ class ExtraIncomeController extends Controller
             'amount' => 'required|numeric|min:0',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'date' => 'required|date'
+            'date' => 'required|date',
         ]);
 
         DB::transaction(function () use ($validated, $extraIncome) {
@@ -163,12 +163,12 @@ class ExtraIncomeController extends Controller
             BankTransaction::where([
                 'bank_account_id' => $extraIncome->getOriginal('bank_account_id'),
                 'amount' => $extraIncome->getOriginal('amount'),
-                'date' => $extraIncome->getOriginal('date')
+                'date' => $extraIncome->getOriginal('date'),
             ])->update([
                 'bank_account_id' => $validated['bank_account_id'],
                 'amount' => $validated['amount'],
                 'description' => "Extra Income ({$categoryName}): {$validated['title']}",
-                'date' => $validated['date']
+                'date' => $validated['date'],
             ]);
 
             // Update new bank account balance
@@ -193,7 +193,7 @@ class ExtraIncomeController extends Controller
             BankTransaction::where([
                 'bank_account_id' => $extraIncome->bank_account_id,
                 'amount' => $extraIncome->amount,
-                'date' => $extraIncome->date
+                'date' => $extraIncome->date,
             ])->delete();
 
             // Delete extra income

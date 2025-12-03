@@ -68,7 +68,7 @@
                             </div>
                             <input v-model="search" type="text" placeholder="Search products..."
                                 class="block w-full rounded-md border-0 py-1.5 pl-10 pr-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-800 sm:text-sm sm:leading-6"
-                                @input="debouncedSearch">
+                                @input="handleSearchInput">
                         </div>
 
                         <!-- Category Filter -->
@@ -187,6 +187,7 @@ const filters = ref({
 const showConfirmDialog = ref(false);
 const confirmMessage = ref('');
 const productToDelete = ref(null);
+const isSearching = ref(false); // Track if user is actively typing
 
 // Computed Properties
 const activeProducts = computed(() =>
@@ -221,8 +222,14 @@ const viewToggleClass = (mode) => {
 
 // Search and Filters
 const debouncedSearch = debounce(() => {
+    isSearching.value = false;
     applyFilters({ search: search.value });
-}, 300);
+}, 500);
+
+const handleSearchInput = () => {
+    isSearching.value = true;
+    debouncedSearch();
+};
 
 const filterChanged = () => {
     applyFilters(filters.value);
@@ -234,7 +241,8 @@ const applyFilters = (newFilters) => {
         ...newFilters
     }, {
         preserveState: true,
-        preserveScroll: true
+        preserveScroll: true,
+        only: ['products'] // Only reload products data, not entire page
     });
 };
 
@@ -268,7 +276,10 @@ const printBarcodes = () => {
 
 // Watchers
 watch(() => props.filters, (newFilters) => {
-    search.value = newFilters.search ?? '';
+    // Only update if user is not actively typing
+    if (!isSearching.value) {
+        search.value = newFilters.search ?? '';
+    }
     filters.value = {
         category_id: newFilters.category_id ?? '',
         brand_id: newFilters.brand_id ?? '',

@@ -8,8 +8,8 @@ use App\Models\BankTransaction;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class BankTransactionReportController extends Controller
 {
@@ -29,7 +29,7 @@ class BankTransactionReportController extends Controller
         $selectedAccount = BankAccount::findOrFail($selectedBankAccount);
 
         // Get previous month's last transaction to get the closing balance
-        $previousMonthEnd = Carbon::create($selectedYear, $selectedMonth, )->subDay();
+        $previousMonthEnd = Carbon::create($selectedYear, $selectedMonth)->subDay();
 
         $previousMonthBalance = BankTransaction::withTrashed()
             ->where('bank_account_id', $selectedBankAccount)
@@ -126,15 +126,15 @@ class BankTransactionReportController extends Controller
                     'payment' => round($paymentReceive, 2),
                     'extra' => round($extraIncomeAmount, 2),
                     'refund' => round($refund, 2),
-                    'total' => round($totalIn, 2)
+                    'total' => round($totalIn, 2),
                 ],
                 'out' => [
                     'fund' => round($fundOut, 2),
                     'purchase' => round($purchase, 2),
                     'expense' => round($expense, 2),
-                    'total' => round($totalOut, 2)
+                    'total' => round($totalOut, 2),
                 ],
-                'balance' => round($runningBalance, 2)
+                'balance' => round($runningBalance, 2),
             ];
 
             $currentDate->addDay();
@@ -150,7 +150,7 @@ class BankTransactionReportController extends Controller
                 'total' => round($dailyTransactions->sum('fund_in') +
                     $dailyTransactions->sum('payment_receive') +
                     $extraIncomes->sum('total_amount') +
-                    $dailyTransactions->sum('refund'), 2)
+                    $dailyTransactions->sum('refund'), 2),
             ],
             'out' => [
                 'fund' => round($dailyTransactions->sum('fund_out'), 2),
@@ -158,8 +158,8 @@ class BankTransactionReportController extends Controller
                 'expense' => round($dailyTransactions->sum('expense'), 2),
                 'total' => round($dailyTransactions->sum('fund_out') +
                     $dailyTransactions->sum('purchase') +
-                    $dailyTransactions->sum('expense'), 2)
-            ]
+                    $dailyTransactions->sum('expense'), 2),
+            ],
         ];
 
         return Inertia::render('Admin/Reports/BankTransactionReport', [
@@ -173,7 +173,6 @@ class BankTransactionReportController extends Controller
             'filters' => $request->all(['month', 'year', 'bank_account_id']),
         ]);
     }
-
 
     public function downloadPdf(Request $request)
     {
@@ -281,15 +280,15 @@ class BankTransactionReportController extends Controller
                     'payment' => round($paymentReceive, 2),
                     'extra' => round($extraIncomeAmount, 2),
                     'refund' => round($refund, 2),
-                    'total' => round($totalIn, 2)
+                    'total' => round($totalIn, 2),
                 ],
                 'out' => [
                     'fund' => round($fundOut, 2),
                     'purchase' => round($purchase, 2),
                     'expense' => round($expense, 2),
-                    'total' => round($totalOut, 2)
+                    'total' => round($totalOut, 2),
                 ],
-                'balance' => round($runningBalance, 2)
+                'balance' => round($runningBalance, 2),
             ];
 
             $currentDate->addDay();
@@ -305,7 +304,7 @@ class BankTransactionReportController extends Controller
                 'total' => round($dailyTransactions->sum('fund_in') +
                     $dailyTransactions->sum('payment_receive') +
                     $extraIncomes->sum('total_amount') +
-                    $dailyTransactions->sum('refund'), 2)
+                    $dailyTransactions->sum('refund'), 2),
             ],
             'out' => [
                 'fund' => round($dailyTransactions->sum('fund_out'), 2),
@@ -313,8 +312,8 @@ class BankTransactionReportController extends Controller
                 'expense' => round($dailyTransactions->sum('expense'), 2),
                 'total' => round($dailyTransactions->sum('fund_out') +
                     $dailyTransactions->sum('purchase') +
-                    $dailyTransactions->sum('expense'), 2)
-            ]
+                    $dailyTransactions->sum('expense'), 2),
+            ],
         ];
 
         $months = [
@@ -329,7 +328,7 @@ class BankTransactionReportController extends Controller
             9 => 'September',
             10 => 'October',
             11 => 'November',
-            12 => 'December'
+            12 => 'December',
         ];
 
         $pdf = PDF::loadView('pdf.bank-transaction-report', [
@@ -347,7 +346,7 @@ class BankTransactionReportController extends Controller
         // Add metadata to the PDF
         $pdf->getDomPDF()->add_info('Title', 'Bank Transaction Report');
         $pdf->getDomPDF()->add_info('Author', 'Your Company Name');
-        $pdf->getDomPDF()->add_info('Subject', 'Bank Transaction Report for ' . $months[$selectedMonth] . ' ' . $selectedYear);
+        $pdf->getDomPDF()->add_info('Subject', 'Bank Transaction Report for '.$months[$selectedMonth].' '.$selectedYear);
 
         // Generate filename
         $filename = sprintf(

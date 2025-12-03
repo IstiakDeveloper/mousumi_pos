@@ -4,14 +4,15 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
-use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class BankAccountController extends Controller
 {
     public function index()
     {
         $bankAccounts = BankAccount::all();
+
         return Inertia::render('Admin/BankAccounts/Index', [
             'bankAccounts' => $bankAccounts,
         ]);
@@ -66,6 +67,7 @@ class BankAccountController extends Controller
     public function destroy(BankAccount $bankAccount)
     {
         $bankAccount->delete();
+
         return redirect()->route('admin.bank-accounts.index')->with('success', 'Bank account deleted successfully.');
     }
 }

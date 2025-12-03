@@ -11,16 +11,18 @@ class Role extends Model
 
     protected $fillable = [
         'name',
-        'short_name',
-        'status'
+        'slug',
+        'permissions',
+        'status',
     ];
 
     protected $casts = [
-        'status' => 'boolean'
+        'status' => 'boolean',
+        'permissions' => 'array',
     ];
 
-    public function products()
+    public function users()
     {
-        return $this->hasMany(Product::class);
+        return $this->hasMany(User::class);
     }
 }

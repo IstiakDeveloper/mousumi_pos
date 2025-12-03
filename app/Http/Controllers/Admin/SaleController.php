@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
-use App\Models\Sale;
 use App\Models\Customer;
 use App\Models\ProductStock;
+use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockMovement;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -25,8 +25,8 @@ class SaleController extends Controller
         // Filter by date range
         if ($request->filled(['start_date', 'end_date'])) {
             $query->whereBetween('created_at', [
-                $request->start_date . ' 00:00:00',
-                $request->end_date . ' 23:59:59'
+                $request->start_date.' 00:00:00',
+                $request->end_date.' 23:59:59',
             ]);
         }
 
@@ -42,7 +42,7 @@ class SaleController extends Controller
 
         // Filter by invoice number
         if ($request->filled('invoice_no')) {
-            $query->where('invoice_no', 'like', '%' . $request->invoice_no . '%');
+            $query->where('invoice_no', 'like', '%'.$request->invoice_no.'%');
         }
 
         // Get sales with pagination
@@ -99,7 +99,7 @@ class SaleController extends Controller
         $sale = Sale::with([
             'customer',
             'saleItems.product',
-            'createdBy'
+            'createdBy',
         ])->findOrFail($id);
 
         return Inertia::render('Admin/Sales/Show', [
@@ -113,7 +113,7 @@ class SaleController extends Controller
                     'phone' => $sale->customer->phone,
                     'address' => $sale->customer->address,
                 ] : null,
-                'items' => $sale->saleItems->map(fn($item) => [
+                'items' => $sale->saleItems->map(fn ($item) => [
                     'product' => [
                         'name' => $item->product->name,
                         'sku' => $item->product->sku,
@@ -134,14 +134,13 @@ class SaleController extends Controller
         ]);
     }
 
-
     public function edit($id)
     {
         try {
             $sale = Sale::with([
                 'customer:id,name,phone,balance,credit_limit',
                 'saleItems.product',
-                'createdBy'
+                'createdBy',
             ])->findOrFail($id);
 
             // Get active customers for selection
@@ -175,7 +174,7 @@ class SaleController extends Controller
                         'balance' => (string) $sale->customer->balance,
                         'credit_limit' => (string) $sale->customer->credit_limit,
                     ] : null,
-                    'items' => $sale->saleItems->map(fn($item) => [
+                    'items' => $sale->saleItems->map(fn ($item) => [
                         'id' => $item->id,
                         'product_id' => $item->product_id,
                         'product' => [
@@ -187,6 +186,8 @@ class SaleController extends Controller
                         'quantity' => (string) $item->quantity,
                         'unit_price' => (string) $item->unit_price,
                         'subtotal' => (string) $item->subtotal,
+                        // Add current available stock for validation
+                        'available_stock' => $this->getCurrentStock($item->product_id) + $item->quantity, // Current stock + what was sold
                     ]),
                     'subtotal' => (string) $sale->subtotal,
                     'discount' => (string) $sale->discount,
@@ -216,7 +217,7 @@ class SaleController extends Controller
                 'subtotal' => 'required|numeric|min:0',
                 'discount' => 'required|numeric|min:0',
                 'total' => 'required|numeric|min:0',
-                'paid' => 'required|numeric|min:0',
+                'paid' => 'required|numeric|min:0|lte:total',
                 'customer_id' => 'nullable|exists:customers,id',
                 'bank_account_id' => 'nullable|exists:bank_accounts,id',
                 'note' => 'nullable|string|max:1000',
@@ -234,8 +235,9 @@ class SaleController extends Controller
 
             // Step 1: Reverse all original stock movements
             foreach ($sale->saleItems as $item) {
-                // Get current stock
+                // Get current stock with row lock to prevent race conditions
                 $currentStock = ProductStock::where('product_id', $item->product_id)
+                    ->lockForUpdate()
                     ->orderBy('id', 'desc')
                     ->first();
 
@@ -248,6 +250,7 @@ class SaleController extends Controller
                     'quantity' => $item->quantity, // positive for reversal
                     'available_quantity' => $afterQuantity,
                     'type' => 'sale_reversal',
+                    'date' => now()->toDateString(),
                     'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
                     'total_cost' => $currentStock ? ($currentStock->unit_cost * $item->quantity) : 0,
                     'created_by' => auth()->id(),
@@ -299,8 +302,9 @@ class SaleController extends Controller
 
             // Step 6: Process new items and check stock
             foreach ($request->items as $item) {
-                // Check stock availability for new quantity
+                // Check stock availability for new quantity with row lock
                 $currentStock = ProductStock::where('product_id', $item['product_id'])
+                    ->lockForUpdate()
                     ->orderBy('id', 'desc')
                     ->first();
 
@@ -327,6 +331,7 @@ class SaleController extends Controller
                     'quantity' => -$item['quantity'], // negative for sales
                     'available_quantity' => $afterQuantity,
                     'type' => 'sale',
+                    'date' => now()->toDateString(),
                     'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
                     'total_cost' => $currentStock ? ($currentStock->unit_cost * $item['quantity']) : 0,
                     'created_by' => auth()->id(),
@@ -389,7 +394,7 @@ class SaleController extends Controller
 
                     $bankAccount->decrement('current_balance', $decreaseAmount);
                 }
-            } else if ($request->paid > 0 && $request->bank_account_id && $originalPaid == 0) {
+            } elseif ($request->paid > 0 && $request->bank_account_id && $originalPaid == 0) {
                 // First time payment
                 $bankAccount = BankAccount::findOrFail($request->bank_account_id);
                 $bankAccount->transactions()->create([
@@ -423,9 +428,11 @@ class SaleController extends Controller
                 ->with('success', 'Sale updated successfully.');
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
+
             return back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
     }
@@ -441,14 +448,14 @@ class SaleController extends Controller
             if ($sale->created_at->diffInDays(now()) > 7) {
                 return response()->json([
                     'success' => false,
-                    'massage' => 'Sales older than 7 days cannot be deleted.' // Changed 'message' to 'massage'
+                    'massage' => 'Sales older than 7 days cannot be deleted.', // Changed 'message' to 'massage'
                 ], 403);
             }
 
             // Restore product stock
             foreach ($sale->saleItems as $item) {
                 $stock = ProductStock::firstOrCreate([
-                    'product_id' => $item->product_id
+                    'product_id' => $item->product_id,
                 ]);
                 $stock->increment('quantity', $item->quantity);
             }
@@ -481,9 +488,10 @@ class SaleController extends Controller
             session()->flash('success', 'Sale deleted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'massage' => 'Error deleting sale: ' . $e->getMessage() // Changed 'message' to 'massage'
+                'massage' => 'Error deleting sale: '.$e->getMessage(), // Changed 'message' to 'massage'
             ], 500);
         }
     }
@@ -495,7 +503,7 @@ class SaleController extends Controller
             'saleItems.product.category', // Include product category relationship
             'customer',
             'createdBy',
-            'bankAccount'
+            'bankAccount',
         ])->findOrFail($id);
 
         // Group items by category
@@ -509,9 +517,8 @@ class SaleController extends Controller
             $categoryTotals[$category] = $items->sum('subtotal');
         }
 
-        $f = new NumberFormatter("en", NumberFormatter::SPELLOUT);
-        $amountInWords = ucfirst($f->format($sale->total)) . " taka only";
-
+        $f = new NumberFormatter('en', NumberFormatter::SPELLOUT);
+        $amountInWords = ucfirst($f->format($sale->total)).' taka only';
 
         $pdf = PDF::loadView('admin.sales.receipt', [
             'sale' => $sale,
@@ -524,12 +531,24 @@ class SaleController extends Controller
                 'phone' => config('app.phone'),
                 'email' => config('app.email'),
                 'logo' => public_path('images/logo.png'),
-            ]
+            ],
         ]);
 
         // Set paper size for 80mm receipt (width: 80mm)
         $pdf->setPaper([0, 0, 226.772, 841.89], 'portrait');
 
         return $pdf->stream("receipt-{$sale->invoice_no}.pdf");
+    }
+
+    /**
+     * Get current available stock for a product
+     */
+    private function getCurrentStock($productId)
+    {
+        $stock = ProductStock::where('product_id', $productId)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        return $stock ? $stock->available_quantity : 0;
     }
 }

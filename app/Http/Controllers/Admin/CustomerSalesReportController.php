@@ -98,6 +98,7 @@ class CustomerSalesReportController extends Controller
     private function getYearsList()
     {
         $currentYear = Carbon::now()->year;
+
         return collect(range($currentYear - 4, $currentYear))->map(function ($year) {
             return [
                 'value' => $year,

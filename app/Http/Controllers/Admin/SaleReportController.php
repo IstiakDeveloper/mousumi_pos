@@ -4,16 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
-use App\Models\BankTransaction;
-use App\Models\Sale;
 use App\Models\Customer;
-use App\Models\Product;
-use App\Models\SalePayment;
+use App\Models\Sale;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class SaleReportController extends Controller
 {
@@ -69,9 +65,9 @@ class SaleReportController extends Controller
                                     'method' => $payment->payment_method,
                                     'bank_name' => optional($payment->bankAccount)->bank_name,
                                     'account_number' => optional($payment->bankAccount)->account_number,
-                                    'transaction_id' => $payment->transaction_id
+                                    'transaction_id' => $payment->transaction_id,
                                 ];
-                            })
+                            }),
                         ];
                     }),
                     'summary' => [
@@ -88,15 +84,16 @@ class SaleReportController extends Controller
                                         ->groupBy('bank_account_id')
                                         ->map(function ($bankPayments) {
                                             $firstPayment = $bankPayments->first();
+
                                             return [
                                                 'bank_name' => $firstPayment->bankAccount->bank_name,
                                                 'account_number' => $firstPayment->bankAccount->account_number,
-                                                'amount' => $bankPayments->sum('amount')
+                                                'amount' => $bankPayments->sum('amount'),
                                             ];
-                                        })
+                                        }),
                                 ];
-                            })
-                    ]
+                            }),
+                    ],
                 ];
             });
 
@@ -117,15 +114,16 @@ class SaleReportController extends Controller
                                     ->groupBy('bank_account_id')
                                     ->map(function ($bankPayments) {
                                         $firstPayment = $bankPayments->first();
+
                                         return [
                                             'bank_name' => $firstPayment->bankAccount->bank_name,
                                             'account_number' => $firstPayment->bankAccount->account_number,
-                                            'amount' => $bankPayments->sum('amount')
+                                            'amount' => $bankPayments->sum('amount'),
                                         ];
-                                    })
+                                    }),
                             ];
-                        })
-                ]
+                        }),
+                ],
             ]);
         }
 
@@ -145,7 +143,7 @@ class SaleReportController extends Controller
                 'total_amount' => $query->sum('total'),
                 'received' => $query->sum('paid'),
                 'due' => $query->sum('due'),
-            ]
+            ],
         ]);
     }
 
@@ -157,7 +155,7 @@ class SaleReportController extends Controller
         $pdf = PDF::loadView('reports.sales-report-pdf', $data);
         $pdf->setPaper('a4', 'landscape');
 
-        return $pdf->download('sales-report-' . now()->format('Y-m-d') . '.pdf');
+        return $pdf->download('sales-report-'.now()->format('Y-m-d').'.pdf');
     }
 
     private function processReportData(Request $request)
@@ -179,7 +177,7 @@ class SaleReportController extends Controller
             'customer',
             'saleItems.product',
             'salePayments.bankAccount',
-            'createdBy'
+            'createdBy',
         ])->when($request->customer_id, function ($q) use ($request) {
             return $q->where('customer_id', $request->customer_id);
         })->when($request->payment_status, function ($q) use ($request) {
@@ -214,11 +212,11 @@ class SaleReportController extends Controller
                                     'method' => $payment->payment_method,
                                     'bank_account' => $payment->bank_account_id ? [
                                         'name' => $payment->bankAccount->bank_name,
-                                        'account' => $payment->bankAccount->account_number
+                                        'account' => $payment->bankAccount->account_number,
                                     ] : null,
-                                    'transaction_id' => $payment->transaction_id
+                                    'transaction_id' => $payment->transaction_id,
                                 ];
-                            })
+                            }),
                         ];
                     })->values(),
                     'summary' => [
@@ -238,15 +236,16 @@ class SaleReportController extends Controller
                                         ->groupBy('bank_account_id')
                                         ->map(function ($bankPayments) {
                                             $firstPayment = $bankPayments->first();
+
                                             return [
                                                 'bank_name' => $firstPayment->bankAccount->bank_name,
                                                 'account_number' => $firstPayment->bankAccount->account_number,
-                                                'amount' => $bankPayments->sum('amount')
+                                                'amount' => $bankPayments->sum('amount'),
                                             ];
-                                        })
+                                        }),
                                 ];
-                            })
-                    ]
+                            }),
+                    ],
                 ];
             })->values();
 
@@ -273,15 +272,16 @@ class SaleReportController extends Controller
                                     ->groupBy('bank_account_id')
                                     ->map(function ($bankPayments) {
                                         $firstPayment = $bankPayments->first();
+
                                         return [
                                             'bank_name' => $firstPayment->bankAccount->bank_name,
                                             'account_number' => $firstPayment->bankAccount->account_number,
-                                            'amount' => $bankPayments->sum('amount')
+                                            'amount' => $bankPayments->sum('amount'),
                                         ];
-                                    })
+                                    }),
                             ];
-                        })
-                ]
+                        }),
+                ],
             ]);
         }
 
@@ -307,21 +307,20 @@ class SaleReportController extends Controller
                                 ->groupBy('bank_account_id')
                                 ->map(function ($bankPayments) {
                                     $firstPayment = $bankPayments->first();
+
                                     return [
                                         'bank_name' => $firstPayment->bankAccount->bank_name,
                                         'account_number' => $firstPayment->bankAccount->account_number,
-                                        'amount' => $bankPayments->sum('amount')
+                                        'amount' => $bankPayments->sum('amount'),
                                     ];
-                                })
+                                }),
                         ];
-                    })
+                    }),
             ],
             'filters' => [
                 'from_date' => $fromDate->format('d M, Y'),
-                'to_date' => $toDate->format('d M, Y')
-            ]
+                'to_date' => $toDate->format('d M, Y'),
+            ],
         ];
     }
 }
-
-

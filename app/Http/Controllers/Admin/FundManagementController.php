@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Fund;
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
-use Inertia\Inertia;
+use App\Models\Fund;
 use DB;
-
+use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class FundManagementController extends Controller
 {
@@ -19,7 +18,7 @@ class FundManagementController extends Controller
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('from_who', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%");
+                        ->orWhere('description', 'like', "%{$search}%");
                 });
             })
             ->when($request->bank_account, function ($query, $bankAccount) {
@@ -65,14 +64,14 @@ class FundManagementController extends Controller
             'amount' => 'required|numeric|min:0',
             'from_who' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'date' => 'required|date'
+            'date' => 'required|date',
         ]);
 
-        DB::transaction(function () use ($validated, $request) {
+        DB::transaction(function () use ($validated) {
             // Create fund record
             $fund = Fund::create([
                 ...$validated,
-                'created_by' => auth()->id()
+                'created_by' => auth()->id(),
             ]);
 
             // Create bank transaction
@@ -82,7 +81,7 @@ class FundManagementController extends Controller
                 'amount' => $validated['amount'],
                 'description' => "Fund {$validated['type']}: {$validated['from_who']}",
                 'date' => $validated['date'],
-                'created_by' => auth()->id()
+                'created_by' => auth()->id(),
             ]);
 
             // Update bank account balance
@@ -115,7 +114,7 @@ class FundManagementController extends Controller
             'amount' => 'required|numeric|min:0',
             'from_who' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'date' => 'required|date'
+            'date' => 'required|date',
         ]);
 
         DB::transaction(function () use ($validated, $fund) {
@@ -135,13 +134,13 @@ class FundManagementController extends Controller
             BankTransaction::where([
                 'bank_account_id' => $fund->getOriginal('bank_account_id'),
                 'amount' => $fund->getOriginal('amount'),
-                'date' => $fund->getOriginal('date')
+                'date' => $fund->getOriginal('date'),
             ])->update([
                 'bank_account_id' => $validated['bank_account_id'],
                 'transaction_type' => $validated['type'],
                 'amount' => $validated['amount'],
                 'description' => "Fund {$validated['type']}: {$validated['from_who']}",
-                'date' => $validated['date']
+                'date' => $validated['date'],
             ]);
 
             // Apply new transaction to bank balance
@@ -174,7 +173,7 @@ class FundManagementController extends Controller
             BankTransaction::where([
                 'bank_account_id' => $fund->bank_account_id,
                 'amount' => $fund->amount,
-                'date' => $fund->date
+                'date' => $fund->date,
             ])->delete();
 
             // Delete fund record

@@ -7,11 +7,11 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\SaleItem;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class ProductStockReportController extends Controller
 {
@@ -49,10 +49,9 @@ class ProductStockReportController extends Controller
                 'to_date' => $toDate->format('Y-m-d'),
             ],
             'reports' => $reportData['data'],
-            'summary' => $reportData['summary']
+            'summary' => $reportData['summary'],
         ]);
     }
-
 
     private function getStockMovements($productId, $fromDate, $toDate)
     {
@@ -69,7 +68,7 @@ class ProductStockReportController extends Controller
                     'available_quantity' => $stock->available_quantity,
                     'unit_cost' => $stock->unit_cost,
                     'total_cost' => $stock->total_cost,
-                    'note' => $stock->note
+                    'note' => $stock->note,
                 ];
             });
 
@@ -86,7 +85,7 @@ class ProductStockReportController extends Controller
                     'available_quantity' => $stock->available_quantity,
                     'unit_cost' => $stock->unit_cost,
                     'total_cost' => abs($stock->total_cost), // Make positive for display
-                    'invoice_no' => "Sale Entry" // You can add sale reference if needed
+                    'invoice_no' => 'Sale Entry', // You can add sale reference if needed
                 ];
             });
 
@@ -137,6 +136,7 @@ class ProductStockReportController extends Controller
                 // Get this month's movements
                 $monthMovements = $movements->filter(function ($movement) use ($monthStart, $monthEnd) {
                     $date = Carbon::parse($movement['date']);
+
                     return $date->between($monthStart, $monthEnd);
                 });
 
@@ -161,7 +161,7 @@ class ProductStockReportController extends Controller
                     'total_out' => $monthStockOuts->sum('quantity'),
                     'closing_stock' => $monthEndStock,
                     'in_value' => $monthStockIns->sum('total_cost'),
-                    'out_value' => $monthStockOuts->sum('total_cost')
+                    'out_value' => $monthStockOuts->sum('total_cost'),
                 ];
 
                 $initialStock = $monthEndStock;
@@ -187,7 +187,7 @@ class ProductStockReportController extends Controller
                 'total_stock_in' => collect($monthlyData)->sum('total_in'),
                 'total_stock_out' => collect($monthlyData)->sum('total_out'),
                 'total_stock_value' => round($currentStock * $weightedAverageCost, 2),
-                'monthly_data' => $monthlyData
+                'monthly_data' => $monthlyData,
             ];
         });
     }
@@ -207,7 +207,7 @@ class ProductStockReportController extends Controller
                         'unit_cost' => round($stock->unit_cost, 2),
                         'total_cost' => round($stock->total_cost, 2),
                         'available_quantity' => round($stock->available_quantity),
-                        'note' => $stock->note
+                        'note' => $stock->note,
                     ];
                 });
 
@@ -225,7 +225,7 @@ class ProductStockReportController extends Controller
                         'invoice_no' => $item->sale->invoice_no,
                         'unit_price' => round($item->unit_price, 2),
                         'total' => round($item->subtotal, 2),
-                        'available_quantity' => round($this->getAvailableQuantityAtTime($item->product_id, $item->sale->created_at))
+                        'available_quantity' => round($this->getAvailableQuantityAtTime($item->product_id, $item->sale->created_at)),
                     ];
                 });
 
@@ -251,7 +251,7 @@ class ProductStockReportController extends Controller
                     'name' => $product->name,
                     'sku' => $product->sku,
                     'category' => $product->category->name,
-                    'unit' => $product->unit->name
+                    'unit' => $product->unit->name,
                 ],
                 'summary' => [
                     'opening_stock' => $openingStock ? round($openingStock->available_quantity) : 0,
@@ -261,10 +261,10 @@ class ProductStockReportController extends Controller
                     'avg_cost' => round($avgCost, 2),
                     'stock_value' => round(($currentStock ? $currentStock->available_quantity : 0) * $avgCost, 2),
                     'sales_value' => round($sales->sum('total'), 2),
-                    'purchase_value' => round($totalPurchaseCost, 2)
+                    'purchase_value' => round($totalPurchaseCost, 2),
                 ],
                 'purchases' => $purchases,
-                'sales' => $sales->sortBy('date')->values()
+                'sales' => $sales->sortBy('date')->values(),
             ];
         });
 
@@ -274,12 +274,12 @@ class ProductStockReportController extends Controller
             'total_sales_quantity' => $reports->sum('summary.total_sold'),
             'total_sales_value' => $reports->sum('summary.sales_value'),
             'total_current_stock' => $reports->sum('summary.current_stock'),
-            'total_stock_value' => $reports->sum('summary.stock_value')
+            'total_stock_value' => $reports->sum('summary.stock_value'),
         ];
 
         return [
             'data' => $reports,
-            'summary' => $totalSummary
+            'summary' => $totalSummary,
         ];
     }
 
@@ -290,10 +290,8 @@ class ProductStockReportController extends Controller
             ->where('created_at', '<=', $date)
             ->orderByDesc('id')
             ->first()
-                ?->available_quantity ?? 0;
+            ?->available_quantity ?? 0;
     }
-
-
 
     public function downloadPdf(Request $request)
     {
@@ -328,13 +326,13 @@ class ProductStockReportController extends Controller
             ],
             'filters' => [
                 'from_date' => $fromDate->format('d M, Y'),
-                'to_date' => $toDate->format('d M, Y')
-            ]
+                'to_date' => $toDate->format('d M, Y'),
+            ],
         ];
 
         $pdf = PDF::loadView('reports.stock-report-pdf', $data);
         $pdf->setPaper('a4', 'landscape');
 
-        return $pdf->download('stock-report-' . now()->format('Y-m-d') . '.pdf');
+        return $pdf->download('stock-report-'.now()->format('Y-m-d').'.pdf');
     }
 }

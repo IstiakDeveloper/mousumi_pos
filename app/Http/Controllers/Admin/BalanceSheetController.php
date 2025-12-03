@@ -3,19 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Fund;
-use App\Models\Sale;
-use App\Models\Expense;
-use App\Models\Product;
-use App\Models\ProductStock;
 use App\Models\BankAccount;
-use App\Models\ExtraIncome;
+use App\Models\Expense;
 use App\Models\ExpenseCategory;
+use App\Models\ExtraIncome;
+use App\Models\Fund;
+use App\Models\Product;
+use App\Models\Sale;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class BalanceSheetController extends Controller
 {
@@ -48,7 +47,7 @@ class BalanceSheetController extends Controller
             'filters' => [
                 'start_date' => $startDate->format('Y-m-d'),
                 'end_date' => $endDate->format('Y-m-d'),
-            ]
+            ],
         ];
 
         return Inertia::render('Admin/Reports/BalanceSheet', $data);
@@ -83,8 +82,8 @@ class BalanceSheetController extends Controller
         // Cost of Goods Sold up to the end date
         $costOfGoodsSold = $this->calculateCostOfGoodsSold(null, $endDate);
 
-        // Use a fixed start date for cumulative calculations
-        $cumulativeStartDate = Carbon::parse('2024-01-01')->startOfDay();
+        // Use the actual first transaction date for cumulative calculations
+        $cumulativeStartDate = Carbon::parse('2024-12-29')->startOfDay();
         $productTotalProfit = Product::getProductAnalysis($cumulativeStartDate, $endDate)['totals']['total_profit'];
 
         // Net Profit calculation
@@ -109,11 +108,10 @@ class BalanceSheetController extends Controller
 
         $customerDue = 0;
 
-
         // 3. Fixed Assets up to the end date
         $fixedAssetsCategory = ExpenseCategory::where('name', 'Fixed Asset')->first();
 
-        //Initial newar karon hocche 555 taka barai dite hobe
+        // Initial newar karon hocche 555 taka barai dite hobe
         $fixedAssetsInitial = $fixedAssetsCategory
             ? Expense::where('expense_category_id', $fixedAssetsCategory->id)
                 ->where('date', '<=', $endDate)
@@ -122,7 +120,8 @@ class BalanceSheetController extends Controller
 
         $fixedAssets = $fixedAssetsInitial - 555;
         // 4. Stock Value up to the end date
-        $cumulativeStartDate = Carbon::parse('2024-01-01')->startOfDay();
+        // Use the actual first transaction date for accurate calculation
+        $cumulativeStartDate = Carbon::parse('2024-12-29')->startOfDay();
         $analysis = Product::getProductAnalysis($cumulativeStartDate, $endDate);
         $stockValue = $analysis['totals']['available_stock_value'];
 
@@ -199,6 +198,8 @@ class BalanceSheetController extends Controller
                 ->where('bank_account_id', $account->id)
                 ->where('date', '<=', $endDate)
                 ->whereNull('deleted_at')
+                ->orderBy('date', 'asc')
+                ->orderBy('id', 'asc')
                 ->get();
 
             foreach ($transactions as $transaction) {
@@ -249,10 +250,9 @@ class BalanceSheetController extends Controller
         $pdf = Pdf::loadView('pdf.balance-sheet', $data);
 
         // Generate filename
-        $filename = 'balance-sheet-' . $startDate->format('Y-m-d') . '-to-' . $endDate->format('Y-m-d') . '.pdf';
+        $filename = 'balance-sheet-'.$startDate->format('Y-m-d').'-to-'.$endDate->format('Y-m-d').'.pdf';
 
         // Download PDF
         return $pdf->download($filename);
     }
-
 }

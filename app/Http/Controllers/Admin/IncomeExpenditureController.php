@@ -3,17 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\ExtraIncomeCategory;
-use App\Models\Sale;
 use App\Models\Expense;
-use App\Models\ExtraIncome;
 use App\Models\ExpenseCategory;
+use App\Models\ExtraIncome;
+use App\Models\ExtraIncomeCategory;
 use App\Models\Product;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class IncomeExpenditureController extends Controller
 {
@@ -46,7 +45,7 @@ class IncomeExpenditureController extends Controller
             'filters' => [
                 'start_date' => $startDate->format('Y-m-d'),
                 'end_date' => $endDate->format('Y-m-d'),
-            ]
+            ],
         ];
 
         return Inertia::render('Admin/Reports/IncomeExpenditure', $data);
@@ -116,7 +115,7 @@ class IncomeExpenditureController extends Controller
                 $extraIncomeCategories->push([
                     'name' => $categoryName,
                     'period' => (float) $periodAmount,
-                    'cumulative' => (float) $cumulative
+                    'cumulative' => (float) $cumulative,
                 ]);
             }
         }
@@ -134,7 +133,7 @@ class IncomeExpenditureController extends Controller
             $extraIncomeCategories->push([
                 'name' => 'Uncategorized',
                 'period' => (float) $uncategorizedPeriod,
-                'cumulative' => (float) $uncategorizedCumulative
+                'cumulative' => (float) $uncategorizedCumulative,
             ]);
         }
 
@@ -207,7 +206,7 @@ class IncomeExpenditureController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'selected_month' => 'nullable|integer|min:1|max:12',
-            'selected_year' => 'nullable|integer'
+            'selected_year' => 'nullable|integer',
         ]);
 
         // Parse the provided dates
@@ -246,18 +245,17 @@ class IncomeExpenditureController extends Controller
                 'end_date' => $endDate->format('Y-m-d'),
                 'year' => $year,
                 'month' => $month,
-                'month_name' => $monthName
-            ]
+                'month_name' => $monthName,
+            ],
         ];
 
         // Generate PDF
         $pdf = Pdf::loadView('pdf.income-expenditure', $data);
 
         // Generate filename with month and year
-        $filename = 'income-expenditure-' . $monthName . '-' . $year . '.pdf';
+        $filename = 'income-expenditure-'.$monthName.'-'.$year.'.pdf';
 
         // Download PDF
         return $pdf->download($filename);
     }
-
 }

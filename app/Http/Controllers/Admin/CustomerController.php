@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\BankAccount;
 use App\Models\Customer;
 use App\Models\Sale;
-use App\Models\BankAccount;
-use App\Models\BankTransaction;
 use App\Models\SalePayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -37,7 +36,7 @@ class CustomerController extends Controller
 
         $customers = $query->latest()
             ->paginate(10)
-            ->through(fn($customer) => [
+            ->through(fn ($customer) => [
                 'id' => $customer->id,
                 'name' => $customer->name,
                 'phone' => $customer->phone,
@@ -46,12 +45,12 @@ class CustomerController extends Controller
                 'total_sales' => $customer->total_sales ?? 0,
                 'total_due' => $customer->total_due ?? 0,
                 'status' => $customer->status,
-                'created_at' => $customer->created_at->format('d M, Y')
+                'created_at' => $customer->created_at->format('d M, Y'),
             ]);
 
         return Inertia::render('Admin/Customers/Index', [
             'customers' => $customers,
-            'filters' => $request->only(['search', 'status'])
+            'filters' => $request->only(['search', 'status']),
         ]);
     }
 
@@ -89,7 +88,7 @@ class CustomerController extends Controller
                         'date' => $payment->created_at->format('d M, Y'),
                         'amount' => number_format($payment->amount, 2, '.', ''),
                         'invoice_no' => $payment->sale->invoice_no,
-                        'bank_account' => optional($payment->bankAccount)->bank_name
+                        'bank_account' => optional($payment->bankAccount)->bank_name,
                     ];
                 });
 
@@ -125,15 +124,17 @@ class CustomerController extends Controller
                     'total_invoices' => $salesSummary->total_invoices ?? 0,
                     'total_amount' => number_format($salesSummary->total_amount ?? 0, 2, '.', ''),
                     'total_paid' => number_format($salesSummary->total_paid ?? 0, 2, '.', ''),
-                    'total_due' => number_format($salesSummary->total_due ?? 0, 2, '.', '')
+                    'total_due' => number_format($salesSummary->total_due ?? 0, 2, '.', ''),
                 ],
-                'bankAccounts' => $bankAccounts
+                'bankAccounts' => $bankAccounts,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error in customer show: ' . $e->getMessage());
+            \Log::error('Error in customer show: '.$e->getMessage());
+
             return back()->with('error', 'An error occurred while loading customer details.');
         }
     }
+
     public function create()
     {
         return Inertia::render('Admin/Customers/Create');
@@ -147,7 +148,7 @@ class CustomerController extends Controller
             'phone' => 'required|string|unique:customers',
             'address' => 'nullable|string',
             'credit_limit' => 'nullable|numeric|min:0',
-            'status' => 'boolean'
+            'status' => 'boolean',
         ]);
 
         // Set default values
@@ -164,7 +165,7 @@ class CustomerController extends Controller
     public function edit(Customer $customer)
     {
         return Inertia::render('Admin/Customers/Edit', [
-            'customer' => $customer
+            'customer' => $customer,
         ]);
     }
 
@@ -172,11 +173,11 @@ class CustomerController extends Controller
     {
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'nullable|email|unique:customers,email,' . $customer->id,
-            'phone' => 'required|string|unique:customers,phone,' . $customer->id,
+            'email' => 'nullable|email|unique:customers,email,'.$customer->id,
+            'phone' => 'required|string|unique:customers,phone,'.$customer->id,
             'address' => 'nullable|string',
             'credit_limit' => 'nullable|numeric|min:0',
-            'status' => 'boolean'
+            'status' => 'boolean',
         ]);
 
         $customer->update($validatedData);
@@ -192,7 +193,7 @@ class CustomerController extends Controller
             'sale_id' => 'required|exists:sales,id',
             'amount' => 'required|numeric|min:0.01',
             'bank_account_id' => 'required|exists:bank_accounts,id',
-            'note' => 'nullable|string'
+            'note' => 'nullable|string',
         ]);
 
         try {
@@ -214,7 +215,7 @@ class CustomerController extends Controller
                 'payment_method' => 'bank', // Always bank
                 'bank_account_id' => $bankAccount->id,
                 'note' => $validatedData['note'],
-                'created_by' => auth()->id()
+                'created_by' => auth()->id(),
             ]);
 
             // Update sale amounts and status
@@ -232,7 +233,7 @@ class CustomerController extends Controller
                 'amount' => $validatedData['amount'],
                 'description' => "Payment received for invoice {$sale->invoice_no} from customer {$customer->name}",
                 'date' => now(),
-                'created_by' => auth()->id()
+                'created_by' => auth()->id(),
             ]);
 
             // Update bank account balance
@@ -244,8 +245,9 @@ class CustomerController extends Controller
             return back()->with('success', 'Payment added successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Payment Error: ' . $e->getMessage());
-            return back()->with('error', 'Error adding payment: ' . $e->getMessage());
+            \Log::error('Payment Error: '.$e->getMessage());
+
+            return back()->with('error', 'Error adding payment: '.$e->getMessage());
         }
     }
 
@@ -257,12 +259,14 @@ class CustomerController extends Controller
         }
 
         $customer->delete();
+
         return back()->with('success', 'Customer deleted successfully.');
     }
 
     public function toggleStatus(Customer $customer)
     {
-        $customer->update(['status' => !$customer->status]);
+        $customer->update(['status' => ! $customer->status]);
+
         return back()->with('success', 'Customer status updated successfully.');
     }
 }

@@ -35,7 +35,9 @@ const form = useForm({
         ...item,
         quantity: String(item.quantity || 1),
         unit_price: String(item.unit_price || 0),
-        subtotal: String(item.subtotal || 0)
+        subtotal: String(item.subtotal || 0),
+        available_stock: item.available_stock || 0, // Track available stock
+        max_allowed: item.available_stock || 0 // Maximum quantity allowed
     })) || [],
     customer_id: props.sale.customer_id || '',
     subtotal: String(props.sale.subtotal || 0),
@@ -125,8 +127,16 @@ function addProduct(product) {
     const existingItem = form.items.find(item => item.product_id === product.id)
 
     if (existingItem) {
-        existingItem.quantity = String(parseFloat(existingItem.quantity) + 1)
-        existingItem.subtotal = String((parseFloat(existingItem.quantity) * parseFloat(existingItem.unit_price)).toFixed(2))
+        const newQty = parseFloat(existingItem.quantity) + 1
+
+        // Check stock limit
+        if (newQty > existingItem.max_allowed) {
+            alert(`⚠️ Only ${existingItem.max_allowed} units available for ${existingItem.product.name}`)
+            return
+        }
+
+        existingItem.quantity = String(newQty)
+        existingItem.subtotal = String((newQty * parseFloat(existingItem.unit_price)).toFixed(2))
     } else {
         const sellingPrice = parseFloat(product.selling_price || 0)
         form.items.push({
@@ -139,7 +149,9 @@ function addProduct(product) {
             },
             quantity: "1",
             unit_price: String(sellingPrice),
-            subtotal: String(sellingPrice.toFixed(2))
+            subtotal: String(sellingPrice.toFixed(2)),
+            available_stock: product.current_stock || 0,
+            max_allowed: product.current_stock || 0
         })
     }
 
@@ -156,6 +168,16 @@ function removeItem(index) {
 function updateQuantity(index, value) {
     const item = form.items[index]
     const quantity = Math.max(1, parseInt(value) || 1)
+
+    // Check stock limit
+    if (quantity > item.max_allowed) {
+        alert(`⚠️ Only ${item.max_allowed} units available for ${item.product.name}`)
+        item.quantity = String(item.max_allowed)
+        item.subtotal = String((item.max_allowed * parseFloat(item.unit_price)).toFixed(2))
+        updateTotals()
+        return
+    }
+
     item.quantity = String(quantity)
     item.subtotal = String((quantity * parseFloat(item.unit_price)).toFixed(2))
     updateTotals()
@@ -360,12 +382,21 @@ onMounted(() => {
                                             <td class="px-6 py-4">
                                                 <div class="text-sm font-medium text-gray-900">{{ item.product.name }}
                                                 </div>
-                                                <div class="text-sm text-gray-500">SKU: {{ item.product.sku }}</div>
+                                                <div class="text-sm text-gray-500">
+                                                    SKU: {{ item.product.sku }} |
+                                                    <span :class="item.max_allowed > 10 ? 'text-green-600' : 'text-orange-600'">
+                                                        Available: {{ item.max_allowed }}
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td class="px-6 py-4 text-center">
                                                 <TextInput type="number" :model-value="item.quantity"
                                                     @input="updateQuantity(index, $event.target.value)"
-                                                    class="w-20 text-center border-gray-300 rounded" min="1" />
+                                                    class="w-20 text-center border-gray-300 rounded"
+                                                    min="1" :max="item.max_allowed" />
+                                                <div class="text-xs text-gray-500 mt-1">
+                                                    Max: {{ item.max_allowed }}
+                                                </div>
                                             </td>
                                             <td class="px-6 py-4 text-center">
                                                 <TextInput type="number" :model-value="item.unit_price"

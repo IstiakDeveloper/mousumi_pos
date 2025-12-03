@@ -6,8 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class CategoryController extends Controller
@@ -24,7 +22,7 @@ class CategoryController extends Controller
 
         return Inertia::render('Admin/Categories/Index', [
             'categories' => $categories,
-            'filters' => $request->only(['search'])
+            'filters' => $request->only(['search']),
         ]);
     }
 
@@ -33,7 +31,7 @@ class CategoryController extends Controller
         $parentCategories = Category::select('id', 'name')->get();
 
         return Inertia::render('Admin/Categories/Create', [
-            'parentCategories' => $parentCategories
+            'parentCategories' => $parentCategories,
         ]);
     }
 
@@ -61,7 +59,7 @@ class CategoryController extends Controller
 
         return Inertia::render('Admin/Categories/Edit', [
             'category' => $category,
-            'parentCategories' => $parentCategories
+            'parentCategories' => $parentCategories,
         ]);
     }
 

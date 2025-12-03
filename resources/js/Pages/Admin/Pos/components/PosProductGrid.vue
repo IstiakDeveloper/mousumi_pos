@@ -11,10 +11,10 @@
              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 p-4">
             <div v-for="product in products"
                 :key="product.id"
-                @click="$emit('add-to-cart', product)"
+                @click="product.stock > 0 ? $emit('add-to-cart', product) : showOutOfStockAlert(product)"
                 :class="[
-                    'group cursor-pointer transform transition-all duration-200',
-                    product.stock <= 0 ? 'opacity-60 cursor-not-allowed' : 'hover:scale-102'
+                    'group transform transition-all duration-200',
+                    product.stock <= 0 ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:scale-102'
                 ]"
             >
                 <div class="bg-white dark:bg-gray-700 rounded-xl shadow-sm overflow-hidden
@@ -100,6 +100,10 @@ const props = defineProps({
 })
 
 defineEmits(['add-to-cart'])
+
+const showOutOfStockAlert = (product) => {
+    alert(`❌ ${product.name} is out of stock!`)
+}
 
 const getImageUrl = (path) => {
     return path ? `/storage/${path}` : null

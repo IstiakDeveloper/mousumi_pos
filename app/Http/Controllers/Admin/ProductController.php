@@ -5,25 +5,24 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
-use App\Models\Product;
-use App\Models\Category;
 use App\Models\Brand;
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductStock;
 use App\Models\StockMovement;
 use App\Models\Unit;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\File;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class ProductController extends Controller
 {
-
     public function index(Request $request)
     {
         $products = Product::query()
@@ -91,54 +90,13 @@ class ProductController extends Controller
             })
             ->latest()
             ->paginate(10)
-            ->through(function ($product) {
-                // Calculate weighted average cost
-                $averageUnitCost = $product->total_purchased > 0
-                    ? bcdiv($product->total_purchase_value, $product->total_purchased, 6)
-                    : $product->cost_price;
-
-                // Calculate current stock value
-                $currentStockValue = bcmul($product->available_quantity ?? 0, $averageUnitCost, 6);
-
-                return [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'sku' => $product->sku,
-                    'barcode' => $product->barcode,
-                    'category' => $product->category ? [
-                        'id' => $product->category->id,
-                        'name' => $product->category->name
-                    ] : null,
-                    'brand' => $product->brand ? [
-                        'id' => $product->brand->id,
-                        'name' => $product->brand->name
-                    ] : null,
-                    'unit' => $product->unit ? [
-                        'id' => $product->unit->id,
-                        'name' => $product->unit->name
-                    ] : null,
-                    'cost_price' => round($averageUnitCost, 2),
-                    'selling_price' => $product->selling_price,
-                    'alert_quantity' => $product->alert_quantity,
-                    'available_quantity' => $product->available_quantity ?? 0,
-                    'total_purchased' => $product->total_purchased,
-                    'current_stock_value' => round($currentStockValue, 2),
-                    'status' => $product->status,
-                    'stock_status' => $product->stock_status,
-                    'images' => $product->images->map(function ($image) {
-                        return [
-                            'image' => $image->image,
-                            'is_primary' => $image->is_primary
-                        ];
-                    }),
-                    'created_at' => $product->created_at
-                ];
-            })
-            ->withQueryString();
+            ->appends($request->query());
 
         return Inertia::render('Admin/Products/Index', [
             'products' => $products,
-            'filters' => $request->only(['search', 'category_id', 'brand_id', 'status'])
+            'categories' => Category::select('id', 'name')->orderBy('name')->get(),
+            'brands' => Brand::select('id', 'name')->orderBy('name')->get(),
+            'filters' => $request->only(['search', 'category_id', 'brand_id', 'status']),
         ]);
     }
 
@@ -160,7 +118,7 @@ class ProductController extends Controller
         return Inertia::render('Admin/Products/Create', [
             'categories' => Category::active()->get(['id', 'name']),
             'brands' => Brand::active()->get(['id', 'name']),
-            'units' => Unit::active()->get(['id', 'name', 'short_name'])
+            'units' => Unit::active()->get(['id', 'name', 'short_name']),
         ]);
     }
 
@@ -183,15 +141,15 @@ class ProductController extends Controller
                 'nullable',
                 function ($attribute, $value, $fail) {
                     // Manual file validation
-                    if (!is_file($value)) {
+                    if (! is_file($value)) {
                         $fail('Invalid file upload.');
                     }
 
                     // Check file extension
                     $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
                     $extension = strtolower($value->getClientOriginalExtension());
-                    if (!in_array($extension, $allowedExtensions)) {
-                        $fail('Invalid image type. Allowed types: ' . implode(', ', $allowedExtensions));
+                    if (! in_array($extension, $allowedExtensions)) {
+                        $fail('Invalid image type. Allowed types: '.implode(', ', $allowedExtensions));
                     }
 
                     // Check file size (2MB = 2048 KB)
@@ -199,9 +157,9 @@ class ProductController extends Controller
                     if ($value->getSize() > $maxSize * 1024) {
                         $fail("Image cannot be larger than {$maxSize}KB.");
                     }
-                }
+                },
             ],
-            'primary_image_index' => 'required|integer|min:0'
+            'primary_image_index' => 'required|integer|min:0',
         ]);
 
         $validated['slug'] = Str::slug($request->name);
@@ -214,11 +172,11 @@ class ProductController extends Controller
 
             foreach ($images as $index => $image) {
                 // Generate a unique filename
-                $filename = uniqid() . '.' . $image->getClientOriginalExtension();
+                $filename = uniqid().'.'.$image->getClientOriginalExtension();
 
                 // Ensure products directory exists
                 $uploadDir = public_path('storage/products');
-                if (!File::exists($uploadDir)) {
+                if (! File::exists($uploadDir)) {
                     File::makeDirectory($uploadDir, 0755, true);
                 }
 
@@ -227,9 +185,9 @@ class ProductController extends Controller
 
                 // Create the database entry with the relative path
                 $product->images()->create([
-                    'image' => 'products/' . $filename,
+                    'image' => 'products/'.$filename,
                     'is_primary' => $index === $primaryIndex,
-                    'sort_order' => $index
+                    'sort_order' => $index,
                 ]);
             }
         }
@@ -243,7 +201,7 @@ class ProductController extends Controller
         $product->load(['category', 'brand', 'unit', 'images']);
 
         return Inertia::render('Admin/Products/Show', [
-            'product' => $product
+            'product' => $product,
         ]);
     }
 
@@ -255,7 +213,7 @@ class ProductController extends Controller
             'product' => $product,
             'categories' => Category::active()->get(['id', 'name']),
             'brands' => Brand::active()->get(['id', 'name']),
-            'units' => Unit::active()->get(['id', 'name', 'short_name'])
+            'units' => Unit::active()->get(['id', 'name', 'short_name']),
         ]);
     }
 
@@ -263,8 +221,8 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'sku' => 'required|string|unique:products,sku,' . $product->id,
-            'barcode' => 'nullable|string|unique:products,barcode,' . $product->id,
+            'sku' => 'required|string|unique:products,sku,'.$product->id,
+            'barcode' => 'nullable|string|unique:products,barcode,'.$product->id,
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'unit_id' => 'required|exists:units,id',
@@ -278,15 +236,15 @@ class ProductController extends Controller
                 'nullable',
                 function ($attribute, $value, $fail) {
                     // Manual file validation
-                    if (!is_file($value)) {
+                    if (! is_file($value)) {
                         $fail('Invalid file upload.');
                     }
 
                     // Check file extension
                     $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
                     $extension = strtolower($value->getClientOriginalExtension());
-                    if (!in_array($extension, $allowedExtensions)) {
-                        $fail('Invalid image type. Allowed types: ' . implode(', ', $allowedExtensions));
+                    if (! in_array($extension, $allowedExtensions)) {
+                        $fail('Invalid image type. Allowed types: '.implode(', ', $allowedExtensions));
                     }
 
                     // Check file size (2MB = 2048 KB)
@@ -294,10 +252,10 @@ class ProductController extends Controller
                     if ($value->getSize() > $maxSize * 1024) {
                         $fail("Image cannot be larger than {$maxSize}KB.");
                     }
-                }
+                },
             ],
             'primary_image_index' => 'nullable|integer',
-            'primary_image_id' => 'nullable|exists:product_images,id'
+            'primary_image_id' => 'nullable|exists:product_images,id',
         ]);
 
         // Add slug
@@ -321,22 +279,22 @@ class ProductController extends Controller
             $primaryIndex = $request->input('primary_image_index');
 
             // If no primary image exists and primary_image_index refers to a new image
-            $setPrimaryForNew = !$request->has('primary_image_id') &&
+            $setPrimaryForNew = ! $request->has('primary_image_id') &&
                 is_numeric($primaryIndex) &&
                 $primaryIndex < $newImageCount;
 
             foreach ($request->file('images') as $index => $image) {
                 // Generate a unique filename
-                $filename = uniqid() . '.' . $image->getClientOriginalExtension();
+                $filename = uniqid().'.'.$image->getClientOriginalExtension();
 
                 // Move the file manually to the public storage
                 $path = $image->move(public_path('storage/products'), $filename);
 
                 // Create the database entry with the relative path
                 $product->images()->create([
-                    'image' => 'products/' . $filename,
+                    'image' => 'products/'.$filename,
                     'is_primary' => $setPrimaryForNew && $index == $primaryIndex,
-                    'sort_order' => $index
+                    'sort_order' => $index,
                 ]);
             }
         }
@@ -362,7 +320,7 @@ class ProductController extends Controller
                 // Find the original bank transaction
                 $bankTransaction = BankTransaction::where([
                     'transaction_type' => 'out',
-                    'amount' => $stock->total_cost
+                    'amount' => $stock->total_cost,
                 ])
                     ->where('created_at', '>=', $stock->created_at->startOfDay())
                     ->where('created_at', '<=', $stock->created_at->endOfDay())
@@ -370,7 +328,7 @@ class ProductController extends Controller
 
                 if ($bankTransaction) {
                     $bankAccountId = $bankTransaction->bank_account_id;
-                    if (!isset($bankRefunds[$bankAccountId])) {
+                    if (! isset($bankRefunds[$bankAccountId])) {
                         $bankRefunds[$bankAccountId] = 0;
                     }
                     $bankRefunds[$bankAccountId] = bcadd($bankRefunds[$bankAccountId], $stock->total_cost, 4);
@@ -388,7 +346,7 @@ class ProductController extends Controller
                         'amount' => $totalRefund,
                         'description' => "Total refund for deleted product ID: {$product->id}",
                         'date' => now(),
-                        'created_by' => auth()->id()
+                        'created_by' => Auth::id(),
                     ]);
 
                     // Update bank balance
@@ -419,13 +377,13 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            \Log::error('Product deletion error', [
+            Log::error('Product deletion error', [
                 'product_id' => $product->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return redirect()->back()
-                ->with('error', 'Error deleting product: ' . $e->getMessage());
+                ->with('error', 'Error deleting product: '.$e->getMessage());
         }
     }
 
@@ -436,6 +394,7 @@ class ProductController extends Controller
 
         return response()->json(['success' => true]);
     }
+
     public function downloadPdf()
     {
         $products = Product::with(['category', 'brand', 'unit', 'stocks'])
@@ -463,7 +422,7 @@ class ProductController extends Controller
             });
 
         return Inertia::render('Admin/Products/Report', [
-            'products' => $products
+            'products' => $products,
         ]);
     }
 }
