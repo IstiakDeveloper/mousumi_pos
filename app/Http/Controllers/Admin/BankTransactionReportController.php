@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
-use App\Models\BankTransaction;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -31,12 +30,16 @@ class BankTransactionReportController extends Controller
         // Get previous month's last transaction to get the closing balance
         $previousMonthEnd = Carbon::create($selectedYear, $selectedMonth)->subDay();
 
-        $previousMonthBalance = BankTransaction::withTrashed()
-            ->where('bank_account_id', $selectedBankAccount)
-            ->where('date', '<=', $previousMonthEnd)
-            ->orderBy('date', 'desc')
-            ->orderBy('id', 'desc')
-            ->first()?->running_balance ?? $selectedAccount->opening_balance;
+        // Calculate previous month balance manually (excluding soft deleted transactions)
+        $previousMonthBalance = $selectedAccount->opening_balance +
+            DB::table('bank_transactions')
+                ->where('bank_account_id', $selectedBankAccount)
+                ->where('date', '<=', $previousMonthEnd)
+                ->whereNull('deleted_at')
+                ->sum(DB::raw('CASE
+                    WHEN transaction_type = "in" THEN amount
+                    ELSE -amount
+                END'));
 
         // Get all dates in the selected month
         $startOfMonth = Carbon::create($selectedYear, $selectedMonth, 1);
@@ -189,12 +192,16 @@ class BankTransactionReportController extends Controller
         // Get previous month's last transaction to get the closing balance
         $previousMonthEnd = Carbon::create($selectedYear, $selectedMonth, 1)->subDay();
 
-        $previousMonthBalance = BankTransaction::withTrashed()
-            ->where('bank_account_id', $selectedBankAccount)
-            ->where('date', '<=', $previousMonthEnd)
-            ->orderBy('date', 'desc')
-            ->orderBy('id', 'desc')
-            ->first()?->running_balance ?? $selectedAccount->opening_balance;
+        // Calculate previous month balance manually (excluding soft deleted transactions)
+        $previousMonthBalance = $selectedAccount->opening_balance +
+            DB::table('bank_transactions')
+                ->where('bank_account_id', $selectedBankAccount)
+                ->where('date', '<=', $previousMonthEnd)
+                ->whereNull('deleted_at')
+                ->sum(DB::raw('CASE
+                    WHEN transaction_type = "in" THEN amount
+                    ELSE -amount
+                END'));
 
         // Get all dates in the selected month
         $startOfMonth = Carbon::create($selectedYear, $selectedMonth, 1);

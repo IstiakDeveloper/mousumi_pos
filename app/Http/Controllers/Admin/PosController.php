@@ -14,6 +14,7 @@ use App\Models\StockMovement;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use NumberFormatter;
 
@@ -116,7 +117,7 @@ class PosController extends Controller
 
     public function store(Request $request)
     {
-        \Log::info('POS Store Request: '.json_encode($request->all()));
+        Log::info('POS Store Request: '.json_encode($request->all()));
 
         try {
             $request->validate([
@@ -132,10 +133,10 @@ class PosController extends Controller
                 'customer_id' => 'nullable|exists:customers,id',
             ]);
 
-            \Log::info('Validation passed');
+            Log::info('Validation passed');
 
             DB::beginTransaction();
-            \Log::info('Transaction started');
+            Log::info('Transaction started');
 
             // Generate a unique invoice number
             $date = date('Ymd');
@@ -164,14 +165,14 @@ class PosController extends Controller
                 'due' => $request->total - $request->paid,
                 'payment_status' => $request->paid >= $request->total ? 'paid' : ($request->paid > 0 ? 'partial' : 'due'),
                 'note' => $request->note ?? null,
-                'created_by' => auth()->id(),
+                'created_by' => auth()->id() ?? null,
             ]);
 
-            \Log::info('Sale created with ID: '.$sale->id);
+            Log::info('Sale created with ID: '.$sale->id);
 
             // Process each item
             foreach ($request->items as $index => $item) {
-                \Log::info("Processing item {$index}: ".json_encode($item));
+                Log::info("Processing item {$index}: ".json_encode($item));
 
                 // Check stock before attempting to create the sale item
                 // Use lockForUpdate to prevent race conditions
@@ -183,7 +184,7 @@ class PosController extends Controller
                 $beforeQuantity = $currentStock ? $currentStock->available_quantity : 0;
                 $afterQuantity = $beforeQuantity - $item['quantity'];
 
-                \Log::info("Stock check: before={$beforeQuantity}, after={$afterQuantity}");
+                Log::info("Stock check: before={$beforeQuantity}, after={$afterQuantity}");
 
                 // Check if stock is available
                 if ($afterQuantity < 0) {
@@ -199,7 +200,7 @@ class PosController extends Controller
                     'subtotal' => $item['quantity'] * $item['unit_price'],
                 ]);
 
-                \Log::info("Sale item created for product ID: {$item['product_id']}");
+                Log::info("Sale item created for product ID: {$item['product_id']}");
 
                 // Create new stock record
                 ProductStock::create([
@@ -207,13 +208,12 @@ class PosController extends Controller
                     'quantity' => -$item['quantity'], // negative for sales
                     'available_quantity' => $afterQuantity,
                     'type' => 'sale',
-                    'date' => now()->toDateString(),
                     'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
                     'total_cost' => $currentStock ? ($currentStock->unit_cost * $item['quantity']) : 0,
-                    'created_by' => auth()->id(),
+                    'created_by' => auth()->id() ?? null,
                 ]);
 
-                \Log::info("Product stock updated for product ID: {$item['product_id']}");
+                Log::info("Product stock updated for product ID: {$item['product_id']}");
 
                 // Record stock movement
                 StockMovement::create([
@@ -224,10 +224,10 @@ class PosController extends Controller
                     'before_quantity' => $beforeQuantity,
                     'after_quantity' => $afterQuantity,
                     'type' => 'out',
-                    'created_by' => auth()->id(),
+                    'created_by' => auth()->id() ?? null,
                 ]);
 
-                \Log::info("Stock movement recorded for product ID: {$item['product_id']}");
+                Log::info("Stock movement recorded for product ID: {$item['product_id']}");
             }
 
             // Update customer balance if needed
@@ -235,7 +235,7 @@ class PosController extends Controller
                 $customer = Customer::find($request->customer_id);
 
                 if ($customer) {
-                    \Log::info("Checking customer credit limit: current balance={$customer->balance}, credit limit={$customer->credit_limit}, new due={$sale->due}");
+                    Log::info("Checking customer credit limit: current balance={$customer->balance}, credit limit={$customer->credit_limit}, new due={$sale->due}");
 
                     // Check credit limit
                     $newBalance = $customer->balance + $sale->due;
@@ -243,14 +243,14 @@ class PosController extends Controller
                         throw new \Exception("This sale would exceed the customer's credit limit. Current balance: {$customer->balance}, Credit limit: {$customer->credit_limit}, New due: {$sale->due}");
                     }
 
-                    $customer->increment('balance', $sale->due);
-                    \Log::info("Customer balance updated: {$newBalance}");
+                    $customer->increment('balance', (float) $sale->due);
+                    Log::info("Customer balance updated: {$newBalance}");
                 }
             }
 
             // Handle payment if any
             if ($request->paid > 0) {
-                \Log::info("Processing payment of {$request->paid} to bank account ID: {$request->bank_account_id}");
+                Log::info("Processing payment of {$request->paid} to bank account ID: {$request->bank_account_id}");
 
                 $bankAccount = BankAccount::findOrFail($request->bank_account_id);
                 $bankAccount->transactions()->create([
@@ -258,25 +258,25 @@ class PosController extends Controller
                     'amount' => $request->paid,
                     'date' => now(),
                     'description' => "Payment received for invoice {$sale->invoice_no}",
-                    'created_by' => auth()->id(),
+                    'created_by' => auth()->id() ?? null,
                 ]);
 
                 $bankAccount->increment('current_balance', $request->paid);
-                \Log::info('Bank account balance updated');
+                Log::info('Bank account balance updated');
             }
 
             DB::commit();
-            \Log::info("Transaction committed successfully with invoice number: {$invoiceNumber}");
+            Log::info("Transaction committed successfully with invoice number: {$invoiceNumber}");
 
             return to_route('admin.pos.index')->with('sale', $sale);
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
-            \Log::error('POS Validation Error: '.json_encode($e->errors()));
+            Log::error('POS Validation Error: '.json_encode($e->errors()));
 
             return back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('POS Error: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine());
+            Log::error('POS Error: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine());
 
             return back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
@@ -303,7 +303,7 @@ class PosController extends Controller
         }
 
         $f = new NumberFormatter('en', NumberFormatter::SPELLOUT);
-        $amountInWords = ucfirst($f->format($sale->total)).' taka only';
+        $amountInWords = ucfirst($f->format((float) $sale->total)).' taka only';
 
         $pdf = Pdf::loadView('pdf.receipt', [
             'sale' => $sale,

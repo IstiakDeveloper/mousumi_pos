@@ -27,11 +27,13 @@ class BankReportController extends Controller
         // Get purchases for this product
         $purchases = BankTransaction::where('transaction_type', 'out')
             ->where('description', 'LIKE', "Stock purchase for product ID: $productId%")
+            ->whereNull('deleted_at')
             ->sum('amount');
 
         // Get refunds for this product
         $refunds = BankTransaction::where('transaction_type', 'in')
             ->where('description', 'LIKE', "Total refund for deleted product ID: $productId%")
+            ->whereNull('deleted_at')
             ->sum('amount');
 
         // Calculate net amount
@@ -104,6 +106,7 @@ class BankReportController extends Controller
         return BankTransaction::where('transaction_type', 'in')
             ->where('description', 'like', 'Payment received for invoice%')
             ->whereBetween('date', [$fromDate, $toDate])
+            ->whereNull('deleted_at')
             ->sum('amount');
     }
 
@@ -127,21 +130,30 @@ class BankReportController extends Controller
         $accounts = $query->get();
 
         $reports = $accounts->map(function ($account) use ($fromDate, $toDate) {
-            // Get previous balance (before from_date)
+            // Get previous balance (before from_date, excluding rounding adjustments)
             $previousBalance = $account->opening_balance +
                 DB::table('bank_transactions')
                     ->where('bank_account_id', $account->id)
                     ->where('date', '<', $fromDate)
                     ->whereNull('deleted_at')
+                    ->where(function ($query) {
+                        $query->whereNull('description')
+                            ->orWhere('description', 'NOT LIKE', '%Rounding Adjustment%');
+                    })
                     ->sum(DB::raw('CASE
                         WHEN transaction_type = "in" THEN amount
                         ELSE -amount
                     END'));
 
-            // Get all transactions for the period
+            // Get all transactions for the period (excluding rounding adjustments)
             $transactions = BankTransaction::with('createdBy')
                 ->where('bank_account_id', $account->id)
                 ->whereBetween('date', [$fromDate, $toDate])
+                ->whereNull('deleted_at')
+                ->where(function ($query) {
+                    $query->whereNull('description')
+                        ->orWhere('description', 'NOT LIKE', '%Rounding Adjustment%');
+                })
                 ->orderBy('date')
                 ->orderBy('id')
                 ->get()
@@ -179,6 +191,21 @@ class BankReportController extends Controller
                 ];
             })->values();
 
+            // Calculate balance at end of period (toDate, excluding rounding adjustments)
+            $balanceAtEndDate = $account->opening_balance +
+                DB::table('bank_transactions')
+                    ->where('bank_account_id', $account->id)
+                    ->where('date', '<=', $toDate)
+                    ->whereNull('deleted_at')
+                    ->where(function ($query) {
+                        $query->whereNull('description')
+                            ->orWhere('description', 'NOT LIKE', '%Rounding Adjustment%');
+                    })
+                    ->sum(DB::raw('CASE
+                        WHEN transaction_type = "in" THEN amount
+                        ELSE -amount
+                    END'));
+
             return [
                 'account' => [
                     'id' => $account->id,
@@ -188,25 +215,56 @@ class BankReportController extends Controller
                 ],
                 'opening_balance' => $account->opening_balance,
                 'previous_balance' => $previousBalance,
-                'current_balance' => $account->current_balance,
+                'current_balance' => $balanceAtEndDate,
                 'monthly_summary' => $monthlySummary,
                 'transactions' => $transactions,
             ];
         });
 
+        // Calculate total balance at end date for all accounts (excluding rounding adjustments)
+        $totalBalanceAtEndDate = $accounts->sum(function ($account) use ($toDate) {
+            return $account->opening_balance +
+                DB::table('bank_transactions')
+                    ->where('bank_account_id', $account->id)
+                    ->where('date', '<=', $toDate)
+                    ->whereNull('deleted_at')
+                    ->where(function ($query) {
+                        $query->whereNull('description')
+                            ->orWhere('description', 'NOT LIKE', '%Rounding Adjustment%');
+                    })
+                    ->sum(DB::raw('CASE
+                        WHEN transaction_type = "in" THEN amount
+                        ELSE -amount
+                    END'));
+        });
+
         $summary = [
             'total_accounts' => $accounts->count(),
-            'total_balance' => $accounts->sum('current_balance'),
+            'total_balance' => $totalBalanceAtEndDate,
             'total_sales_from_invoices' => $this->getTotalSalesFromInvoices($fromDate, $toDate),
             'total_inflows' => BankTransaction::where('transaction_type', 'in')
                 ->whereBetween('date', [$fromDate, $toDate])
                 ->whereNull('deleted_at')
+                ->where(function ($query) {
+                    $query->whereNull('description')
+                        ->orWhere('description', 'NOT LIKE', '%Rounding Adjustment%');
+                })
                 ->sum('amount'),
             'total_outflows' => BankTransaction::where('transaction_type', 'out')
                 ->whereBetween('date', [$fromDate, $toDate])
                 ->whereNull('deleted_at')
+                ->where(function ($query) {
+                    $query->whereNull('description')
+                        ->orWhere('description', 'NOT LIKE', '%Rounding Adjustment%');
+                })
                 ->sum('amount'),
-            'total_transactions' => BankTransaction::whereBetween('date', [$fromDate, $toDate])->whereNull('deleted_at')->count(),
+            'total_transactions' => BankTransaction::whereBetween('date', [$fromDate, $toDate])
+                ->whereNull('deleted_at')
+                ->where(function ($query) {
+                    $query->whereNull('description')
+                        ->orWhere('description', 'NOT LIKE', '%Rounding Adjustment%');
+                })
+                ->count(),
 
             // Add these new fields
             'total_product_purchases' => BankTransaction::where('transaction_type', 'out')
@@ -267,11 +325,20 @@ class BankReportController extends Controller
                     ->where('bank_account_id', $account->id)
                     ->where('date', '<', $fromDate)
                     ->whereNull('deleted_at')
+                    ->where(function ($query) {
+                        $query->whereNull('description')
+                            ->orWhere('description', 'NOT LIKE', '%Rounding Adjustment%');
+                    })
                     ->sum(DB::raw('CASE WHEN transaction_type = "in" THEN amount ELSE -amount END'));
 
-            // Get all transactions with details
+            // Get all transactions with details (excluding rounding adjustments)
             $allTransactions = BankTransaction::where('bank_account_id', $account->id)
                 ->whereBetween('date', [$fromDate, $toDate])
+                ->whereNull('deleted_at')
+                ->where(function ($query) {
+                    $query->whereNull('description')
+                        ->orWhere('description', 'NOT LIKE', '%Rounding Adjustment%');
+                })
                 ->orderBy('date')
                 ->get();
 
@@ -329,10 +396,23 @@ class BankReportController extends Controller
             ];
         });
 
+        // Calculate total balance at end date for summary
+        $totalBalanceAtEndDate = $accounts->sum(function ($account) use ($toDate) {
+            return $account->opening_balance +
+                DB::table('bank_transactions')
+                    ->where('bank_account_id', $account->id)
+                    ->where('date', '<=', $toDate)
+                    ->whereNull('deleted_at')
+                    ->sum(DB::raw('CASE
+                        WHEN transaction_type = "in" THEN amount
+                        ELSE -amount
+                    END'));
+        });
+
         // Calculate summary
         $summary = [
             'total_accounts' => $accounts->count(),
-            'total_balance' => $accounts->sum('current_balance'),
+            'total_balance' => $totalBalanceAtEndDate,
             'total_inflows' => BankTransaction::where('transaction_type', 'in')
                 ->whereBetween('date', [$fromDate, $toDate])
                 ->whereNull('deleted_at')

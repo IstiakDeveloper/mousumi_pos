@@ -238,13 +238,17 @@
                             Reset
                         </button>
 
-                        <button @click="processSale" :disabled="!canProcessSale"
+                        <button @click="processSale" :disabled="!canProcessSale || processing"
                             class="flex items-center justify-center w-full py-2 text-xs font-semibold text-white transition-all duration-200 rounded shadow bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed">
-                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg v-if="!processing" class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                       d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
-                            Complete Sale
+                            <svg v-else class="w-4 h-4 mr-1 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            {{ processing ? 'Processing...' : 'Complete Sale' }}
                         </button>
                     </div>
                 </div>
@@ -283,6 +287,7 @@ const searchResults = ref([])
 const cartItems = ref([])
 const selectedCategory = ref(null)
 const loading = ref(false)
+const processing = ref(false)
 const showSuccessModal = ref(false)
 const lastSale = ref(null)
 
@@ -461,7 +466,9 @@ const resetCart = () => {
 }
 
 const processSale = () => {
-    if (!canProcessSale.value) return
+    if (!canProcessSale.value || processing.value) return
+
+    processing.value = true
 
     const saleData = {
         customer_id: selectedCustomer.value,
@@ -478,13 +485,23 @@ const processSale = () => {
     router.post(route('admin.pos.store'), saleData, {
         preserveScroll: true,
         onSuccess: (page) => {
+            processing.value = false
             if (page.props.flash?.sale) {
-                lastSale.value = page.props.flash.sale;
-                new Howl({ src: ['/sounds/success.mp3'] }).play();
-                showSuccessModal.value = true;
+                lastSale.value = page.props.flash.sale
+                new Howl({ src: ['/sounds/success.mp3'] }).play()
+                showSuccessModal.value = true
             }
+        },
+        onError: (errors) => {
+            processing.value = false
+            console.error('Sale error:', errors)
+            new Howl({ src: ['/sounds/error.mp3'] }).play()
+            alert(errors.error || 'Failed to process sale. Please try again.')
+        },
+        onFinish: () => {
+            processing.value = false
         }
-    });
+    })
 };
 
 const closeSuccessModal = () => {
