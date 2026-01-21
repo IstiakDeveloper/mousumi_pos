@@ -184,38 +184,40 @@
             <thead>
                 <tr>
                     <!-- Product Info Section -->
-                    <th rowspan="2" style="width: 3%;">SL</th>
-                    <th rowspan="2" style="width: 15%;">Product Name</th>
+                    <th rowspan="2" style="width: 2%;">SL</th>
+                    <th rowspan="2" style="width: 12%;">Product Name</th>
 
                     <!-- Before Stock Section -->
-                    <th colspan="3" class="bg-purple" style="width: 16%;">Before Stock Information</th>
+                    <th colspan="3" class="bg-purple" style="width: 14%;">Before Stock Information</th>
 
                     <!-- Buy Info Section -->
-                    <th colspan="3" class="bg-blue" style="width: 16%;">Buy Information</th>
+                    <th colspan="3" class="bg-blue" style="width: 14%;">Buy Information</th>
 
                     <!-- Sale Info Section -->
-                    <th colspan="3" class="bg-green" style="width: 16%;">Sale Information</th>
+                    <th colspan="5" class="bg-green" style="width: 24%;">Sale Information</th>
 
                     <!-- Profit Info Section -->
-                    <th colspan="2" class="bg-orange" style="width: 14%;">Profit Information</th>
+                    <th colspan="2" class="bg-orange" style="width: 12%;">Profit Information</th>
 
                     <!-- Available Info Section -->
-                    <th colspan="2" class="bg-yellow" style="width: 20%;">Available Information</th>
+                    <th colspan="2" class="bg-yellow" style="width: 12%;">Available Information</th>
                 </tr>
                 <tr>
                     <!-- Before Stock Headers -->
-                    <th class="bg-purple">Quantity</th>
+                    <th class="bg-purple">Qty</th>
                     <th class="bg-purple">Price</th>
                     <th class="bg-purple">Value</th>
 
                     <!-- Buy Info Headers -->
-                    <th class="bg-blue">Quantity</th>
+                    <th class="bg-blue">Qty</th>
                     <th class="bg-blue">Price</th>
                     <th class="bg-blue">Total</th>
 
                     <!-- Sale Info Headers -->
-                    <th class="bg-green">Quantity</th>
+                    <th class="bg-green">Qty</th>
                     <th class="bg-green">Price</th>
+                    <th class="bg-green">Subtotal</th>
+                    <th class="bg-green">Discount</th>
                     <th class="bg-green">Total</th>
 
                     <!-- Profit Info Headers -->
@@ -235,28 +237,29 @@
                         <td class="product-cell">{{ $product['product_name'] }}</td>
 
                         <!-- Before Stock Info -->
-                        <td class="text-center bg-purple">{{ $product['before_quantity'] }}</td>
+                        <td class="text-center bg-purple">{{ number_format($product['before_quantity'], 2) }}</td>
                         <td class="text-center bg-purple">{{ number_format($product['before_price'], 2) }}</td>
                         <td class="text-center bg-purple">{{ number_format($product['before_value'], 2) }}</td>
 
                         <!-- Buy Info -->
-                        <td class="text-center bg-blue">{{ $product['buy_quantity'] }}</td>
+                        <td class="text-center bg-blue">{{ number_format($product['buy_quantity'], 2) }}</td>
                         <td class="text-center bg-blue">{{ number_format($product['buy_price'], 2) }}</td>
                         <td class="text-center bg-blue">{{ number_format($product['total_buy_price'], 2) }}</td>
 
                         <!-- Sale Info -->
-                        <td class="text-center bg-green">{{ $product['sale_quantity'] }}</td>
+                        <td class="text-center bg-green">{{ number_format($product['sale_quantity'], 2) }}</td>
                         <td class="text-center bg-green">{{ number_format($product['sale_price'], 2) }}</td>
                         <td class="text-center bg-green">{{ number_format($product['total_sale_price'], 2) }}</td>
+                        <td class="text-center bg-green">{{ number_format($product['sale_discount'] ?? 0, 2) }}</td>
+                        <td class="text-center bg-green">{{ number_format($product['sale_after_discount'] ?? $product['total_sale_price'], 2) }}</td>
 
                         <!-- Profit Info -->
                         <td class="text-center bg-orange">{{ number_format($product['profit_per_unit'], 2) }}</td>
                         <td class="text-center bg-orange">{{ number_format($product['total_profit'], 2) }}</td>
 
                         <!-- Available Info -->
-                        <td class="text-center bg-yellow">{{ $product['available_quantity'] }}</td>
-                        <td class="text-center bg-yellow">{{ number_format($product['available_stock_value'], 2) }}
-                        </td>
+                        <td class="text-center bg-yellow">{{ number_format($product['available_quantity'], 2) }}</td>
+                        <td class="text-center bg-yellow">{{ number_format($product['available_stock_value'], 2) }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -264,22 +267,24 @@
                 <tr class="total-row">
                     <td colspan="2" class="text-center">Totals:</td>
                     <!-- Before Stock Totals -->
-                    <td class="text-center bg-purple">{{ $totals['before_quantity'] }}</td>
+                    <td class="text-center bg-purple">{{ number_format($totals['before_quantity'], 2) }}</td>
                     <td class="text-center bg-purple">-</td>
                     <td class="text-center bg-purple">{{ number_format($totals['before_value'], 2) }}</td>
                     <!-- Buy Info Totals -->
-                    <td class="text-center bg-blue">{{ $totals['buy_quantity'] }}</td>
+                    <td class="text-center bg-blue">{{ number_format($totals['buy_quantity'], 2) }}</td>
                     <td class="text-center bg-blue">-</td>
                     <td class="text-center bg-blue">{{ number_format($totals['total_buy_price'], 2) }}</td>
                     <!-- Sale Info Totals -->
-                    <td class="text-center bg-green">{{ $totals['sale_quantity'] }}</td>
+                    <td class="text-center bg-green">{{ number_format($totals['sale_quantity'], 2) }}</td>
                     <td class="text-center bg-green">-</td>
                     <td class="text-center bg-green">{{ number_format($totals['total_sale_price'], 2) }}</td>
+                    <td class="text-center bg-green">{{ number_format($totals['sale_discount'] ?? 0, 2) }}</td>
+                    <td class="text-center bg-green">{{ number_format($totals['sale_after_discount'] ?? $totals['total_sale_price'], 2) }}</td>
                     <!-- Profit Info Totals -->
                     <td class="text-center bg-orange">-</td>
                     <td class="text-center bg-orange">{{ number_format($totals['total_profit'], 2) }}</td>
                     <!-- Available Info Totals -->
-                    <td class="text-center bg-yellow">{{ $totals['available_quantity'] }}</td>
+                    <td class="text-center bg-yellow">{{ number_format($totals['available_quantity'], 2) }}</td>
                     <td class="text-center bg-yellow">{{ number_format($totals['available_stock_value'], 2) }}</td>
                 </tr>
             </tfoot>
