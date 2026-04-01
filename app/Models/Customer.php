@@ -15,6 +15,8 @@ class Customer extends Model
         'email',
         'phone',
         'address',
+        'branch_code',
+        'branch_name',
         'credit_limit',
         'balance',
         'points',

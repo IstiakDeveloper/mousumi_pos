@@ -344,6 +344,9 @@ class Product extends Model
         $totalProfit = $totalSaleAfterDiscount - $monthlySalesCost;
         $profitPerUnit = $saleQuantity > 0 ? $totalProfit / $saleQuantity : 0;
 
+        // Calculate profit percentage: (Profit / Sale After Discount) * 100
+        $profitPercentage = $totalSaleAfterDiscount > 0 ? ($totalProfit / $totalSaleAfterDiscount) * 100 : 0;
+
         return [
             'serial' => $index + 1,
             'product_name' => $product->name,
@@ -363,6 +366,7 @@ class Product extends Model
             'sale_after_discount' => $totalSaleAfterDiscount,
             'profit_per_unit' => $profitPerUnit,
             'total_profit' => $totalProfit,
+            'profit_percentage' => $profitPercentage,
             'available_quantity' => $availableQuantity,
             'available_stock_value' => $availableStockValue,
         ];

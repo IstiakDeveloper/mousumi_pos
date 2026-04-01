@@ -58,6 +58,9 @@
                                 <div v-if="customer.email" class="text-sm text-gray-500 dark:text-gray-400">
                                     {{ customer.email }}
                                 </div>
+                                <div v-if="customer.branch_code || customer.branch_name" class="text-xs text-gray-500 dark:text-gray-400">
+                                    Branch: {{ customer.branch_name || '-' }} ({{ customer.branch_code || '-' }})
+                                </div>
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="text-sm text-gray-900 dark:text-gray-100">

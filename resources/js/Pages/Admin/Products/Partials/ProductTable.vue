@@ -1,7 +1,7 @@
 # ProductTable.vue
 <template>
-    <div class="bg-white dark:bg-gray-800 shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
+    <div class="bg-white dark:bg-gray-800 shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg overflow-x-auto">
+        <table class="min-w-[900px] w-full divide-y divide-gray-300 dark:divide-gray-700">
             <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
                     <th scope="col"

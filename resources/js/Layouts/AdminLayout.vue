@@ -1,72 +1,78 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="min-h-screen bg-gray-50 text-sm dark:bg-gray-900">
         <!-- Sidebar -->
 
         <aside :class="[
-            'fixed inset-y-0 left-0 z-50 w-72 transition-transform duration-300 ease-in-out flex flex-col',
-            'bg-gradient-to-b from-indigo-700 via-indigo-800 to-indigo-900 dark:from-gray-800 dark:via-gray-900 dark:to-black',
+            'fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 ease-in-out flex flex-col',
+            'bg-gradient-to-b from-slate-50 via-indigo-50/40 to-slate-100 text-slate-800 border-r border-slate-200/70 shadow-[inset_-1px_0_0_rgba(15,23,42,0.04)]',
+            'dark:bg-gradient-to-b dark:from-indigo-900 dark:via-indigo-950 dark:to-slate-950 dark:text-slate-100 dark:border-white/10',
             isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         ]">
 
             <!-- Fixed Header -->
             <div class="flex-shrink-0">
                 <div
-                    class="flex items-center justify-between h-16 px-6 bg-indigo-800/50 dark:bg-gray-800/50 backdrop-blur-sm">
-                    <Link href="/admin/dashboard" class="flex items-center space-x-3">
-                    <div class="p-2 rounded-lg bg-white/10 dark:bg-gray-700 backdrop-blur-sm">
-                        <img src="/logo.svg" alt="Logo" class="w-8 h-8" />
+                    class="flex items-center justify-between h-14 px-4 bg-slate-900/0 dark:bg-white/5 backdrop-blur-sm">
+                    <Link href="/admin/dashboard" class="flex items-center gap-2.5">
+                    <div class="p-1.5 rounded-lg bg-slate-900/5 dark:bg-white/10 backdrop-blur-sm">
+                        <img src="/logo.svg" alt="Logo" class="w-7 h-7" />
                     </div>
                     <span
-                        class="text-xl font-bold text-transparent bg-gradient-to-r from-white to-indigo-200 dark:from-gray-100 dark:to-gray-400 bg-clip-text">
-                        Admin Panel
+                        class="text-[15px] leading-5 font-semibold text-slate-900 dark:text-slate-100">
+                        Mousumi Prokashon/ Variety Store
                     </span>
                     </Link>
                     <button
-                        class="p-2 transition-colors rounded-lg lg:hidden hover:bg-white/10 dark:hover:bg-gray-700 text-white/80 dark:text-gray-400 hover:text-white"
+                        class="p-2 transition-colors rounded-lg lg:hidden hover:bg-slate-900/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                         @click="toggleSidebar">
-                        <i class="text-xl fas fa-times"></i>
+                        <i class="text-lg fas fa-times"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Scrollable Navigation -->
             <div class="flex-1 overflow-y-auto">
-                <nav class="px-4 mt-6">
-                    <div class="space-y-2">
+                <nav class="px-3 mt-4">
+                    <div class="space-y-1.5">
                         <!-- Single Items -->
                         <Link v-for="item in filteredSingleNavItems" :key="item.name" :href="item.href" :class="[
-                            'flex items-center px-4 py-3 text-sm rounded-xl transition-all duration-200',
-                            'hover:bg-white/10 dark:hover:bg-gray-700 backdrop-blur-sm group',
+                            'flex items-center px-3 py-2.5 text-[13px] rounded-lg transition-all duration-200',
+                            'hover:bg-slate-900/5 dark:hover:bg-white/10 backdrop-blur-sm group',
                             isActivePath(item.href)
-                                ? 'bg-white/15 dark:bg-gray-700 text-white shadow-lg shadow-indigo-900/20'
-                                : 'text-indigo-100 dark:text-gray-400 hover:text-white dark:hover:text-gray-100'
+                                ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-black/5 dark:bg-white/10 dark:text-white dark:shadow-black/10'
+                                : 'text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
                         ]">
                         <div :class="[
-                            'p-2 rounded-lg mr-3 transition-all duration-200',
+                            'p-1.5 rounded-lg mr-2.5 transition-all duration-200',
                             isActivePath(item.href)
-                                ? 'bg-white/20 dark:bg-gray-600 text-white'
-                                : 'bg-white/10 dark:bg-gray-700 text-indigo-200 dark:text-gray-400 group-hover:bg-white/15 group-hover:dark:bg-gray-600 group-hover:text-white'
+                                ? 'bg-indigo-100 text-indigo-700 dark:bg-white/10 dark:text-white'
+                                : 'bg-slate-900/5 text-slate-600 group-hover:bg-slate-900/8 group-hover:text-slate-900 dark:bg-white/10 dark:text-slate-300 dark:group-hover:bg-white/12 dark:group-hover:text-white'
                         ]">
                             <i :class="['fas', item.icon, 'w-4 h-4']"></i>
                         </div>
                         <span class="font-medium">{{ item.name }}</span>
+                        <span
+                            v-if="item.badgeKey && (counts[item.badgeKey] || 0) > 0"
+                            class="ml-auto inline-flex items-center justify-center min-w-6 h-5 px-1.5 rounded-full text-[11px] font-semibold bg-indigo-600 text-white dark:bg-indigo-500">
+                            {{ counts[item.badgeKey] }}
+                        </span>
                         </Link>
 
                         <!-- Dropdown Items -->
                         <div v-for="(group, index) in filteredDropdownNavItems" :key="index" class="space-y-1">
                             <button @click="toggleDropdown(group.name)" :class="[
-                                'w-full flex items-center justify-between px-4 py-3 text-sm rounded-xl transition-all duration-200',
-                                'hover:bg-white/10 dark:hover:bg-gray-700 backdrop-blur-sm group',
+                                'w-full flex items-center justify-between px-3 py-2.5 text-[13px] rounded-lg transition-all duration-200',
+                                'hover:bg-slate-900/5 dark:hover:bg-white/10 backdrop-blur-sm group',
                                 isDropdownActive(group.name)
-                                    ? 'bg-white/15 dark:bg-gray-700 text-white shadow-lg shadow-indigo-900/20'
-                                    : 'text-indigo-100 dark:text-gray-400 hover:text-white dark:hover:text-gray-100'
+                                    ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-black/5 dark:bg-white/10 dark:text-white dark:shadow-black/10'
+                                    : 'text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
                             ]">
                                 <div class="flex items-center">
                                     <div :class="[
-                                        'p-2 rounded-lg mr-3 transition-all duration-200',
+                                        'p-1.5 rounded-lg mr-2.5 transition-all duration-200',
                                         isDropdownActive(group.name)
-                                            ? 'bg-white/20 dark:bg-gray-600 text-white'
-                                            : 'bg-white/10 dark:bg-gray-700 text-indigo-200 dark:text-gray-400 group-hover:bg-white/15 group-hover:dark:bg-gray-600 group-hover:text-white'
+                                            ? 'bg-indigo-100 text-indigo-700 dark:bg-white/10 dark:text-white'
+                                            : 'bg-slate-900/5 text-slate-600 group-hover:bg-slate-900/8 group-hover:text-slate-900 dark:bg-white/10 dark:text-slate-300 dark:group-hover:bg-white/12 dark:group-hover:text-white'
                                     ]">
                                         <i :class="['fas', group.icon, 'w-4 h-4']"></i>
                                     </div>
@@ -86,20 +92,23 @@
                                 leave="transition-all duration-200 ease-in-out"
                                 leave-from="transform opacity-100 scale-100 translate-y-0"
                                 leave-to="transform opacity-0 scale-95 -translate-y-2">
-                                <div class="pl-4 ml-3 space-y-1 border-l-2 border-indigo-500/30 dark:border-gray-700">
+                                <div
+                                    class="pl-3 ml-3 space-y-1 border-l border-slate-200/70 dark:border-white/10">
                                     <Link v-for="subItem in group.items" :key="subItem.name" :href="subItem.href"
                                         :class="[
-                                            'flex items-center px-4 py-2.5 text-sm rounded-lg transition-all duration-200',
-                                            'hover:bg-white/10 dark:hover:bg-gray-700 group',
+                                            'flex items-center px-3 py-2 text-[13px] rounded-lg transition-all duration-200',
+                                            'hover:bg-slate-900/5 dark:hover:bg-white/10 group',
                                             isActivePath(subItem.href)
-                                                ? 'bg-white/15 dark:bg-gray-700 text-white'
-                                                : 'text-indigo-200 dark:text-gray-400 hover:text-white dark:hover:text-gray-100'
+                                                ? 'bg-indigo-50 text-indigo-700 dark:bg-white/10 dark:text-white'
+                                                : 'text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
                                         ]">
                                     <i :class="[
                                         'fas',
                                         subItem.icon,
-                                        'w-4 h-4 mr-3',
-                                        isActivePath(subItem.href) ? 'text-white' : 'text-indigo-300 dark:text-gray-400 group-hover:text-white'
+                                        'w-4 h-4 mr-2.5',
+                                        isActivePath(subItem.href)
+                                            ? 'text-indigo-700 dark:text-white'
+                                            : 'text-slate-400 group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-white'
                                     ]"></i>
                                     <span class="font-medium">{{ subItem.name }}</span>
                                     </Link>
@@ -128,22 +137,22 @@
             </div>
 
             <!-- Fixed Footer with User Profile -->
-            <div class="flex-shrink-0 p-4 border-t border-indigo-500/20">
+            <div class="flex-shrink-0 p-3 border-t border-slate-200/70 dark:border-white/10">
                 <Menu as="div" class="relative">
                     <MenuButton
-                        class="flex items-center w-full p-3 transition-all duration-200 rounded-xl hover:bg-white/10">
+                        class="flex items-center w-full p-2.5 transition-all duration-200 rounded-lg hover:bg-slate-900/5 dark:hover:bg-white/10">
                         <div class="relative">
                             <img :src="user.avatar || '/default-avatar.png'"
-                                class="w-10 h-10 border-2 rounded-lg border-white/20" alt="User Avatar" />
+                                class="w-9 h-9 border-2 rounded-lg border-white/20" alt="User Avatar" />
                             <div
                                 class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-indigo-900 rounded-full">
                             </div>
                         </div>
                         <div class="flex-1 ml-3 text-left">
-                            <p class="text-sm font-medium text-white">{{ user.name }}</p>
-                            <p class="text-xs text-indigo-200">{{ user.role.name || 'Administrator' }}</p>
+                            <p class="text-[13px] font-medium leading-4 text-slate-900 dark:text-white">{{ user.name }}</p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-300">{{ user.role.name || 'Administrator' }}</p>
                         </div>
-                        <i class="ml-2 text-indigo-200 fas fa-chevron-up"></i>
+                        <i class="ml-2 text-slate-500 dark:text-slate-300 fas fa-chevron-up"></i>
                     </MenuButton>
 
                     <transition enter-active-class="transition duration-200 ease-out"
@@ -188,24 +197,24 @@
         </aside>
 
         <!-- Main Content Area -->
-        <div :class="['lg:pl-72 min-h-screen flex flex-col', isOpen && 'overflow-hidden']">
+        <div :class="['lg:pl-64 min-h-screen flex flex-col', isOpen && 'overflow-hidden']">
             <!-- Top Navigation -->
             <header
                 class="sticky top-0 z-40 border-b border-gray-200 bg-white/80 dark:bg-gray-800 backdrop-blur-sm dark:border-gray-700">
-                <div class="h-16 px-4 sm:px-6 lg:px-8">
+                <div class="h-14 px-4 sm:px-6 lg:px-8">
                     <div class="flex items-center justify-between h-full">
                         <!-- Left Side -->
-                        <div class="flex items-center space-x-4">
+                        <div class="flex items-center gap-3">
                             <button
                                 class="p-2 text-gray-600 rounded-lg lg:hidden hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                                 @click="toggleSidebar">
-                                <i class="text-xl fas fa-bars"></i>
+                                <i class="text-lg fas fa-bars"></i>
                             </button>
 
                             <!-- Breadcrumbs -->
                             <nav class="items-center hidden space-x-2 sm:flex">
                                 <Link v-for="(crumb, index) in breadcrumbs" :key="crumb.name" :href="crumb.href" :class="[
-                                    'text-sm font-medium transition-colors',
+                                    'text-[13px] font-medium transition-colors',
                                     index === breadcrumbs.length - 1
                                         ? 'text-indigo-600 dark:text-indigo-400'
                                         : 'text-gray-500 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400'
@@ -220,20 +229,20 @@
                         </div>
 
                         <!-- Right Side -->
-                        <div class="flex items-center space-x-4">
+                        <div class="flex items-center gap-3">
                             <!-- Search -->
                             <div class="hidden md:block">
                                 <div class="relative">
                                     <input type="text" placeholder="Search..."
-                                        class="w-64 py-2 pl-10 pr-4 border border-gray-200 rounded-lg dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50/50 dark:bg-gray-700 dark:text-white" />
+                                        class="w-56 py-1.5 pl-9 pr-3 text-[13px] border border-gray-200 rounded-lg dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50/50 dark:bg-gray-700 dark:text-white" />
                                     <i
-                                        class="fas fa-search absolute left-3 top-2.5 text-gray-400 dark:text-gray-500"></i>
+                                        class="fas fa-search absolute left-3 top-2 text-gray-400 dark:text-gray-500"></i>
                                 </div>
                             </div>
 
                             <!-- POS Quick Access -->
                             <Link href="/admin/pos"
-                                class="flex items-center px-4 py-2 text-white transition-colors duration-150 ease-in-out bg-indigo-600 rounded-lg hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">
+                                class="flex items-center px-3 py-1.5 text-[13px] text-white transition-colors duration-150 ease-in-out bg-indigo-600 rounded-lg hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">
                             <i class="mr-2 fas fa-cash-register"></i>
                             <span class="font-medium">POS</span>
                             </Link>
@@ -243,7 +252,7 @@
                                 <MenuButton
                                     class="relative p-2 text-gray-600 transition-colors rounded-lg dark:text-gray-300 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-gray-700">
                                     <span class="sr-only">View notifications</span>
-                                    <i class="text-xl fas fa-bell"></i>
+                                    <i class="text-lg fas fa-bell"></i>
                                     <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
                                 </MenuButton>
 
@@ -300,7 +309,7 @@
                             <!-- Settings -->
                             <button @click="switchTheme"
                                 class="p-2 text-gray-500 rounded-lg hover:text-gray-700 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                                <i class="text-xl fa-solid fa-circle-half-stroke"></i>
+                                <i class="text-lg fa-solid fa-circle-half-stroke"></i>
                             </button>
                         </div>
                     </div>
@@ -308,14 +317,14 @@
             </header>
 
             <!-- Main Content -->
-            <main class="flex-1 px-4 py-8 sm:px-6 lg:px-8">
+            <main class="flex-1 px-4 py-6 sm:px-6 lg:px-8">
                 <!-- Page Header -->
-                <div v-if="$slots.header" class="mb-8">
+                <div v-if="$slots.header" class="mb-6">
                     <slot name="header" />
                 </div>
 
                 <!-- Page Content -->
-                <div class="space-y-6">
+                <div class="space-y-4">
                     <slot />
                 </div>
             </main>
@@ -323,8 +332,8 @@
             <!-- Footer -->
             <footer class="mt-auto bg-white border-t border-gray-200 dark:border-gray-700 dark:bg-gray-800">
                 <div class="px-4 mx-auto sm:px-6 lg:px-8">
-                    <div class="py-4 text-center sm:text-left">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <div class="py-3 text-center sm:text-left">
+                        <p class="text-[13px] text-gray-500 dark:text-gray-400">
                             © {{ new Date().getFullYear() }} Mousumi Prokashon. All rights reserved.
                         </p>
                     </div>
@@ -350,6 +359,7 @@ import { switchTheme } from '@/theme';
 
 const page = usePage();
 const user = page.props.auth.user;
+const counts = computed(() => page.props.counts || {});
 
 
 
@@ -364,6 +374,13 @@ const singleNavItems = [
         href: '/admin/dashboard',
         icon: 'fa-tachometer-alt',
         allowedRoles: ['admin', 'manager', 'staff'] // Example roles
+    },
+    {
+        name: 'Orders',
+        href: '/admin/pending-sales',
+        icon: 'fa-clipboard-list',
+        badgeKey: 'pendingOrders',
+        allowedRoles: ['admin', 'manager']
     }
 ]
 
@@ -547,7 +564,7 @@ const isDropdownActive = (groupName) => {
 /* Optional: Add custom scrollbar styling */
 .overflow-y-auto {
     scrollbar-width: thin;
-    scrollbar-color: #818cf8 #e0e7ff;
+    scrollbar-color: rgba(148, 163, 184, 0.6) rgba(255, 255, 255, 0.06);
 }
 
 .overflow-y-auto::-webkit-scrollbar {
@@ -555,12 +572,12 @@ const isDropdownActive = (groupName) => {
 }
 
 .overflow-y-auto::-webkit-scrollbar-track {
-    background: #e0e7ff;
+    background: rgba(255, 255, 255, 0.06);
     border-radius: 3px;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb {
-    background-color: #818cf8;
+    background-color: rgba(148, 163, 184, 0.55);
     border-radius: 3px;
 }
 </style>

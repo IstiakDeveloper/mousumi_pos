@@ -242,7 +242,10 @@
                                     </div>
                                     <div class="mt-5 md:mt-0 md:col-span-2">
                                         <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors"
-                                            @dragover.prevent @drop.prevent="onFilesDrop">
+                                            tabindex="0"
+                                            @dragover.prevent
+                                            @drop.prevent="onFilesDrop"
+                                            @paste.prevent="onPasteImages">
                                             <div class="text-center">
                                                 <PhotoIcon class="mx-auto h-12 w-12 text-gray-400" />
                                                 <div
@@ -256,7 +259,7 @@
                                                     <p class="pl-1">or drag and drop</p>
                                                 </div>
                                                 <p class="text-xs leading-5 text-gray-600 dark:text-gray-400">
-                                                    PNG, JPG, GIF up to 2MB each
+                                                    Paste (Ctrl+V), upload, or drag and drop. Images will be auto resized + converted to WebP.
                                                 </p>
                                             </div>
                                         </div>
@@ -390,12 +393,10 @@ const removeSpecification = (index) => {
 const imagesPreviews = ref([]);
 const selectedImages = ref([]);
 
-const onImagesSelected = (event) => {
-    const files = Array.from(event.target.files);
-
+function addImageFiles(files) {
     const validFiles = files.filter(file => {
-        if (file.size > 2 * 1024 * 1024) {
-            alert(`File ${file.name} is too large. Maximum size is 2MB.`);
+        if (file.size > 10 * 1024 * 1024) {
+            alert(`File ${file.name} is too large. Maximum size is 10MB.`);
             return false;
         }
         if (!file.type.startsWith('image/')) {
@@ -405,7 +406,6 @@ const onImagesSelected = (event) => {
         return true;
     });
 
-    // Create previews for valid files
     validFiles.forEach(file => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -417,10 +417,26 @@ const onImagesSelected = (event) => {
 
     form.images = [...form.images, ...validFiles];
 
-    // Set first image as primary if no primary image is set
     if (primaryImageIndex.value === null && imagesPreviews.value.length > 0) {
         primaryImageIndex.value = 0;
         form.primary_image_index = 0;
+    }
+}
+
+const onImagesSelected = (event) => {
+    const files = Array.from(event.target.files);
+    addImageFiles(files);
+};
+
+const onPasteImages = (event) => {
+    const items = Array.from(event.clipboardData?.items || []);
+    const files = items
+        .filter(i => i.kind === 'file' && i.type?.startsWith('image/'))
+        .map(i => i.getAsFile())
+        .filter(Boolean);
+
+    if (files.length) {
+        addImageFiles(files);
     }
 };
 

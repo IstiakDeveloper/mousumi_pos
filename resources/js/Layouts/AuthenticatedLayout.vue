@@ -18,7 +18,7 @@
                     </div>
                     <span
                         class="text-xl font-bold bg-gradient-to-r from-white to-indigo-200 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
-                        Admin Panel
+                        Mousumi Prokashon/ Variety Store
                     </span>
                     </Link>
                     <button

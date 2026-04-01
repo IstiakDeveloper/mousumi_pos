@@ -152,6 +152,7 @@ class ProductAnalysisReportController extends Controller
             'Sale Total',
             'Profit Per Unit',
             'Total Profit',
+            'Profit %',
             'Available Stock',
             'Stock Value',
         ];
@@ -174,12 +175,18 @@ class ProductAnalysisReportController extends Controller
                 number_format($product['total_sale_price'], 2),
                 number_format($product['profit_per_unit'], 2),
                 number_format($product['total_profit'], 2),
+                number_format($product['profit_percentage'], 2),
                 number_format($product['available_quantity'], 2),
                 number_format($product['available_stock_value'], 2),
             ];
         })->toArray());
 
         // Add totals row
+        $totalSaleAfterDiscount = $analysis['totals']['sale_after_discount'] ?? $analysis['totals']['total_sale_price'];
+        $totalProfitMargin = $totalSaleAfterDiscount > 0
+            ? ($analysis['totals']['total_profit'] / $totalSaleAfterDiscount) * 100
+            : 0;
+
         $data[] = [
             '',
             'TOTALS',
@@ -197,6 +204,7 @@ class ProductAnalysisReportController extends Controller
             number_format($analysis['totals']['total_sale_price'], 2),
             '',
             number_format($analysis['totals']['total_profit'], 2),
+            number_format($totalProfitMargin, 2),
             number_format($analysis['totals']['available_quantity'], 2),
             number_format($analysis['totals']['available_stock_value'], 2),
         ];

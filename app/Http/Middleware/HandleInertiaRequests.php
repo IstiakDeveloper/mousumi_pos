@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\PendingSale;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -32,7 +33,12 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? $request->user()->load('role') : null,
+                'user' => $request->user() ? $request->user()->loadMissing('role') : null,
+            ],
+            'counts' => [
+                'pendingOrders' => fn () => $request->user()
+                    ? PendingSale::query()->where('status', 'pending')->count()
+                    : 0,
             ],
             'appUrl' => config('app.url'),
             'flash' => [

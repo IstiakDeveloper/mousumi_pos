@@ -107,7 +107,7 @@
 
         .items-table .amount {
             text-align: right;
-            font-weight: 500;
+            font-weight: 400;
         }
 
         .items-table .quantity {
@@ -136,6 +136,11 @@
             border-bottom: 1px solid #bbb;
         }
 
+        .category-subtotal td:last-child {
+            font-weight: 700;
+            font-style: normal;
+        }
+
         /* টোটাল সেকশন - minimal border */
         .totals-section {
             width: 55%;
@@ -154,11 +159,15 @@
 
         .totals-table .right-align {
             text-align: right;
-            font-weight: 600;
+            font-weight: 500;
+        }
+
+        .subtotal-row td {
+            font-weight: 700;
         }
 
         .total-row td {
-            font-weight: bold;
+            font-weight: 600;
             font-size: 9pt;
             background: #f0f0f0;
             text-transform: uppercase;
@@ -349,7 +358,7 @@
         <!-- টোটালস সেকশন -->
         <div class="totals-section">
             <table class="totals-table">
-                <tr>
+                <tr class="subtotal-row">
                     <td><strong>Subtotal:</strong></td>
                     <td class="right-align currency">{{ number_format($sale->subtotal, 2) }}</td>
                 </tr>

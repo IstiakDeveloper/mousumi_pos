@@ -12,6 +12,8 @@ use App\Models\ProductImage;
 use App\Models\ProductStock;
 use App\Models\StockMovement;
 use App\Models\Unit;
+use App\Jobs\OptimizeProductImagesJob;
+use App\Services\ProductImageProcessor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +25,13 @@ use Inertia\Inertia;
 
 class ProductController extends Controller
 {
+    public function optimizeImages()
+    {
+        OptimizeProductImagesJob::dispatch();
+
+        return redirect()->back()->with('success', 'Image optimization started. This may take a few minutes.');
+    }
+
     public function index(Request $request)
     {
         $products = Product::query()
@@ -152,10 +161,10 @@ class ProductController extends Controller
                         $fail('Invalid image type. Allowed types: '.implode(', ', $allowedExtensions));
                     }
 
-                    // Check file size (2MB = 2048 KB)
-                    $maxSize = 2048;
-                    if ($value->getSize() > $maxSize * 1024) {
-                        $fail("Image cannot be larger than {$maxSize}KB.");
+                    // Check raw upload size (we'll compress after upload)
+                    $maxSizeMb = 10;
+                    if ($value->getSize() > $maxSizeMb * 1024 * 1024) {
+                        $fail("Image cannot be larger than {$maxSizeMb}MB.");
                     }
                 },
             ],
@@ -167,25 +176,14 @@ class ProductController extends Controller
         $product = Product::create($validated);
 
         if ($request->hasFile('images')) {
+            $processor = app(ProductImageProcessor::class);
             $images = $request->file('images');
             $primaryIndex = (int) $request->primary_image_index;
 
             foreach ($images as $index => $image) {
-                // Generate a unique filename
-                $filename = uniqid().'.'.$image->getClientOriginalExtension();
-
-                // Ensure products directory exists
-                $uploadDir = public_path('storage/products');
-                if (! File::exists($uploadDir)) {
-                    File::makeDirectory($uploadDir, 0755, true);
-                }
-
-                // Move the file manually to the public storage
-                $path = $image->move($uploadDir, $filename);
-
-                // Create the database entry with the relative path
+                $relativePath = $processor->storeUploaded($image);
                 $product->images()->create([
-                    'image' => 'products/'.$filename,
+                    'image' => $relativePath,
                     'is_primary' => $index === $primaryIndex,
                     'sort_order' => $index,
                 ]);
@@ -247,10 +245,10 @@ class ProductController extends Controller
                         $fail('Invalid image type. Allowed types: '.implode(', ', $allowedExtensions));
                     }
 
-                    // Check file size (2MB = 2048 KB)
-                    $maxSize = 2048;
-                    if ($value->getSize() > $maxSize * 1024) {
-                        $fail("Image cannot be larger than {$maxSize}KB.");
+                    // Check raw upload size (we'll compress after upload)
+                    $maxSizeMb = 10;
+                    if ($value->getSize() > $maxSizeMb * 1024 * 1024) {
+                        $fail("Image cannot be larger than {$maxSizeMb}MB.");
                     }
                 },
             ],
@@ -275,6 +273,7 @@ class ProductController extends Controller
 
         // Handle new uploaded images
         if ($request->hasFile('images')) {
+            $processor = app(ProductImageProcessor::class);
             $newImageCount = count($request->file('images'));
             $primaryIndex = $request->input('primary_image_index');
 
@@ -284,15 +283,9 @@ class ProductController extends Controller
                 $primaryIndex < $newImageCount;
 
             foreach ($request->file('images') as $index => $image) {
-                // Generate a unique filename
-                $filename = uniqid().'.'.$image->getClientOriginalExtension();
-
-                // Move the file manually to the public storage
-                $path = $image->move(public_path('storage/products'), $filename);
-
-                // Create the database entry with the relative path
+                $relativePath = $processor->storeUploaded($image);
                 $product->images()->create([
-                    'image' => 'products/'.$filename,
+                    'image' => $relativePath,
                     'is_primary' => $setPrimaryForNew && $index == $primaryIndex,
                     'sort_order' => $index,
                 ]);

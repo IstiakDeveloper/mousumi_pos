@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
 
-    <title inertia>{{ config('app.name', 'Mousumi Prokashon') }}</title>
+    <title inertia>{{ config('app.name', 'Mousumi Prokashon/ Variety Store') }}</title>
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
 
     <!-- Fonts -->
@@ -15,7 +15,8 @@
 
     <!-- Scripts -->
     @routes
-    @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
+    {{-- Single entry: pages load via dynamic import in app.js (second entry duplicated Vite work and slows every visit in dev) --}}
+    @vite(['resources/js/app.js'])
     @inertiaHead
 
     <style>

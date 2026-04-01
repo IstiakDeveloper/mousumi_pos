@@ -19,6 +19,26 @@ class ReceiptPaymentController extends Controller
 {
     protected $bankAccountId = 1;
 
+    protected function getCalculatedBalanceUpToDate(int $bankAccountId, string $dateInclusive): float
+    {
+        $bankAccount = BankAccount::findOrFail($bankAccountId);
+
+        $transactionsSum = DB::table('bank_transactions')
+            ->where('bank_account_id', $bankAccountId)
+            ->where('date', '<=', $dateInclusive)
+            ->whereNull('deleted_at')
+            ->where(function ($query) {
+                $query->whereNull('description')
+                    ->orWhere('description', 'NOT LIKE', '%Rounding Adjustment%');
+            })
+            ->sum(DB::raw('CASE
+                WHEN transaction_type = "in" THEN amount
+                ELSE -amount
+            END'));
+
+        return round(((float) $bankAccount->opening_balance) + (float) $transactionsSum, 2);
+    }
+
     public function index(Request $request)
     {
         // Use request year and month if provided, otherwise use current date
@@ -66,16 +86,9 @@ class ReceiptPaymentController extends Controller
         // Get the bank account
         $bank = BankAccount::findOrFail($this->bankAccountId);
 
-        // Get the latest bank transaction from previous month (same as BankTransactionReport)
-        $prevMonthEndBalance = BankTransaction::where('bank_account_id', $this->bankAccountId)
-            ->where('date', '<', $startDate)
-            ->whereNull('deleted_at')
-            ->orderBy('date', 'desc')
-            ->orderBy('id', 'desc')
-            ->first();
-
-        // If we found a previous transaction, use its running balance
-        $openingCashAtBank = $prevMonthEndBalance ? $prevMonthEndBalance->running_balance : $bank->opening_balance;
+        // Compute opening balance from opening_balance + transactions (do not rely on stored running_balance)
+        $openingDate = Carbon::createFromFormat('Y-m-d', $startDate)->subDay()->format('Y-m-d');
+        $openingCashAtBank = $this->getCalculatedBalanceUpToDate($this->bankAccountId, $openingDate);
 
         // Get sale collection for the period from bank transactions
         $salePaid = $this->getTotalSalesFromInvoices($startDate, $endDate);
@@ -203,17 +216,8 @@ class ReceiptPaymentController extends Controller
         $bankAccountId = $this->bankAccountId;
 
         // Get bank account
-        $bankAccount = BankAccount::findOrFail($bankAccountId);
-
-        // Get previous month's last transaction (same as BankTransactionReport)
-        $previousMonthEnd = Carbon::createFromFormat('Y-m-d', $startDate)->subDay();
-
-        $previousMonthBalance = BankTransaction::where('bank_account_id', $bankAccountId)
-            ->where('date', '<=', $previousMonthEnd)
-            ->whereNull('deleted_at')
-            ->orderBy('date', 'desc')
-            ->orderBy('id', 'desc')
-            ->first()?->running_balance ?? $bankAccount->opening_balance;
+        $previousMonthEnd = Carbon::createFromFormat('Y-m-d', $startDate)->subDay()->format('Y-m-d');
+        $previousMonthBalance = $this->getCalculatedBalanceUpToDate($bankAccountId, $previousMonthEnd);
 
         // Get daily transactions for the month (same as BankTransactionReport)
         $dailyTransactions = DB::table('bank_transactions')

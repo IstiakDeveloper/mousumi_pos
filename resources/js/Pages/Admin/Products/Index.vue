@@ -7,7 +7,7 @@
             <header class="bg-white dark:bg-gray-800 shadow">
                 <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                     <!-- Stats -->
-                    <div class="flex flex-wrap items-center justify-between sm:flex-nowrap">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex-grow">
                             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Products</h2>
                             <div class="mt-2 flex flex-wrap gap-4">
@@ -32,7 +32,7 @@
                         </div>
 
                         <!-- Actions -->
-                        <div class="flex flex-shrink-0 gap-2">
+                        <div class="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
                             <!-- View Toggle -->
                             <div class="flex rounded-md shadow-sm">
                                 <button @click="viewMode = 'grid'" :class="viewToggleClass('grid')">
@@ -45,16 +45,23 @@
 
                             <!-- Add Product Button -->
                             <Link :href="route('admin.products.create')"
-                                class="inline-flex items-center gap-x-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400">
+                                class="inline-flex items-center gap-x-2 whitespace-nowrap rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400">
                             <PlusIcon class="h-5 w-5" />
                             Add Product
                             </Link>
 
                             <Link :href="route('admin.products.download-pdf')"
-                                class="inline-flex items-center gap-x-2 rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 dark:bg-green-500 dark:hover:bg-green-400">
+                                class="inline-flex items-center gap-x-2 whitespace-nowrap rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 dark:bg-green-500 dark:hover:bg-green-400">
                             <ArrowDownTrayIcon class="h-5 w-5" />
                             Download PDF
                             </Link>
+
+                            <button type="button"
+                                class="inline-flex items-center gap-x-2 whitespace-nowrap rounded-md bg-slate-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700 dark:bg-slate-600 dark:hover:bg-slate-500"
+                                @click="optimizeAllImages">
+                                <ArrowPathIcon class="h-5 w-5" />
+                                Optimize Images
+                            </button>
 
                         </div>
                     </div>
@@ -163,6 +170,7 @@ import {
     ShieldCheckIcon,
     ExclamationTriangleIcon,
     CurrencyBangladeshiIcon,
+    ArrowPathIcon,
     ArrowDownTrayIcon,
     Squares2X2Icon,
     ListBulletIcon
@@ -210,6 +218,10 @@ const totalValue = computed(() => {
         maximumFractionDigits: 2
     }).format(total);
 });
+
+function optimizeAllImages() {
+    router.post(route('admin.products.optimize-images'), {}, { preserveScroll: true });
+}
 // Methods
 const viewToggleClass = (mode) => {
     const baseClass = 'relative inline-flex items-center px-3 py-2 text-sm font-medium ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-10';

@@ -25,8 +25,10 @@ use App\Http\Controllers\Admin\ReceiptPaymentController;
 use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\SaleReportController;
 use App\Http\Controllers\Admin\UnitController;
+use App\Http\Controllers\Admin\PendingSaleController;
 use App\Http\Controllers\ExtraIncomeCategoryController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Public\StorefrontController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -45,7 +47,14 @@ use Inertia\Inertia;
 // });
 
 
-Route::get('/', fn() => Inertia::render('Welcome'))->name('home');
+// Public storefront (no login required)
+Route::get('/', [StorefrontController::class, 'index'])->name('home');
+Route::get('/cart', [StorefrontController::class, 'cart'])->name('cart');
+Route::post('/cart/add', [StorefrontController::class, 'addToCart'])->name('cart.add');
+Route::post('/cart/update', [StorefrontController::class, 'updateCart'])->name('cart.update');
+Route::post('/cart/remove', [StorefrontController::class, 'removeFromCart'])->name('cart.remove');
+Route::get('/checkout', [StorefrontController::class, 'checkout'])->name('checkout');
+Route::post('/checkout/submit', [StorefrontController::class, 'submitOrder'])->name('checkout.submit');
 Route::get('/about', fn() => Inertia::render('About'))->name('about');
 Route::get('/contact', fn() => Inertia::render('Contact'))->name('contact');
 Route::get('/privacy', fn() => Inertia::render('Privacy'))->name('privacy');
@@ -105,6 +114,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         ->name('products.download-pdf');
     // Your existing routes
     Route::resource('products', ProductController::class);
+    Route::post('products/optimize-images', [ProductController::class, 'optimizeImages'])
+        ->name('products.optimize-images');
 
     Route::post('/products/barcode/print', [ProductController::class, 'printBarcodes'])
         ->name('products.barcode.print');
@@ -154,6 +165,14 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     });
     Route::post('/products/{product}/barcode', [BarcodeController::class, 'generate']);
     Route::post('/products/barcode/print', [BarcodeController::class, 'print']);
+
+    // Pending public orders approval
+    Route::get('/pending-sales', [PendingSaleController::class, 'index'])->name('pending-sales.index');
+    Route::post('/pending-sales/{pendingSale}/approve', [PendingSaleController::class, 'approve'])->name('pending-sales.approve');
+    Route::post('/pending-sales/{pendingSale}/reject', [PendingSaleController::class, 'reject'])->name('pending-sales.reject');
+    Route::post('/pending-sales/{pendingSale}/items/add', [PendingSaleController::class, 'addItem'])->name('pending-sales.items.add');
+    Route::post('/pending-sales/{pendingSale}/items/{item}/update', [PendingSaleController::class, 'updateItem'])->name('pending-sales.items.update');
+    Route::post('/pending-sales/{pendingSale}/items/{item}/remove', [PendingSaleController::class, 'removeItem'])->name('pending-sales.items.remove');
 
 
     Route::get('/reports/bank', [BankReportController::class, 'index'])->name('reports.bank');
@@ -216,9 +235,7 @@ Route::get('/dashboard', function () {
     return redirect('/admin/dashboard');
 })->name('dashboard');
 
-Route::get('/', function () {
-    return redirect('/login');
-})->name('home');
+// NOTE: Home route is the public storefront above.
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

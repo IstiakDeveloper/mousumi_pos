@@ -80,6 +80,15 @@
                                     {{ option[descriptionKey] }}
                                 </p>
                             </div>
+                            <div v-if="option.metaRight" class="ml-3 flex-shrink-0">
+                                <span
+                                    class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                                    {{ option.metaRight }}
+                                </span>
+                                <div v-if="option.metaRightSub" class="mt-1 text-[11px] text-gray-500 dark:text-gray-400 text-right">
+                                    {{ option.metaRightSub }}
+                                </div>
+                            </div>
                             <div v-if="selectedOption && option[valueKey] === selectedOption[valueKey]"
                                 class="ml-3 flex-shrink-0">
                                 <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor"
@@ -159,7 +168,9 @@ const filteredOptions = computed(() => {
     return props.options.filter(option => {
         const label = option[props.labelKey]?.toString().toLowerCase() || '';
         const description = option[props.descriptionKey]?.toString().toLowerCase() || '';
-        return label.includes(query) || description.includes(query);
+        const metaRight = option.metaRight?.toString().toLowerCase() || '';
+        const metaRightSub = option.metaRightSub?.toString().toLowerCase() || '';
+        return label.includes(query) || description.includes(query) || metaRight.includes(query) || metaRightSub.includes(query);
     });
 });
 

@@ -197,10 +197,10 @@
                     <th colspan="5" class="bg-green" style="width: 24%;">Sale Information</th>
 
                     <!-- Profit Info Section -->
-                    <th colspan="2" class="bg-orange" style="width: 12%;">Profit Information</th>
+                    <th colspan="3" class="bg-orange" style="width: 15%;">Profit Information</th>
 
                     <!-- Available Info Section -->
-                    <th colspan="2" class="bg-yellow" style="width: 12%;">Available Information</th>
+                    <th colspan="2" class="bg-yellow" style="width: 10%;">Available Information</th>
                 </tr>
                 <tr>
                     <!-- Before Stock Headers -->
@@ -223,6 +223,7 @@
                     <!-- Profit Info Headers -->
                     <th class="bg-orange">Per Unit</th>
                     <th class="bg-orange">Total</th>
+                    <th class="bg-orange">%</th>
 
                     <!-- Available Info Headers -->
                     <th class="bg-yellow">Stock</th>
@@ -256,6 +257,7 @@
                         <!-- Profit Info -->
                         <td class="text-center bg-orange">{{ number_format($product['profit_per_unit'], 2) }}</td>
                         <td class="text-center bg-orange">{{ number_format($product['total_profit'], 2) }}</td>
+                        <td class="text-center bg-orange">{{ number_format($product['profit_percentage'], 2) }}%</td>
 
                         <!-- Available Info -->
                         <td class="text-center bg-yellow">{{ number_format($product['available_quantity'], 2) }}</td>
@@ -283,6 +285,13 @@
                     <!-- Profit Info Totals -->
                     <td class="text-center bg-orange">-</td>
                     <td class="text-center bg-orange">{{ number_format($totals['total_profit'], 2) }}</td>
+                    <td class="text-center bg-orange">
+                        @php
+                            $totalSaleAfterDiscount = $totals['sale_after_discount'] ?? $totals['total_sale_price'];
+                            $profitMargin = $totalSaleAfterDiscount > 0 ? ($totals['total_profit'] / $totalSaleAfterDiscount) * 100 : 0;
+                        @endphp
+                        {{ number_format($profitMargin, 2) }}%
+                    </td>
                     <!-- Available Info Totals -->
                     <td class="text-center bg-yellow">{{ number_format($totals['available_quantity'], 2) }}</td>
                     <td class="text-center bg-yellow">{{ number_format($totals['available_stock_value'], 2) }}</td>

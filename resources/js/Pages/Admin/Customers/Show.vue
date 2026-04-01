@@ -37,6 +37,12 @@
                                     class="block text-sm font-medium text-gray-600 dark:text-gray-400">Address</label>
                                 <div class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ customer.address }}</div>
                             </div>
+                            <div v-if="customer.branch_code || customer.branch_name">
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400">Branch</label>
+                                <div class="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                                    {{ customer.branch_name || '-' }} ({{ customer.branch_code || '-' }})
+                                </div>
+                            </div>
                             <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Status</span>

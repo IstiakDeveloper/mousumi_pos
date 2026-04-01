@@ -1,302 +1,113 @@
 <template>
     <AdminLayout>
-
         <Head title="Dashboard" />
 
-        <!-- Header Section -->
-        <div
-            class="sm:flex sm:items-center sm:justify-between py-4 px-4 sm:px-6 lg:px-8 border-b border-gray-200 dark:border-gray-700">
-            <div>
-                <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
-                    Dashboard
-                </h1>
-                <p class="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                    {{ currentPeriod }}
-                </p>
-            </div>
-            <div class="mt-4 sm:mt-0 sm:ml-4">
-                <div class="flex space-x-3">
-                    <!-- Date Range Selector -->
-                    <div class="relative inline-block">
-                        <select v-model="selectedRange"
-                            class="block w-40 rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6">
-                            <option value="today">Today</option>
-                            <option value="week">This Week</option>
-                            <option value="month">This Month</option>
-                            <option value="year">This Year</option>
-                            <option value="custom">Custom Range</option>
-                        </select>
+        <div class="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+            <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+                <!-- Header -->
+                <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                            Dashboard
+                        </h1>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            {{ filters.periodLabel }}
+                        </p>
                     </div>
-                    <!-- Refresh Button -->
-                    <button @click="refreshData"
-                        class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                        <ArrowPathIcon class="h-5 w-5 text-gray-400" />
-                    </button>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            class="rounded-full px-4 py-2 text-sm font-medium transition-colors"
+                            :class="preset === 'today'
+                                ? 'bg-indigo-600 text-white shadow-md'
+                                : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-gray-800 dark:text-slate-200 dark:ring-gray-700'"
+                            @click="applyPreset('today')"
+                        >
+                            Today
+                        </button>
+                        <button
+                            type="button"
+                            class="rounded-full px-4 py-2 text-sm font-medium transition-colors"
+                            :class="preset === 'month'
+                                ? 'bg-indigo-600 text-white shadow-md'
+                                : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-gray-800 dark:text-slate-200 dark:ring-gray-700'"
+                            @click="applyPreset('month')"
+                        >
+                            This month
+                        </button>
+                        <button
+                            type="button"
+                            class="rounded-full px-4 py-2 text-sm font-medium transition-colors"
+                            :class="preset === '30d'
+                                ? 'bg-indigo-600 text-white shadow-md'
+                                : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-gray-800 dark:text-slate-200 dark:ring-gray-700'"
+                            @click="applyPreset('30d')"
+                        >
+                            30 days
+                        </button>
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-gray-800 dark:text-slate-200 dark:ring-gray-700"
+                            @click="router.reload()"
+                        >
+                            <ArrowPathIcon class="h-4 w-4" />
+                            Refresh
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Main Content -->
-        <div class="py-6">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <!-- Stats Grid -->
-                <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                    <!-- Bank Balance Card -->
-                    <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
-                        <dt>
-                            <div class="absolute rounded-md bg-blue-500 p-3">
-                                <BanknotesIcon class="h-6 w-6 text-white" aria-hidden="true" />
-                            </div>
-                            <p class="ml-16 truncate text-sm font-medium text-gray-500">Bank Balance</p>
-                        </dt>
-                        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
-                            <p class="text-2xl font-semibold text-gray-900">{{
-                                formatCurrency(summary.banking.total_balance) }}</p>
-                            <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
-                                <div class="text-sm">
-                                    <span class="font-medium text-gray-900">{{ summary.banking.accounts.length }}</span>
-                                    <span class="text-gray-600"> active accounts</span>
-                                </div>
-                            </div>
-                        </dd>
-                    </div>
-
-                    <!-- Sales Card -->
-                    <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
-                        <dt>
-                            <div class="absolute rounded-md bg-green-500 p-3">
-                                <CurrencyDollarIcon class="h-6 w-6 text-white" aria-hidden="true" />
-                            </div>
-                            <p class="ml-16 truncate text-sm font-medium text-gray-500">Total Sales</p>
-                        </dt>
-                        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
-                            <p class="text-2xl font-semibold text-gray-900">{{
-                                formatCurrency(summary.sales.total_amount) }}</p>
-                            <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
-                                <div class="text-sm">
-                                    <span class="font-medium text-gray-900">{{ summary.sales.total_transactions
-                                        }}</span>
-                                    <span class="text-gray-600"> transactions</span>
-                                </div>
-                            </div>
-                        </dd>
-                    </div>
-
-                    <!-- Expenses Card -->
-                    <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
-                        <dt>
-                            <div class="absolute rounded-md bg-red-500 p-3">
-                                <BanknotesIcon class="h-6 w-6 text-white" aria-hidden="true" />
-                            </div>
-                            <p class="ml-16 truncate text-sm font-medium text-gray-500">Total Expenses</p>
-                        </dt>
-                        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
-                            <p class="text-2xl font-semibold text-gray-900">
-                                {{ formatCurrency(summary.profit.operating_expenses) }}
-                            </p>
-                            <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
-                                <div class="text-sm">
-                                    <span class="font-medium text-gray-900">{{ expensesData.length }}</span>
-                                    <span class="text-gray-600"> transactions</span>
-                                </div>
-                            </div>
-                        </dd>
-                    </div>
-
-                    <!-- Net Profit Card -->
-                    <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
-                        <dt>
-                            <div class="absolute rounded-md bg-indigo-500 p-3">
-                                <ChartBarIcon class="h-6 w-6 text-white" aria-hidden="true" />
-                            </div>
-                            <p class="ml-16 truncate text-sm font-medium text-gray-500">Net Profit</p>
-                        </dt>
-                        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
-                            <p class="text-2xl font-semibold text-gray-900">{{ formatCurrency(summary.profit.net_profit)
-                                }}</p>
-                            <p class="ml-2 flex items-baseline text-sm font-semibold"
-                                :class="profitTrend >= 0 ? 'text-green-600' : 'text-red-600'">
-                                <component :is="profitTrend >= 0 ? ArrowUpIcon : ArrowDownIcon"
-                                    class="h-5 w-5 flex-shrink-0 self-center" aria-hidden="true" />
-                                <span class="sr-only">{{ profitTrend >= 0 ? 'Increased' : 'Decreased' }} by</span>
-                                {{ Math.abs(profitTrend) }}%
-                            </p>
-                        </dd>
-                    </div>
-
-
-
-
-
-                    <!-- Stock Value Card -->
-                    <!-- <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
-                        <dt>
-                            <div class="absolute rounded-md bg-purple-500 p-3">
-                                <ArchiveBoxIcon class="h-6 w-6 text-white" aria-hidden="true" />
-                            </div>
-                            <p class="ml-16 truncate text-sm font-medium text-gray-500">Stock Value</p>
-                        </dt>
-                        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
-                            <p class="text-2xl font-semibold text-gray-900">{{
-                                formatCurrency(summary.stock.current_value) }}</p>
-                            <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
-                                <div class="text-sm">
-                                    <span class="font-medium text-red-600">{{ summary.stock.low_stock_count }}</span>
-                                    <span class="text-gray-600"> low stock items</span>
-                                </div>
-                            </div>
-                        </dd>
-                    </div> -->
-
-
-                    <!-- Stock Wrowth Card -->
-                    <!-- <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
-                        <dt>
-                            <div class="absolute rounded-md bg-amber-500 p-3">
-                                <ArchiveBoxIcon class="h-6 w-6 text-white" aria-hidden="true" />
-                            </div>
-                            <p class="ml-16 truncate text-sm font-medium text-gray-500">Stock Worth</p>
-                        </dt>
-                        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
-                            <p class="text-2xl font-semibold text-gray-900">
-                                {{ formatCurrency(summary.stock.potential_value) }}
-                            </p>
-                            <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
-                                <div class="text-sm flex justify-between">
-                                    <div>
-                                        <span class="text-gray-600">ROI: </span>
-                                        <span class="font-medium text-green-600">{{ calculateProfitPercentage }}%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </dd>
-                    </div> -->
-                </dl>
-
-
-
-
-
-                <!-- Recent Activity -->
-                <div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
-                    <!-- Recent Sales -->
-                    <div class="bg-white shadow rounded-lg">
-                        <div class="p-6">
-                            <h3 class="text-lg font-medium text-gray-900">Recent Sales</h3>
-                            <div class="mt-4 flow-root">
-                                <div class="-my-5 divide-y divide-gray-200">
-                                    <div v-for="sale in salesData.slice(0, 5)" :key="sale.id" class="py-5">
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <p class="text-sm font-medium text-gray-900">Invoice #{{ sale.invoice_no
-                                                    }}</p>
-                                                <p class="text-sm text-gray-500">{{ formatDate(sale.created_at) }}</p>
-                                            </div>
-                                            <div class="text-right">
-                                                <p class="text-sm font-medium text-gray-900">{{
-                                                    formatCurrency(sale.total) }}</p>
-                                                <span :class="[
-                                                    'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                                                    sale.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                                ]">
-                                                    {{ sale.payment_status }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mt-6">
-                                <Link href="/admin/sales"
-                                    class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                                View all sales
-                                <span aria-hidden="true"> &rarr;</span>
-                                </Link>
-                            </div>
+                <!-- Metric cards -->
+                <div class="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <article
+                        v-for="card in metricCards"
+                        :key="card.key"
+                        class="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition-all hover:border-indigo-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800/80 dark:hover:border-indigo-500/40"
+                    >
+                        <div
+                            class="flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-inner"
+                            :class="card.iconBg"
+                        >
+                            <component :is="card.icon" class="h-6 w-6" aria-hidden="true" />
                         </div>
-                    </div>
+                        <p class="mt-4 text-sm font-medium text-slate-500 dark:text-slate-400">
+                            {{ card.label }}
+                        </p>
+                        <p class="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-slate-900 dark:text-white">
+                            <template v-if="card.format === 'currency'">{{ formatCurrency(stats[card.key]) }}</template>
+                            <template v-else>{{ Number(stats[card.key] ?? 0).toLocaleString() }}</template>
+                        </p>
+                        <p v-if="card.hint" class="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                            {{ card.hint }}
+                        </p>
+                        <div
+                            class="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-[0.07] transition-transform group-hover:scale-110"
+                            :class="card.blob"
+                        />
+                    </article>
+                </div>
 
-                    <!-- Recent Bank Transactions -->
-                    <div class="bg-white shadow rounded-lg">
-                        <div class="p-6">
-                            <h3 class="text-lg font-medium text-gray-900">Recent Transactions</h3>
-                            <div class="mt-4 flow-root">
-                                <div class="-my-5 divide-y divide-gray-200">
-                                    <div v-for="transaction in bankTransactions.slice(0, 5)" :key="transaction.id"
-                                        class="py-5">
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <p class="text-sm font-medium text-gray-900">
-                                                    {{ transaction.bankAccount?.account_name }}
-                                                </p>
-                                                <p class="text-sm text-gray-500">
-                                                    {{ transaction.description || 'No description' }}
-                                                </p>
-                                                <p class="text-xs text-gray-400">
-                                                    {{ formatDate(transaction.date) }}
-                                                </p>
-                                            </div>
-                                            <div class="text-right">
-                                                <p :class="[
-                                                    'text-sm font-medium',
-                                                    transaction.transaction_type === 'in' ? 'text-green-600' : 'text-red-600'
-                                                ]">
-                                                    {{ transaction.transaction_type === 'in' ? '+' : '-' }}
-                                                    {{ formatCurrency(transaction.amount) }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mt-6">
-                                <Link href="/admin/bank-transactions"
-                                    class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                                View all transactions
-                                <span aria-hidden="true"> &rarr;</span>
-                                </Link>
-                            </div>
+                <!-- Quick links -->
+                <h2 class="mt-14 text-lg font-semibold text-slate-900 dark:text-white">
+                    Quick links
+                </h2>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <Link
+                        v-for="link in quickLinks"
+                        :key="link.href"
+                        :href="link.href"
+                        class="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all hover:border-indigo-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800/60 dark:hover:border-indigo-500/50"
+                    >
+                        <div
+                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-gray-700 dark:text-slate-300"
+                        >
+                            <component :is="link.icon" class="h-5 w-5" />
                         </div>
-                    </div>
-                    <div class="bg-white shadow rounded-lg">
-                        <div class="p-6">
-                            <h3 class="text-lg font-medium text-gray-900">Recent Expenses</h3>
-                            <div class="mt-4 flow-root">
-                                <div class="-my-5 divide-y divide-gray-200">
-                                    <div v-for="expense in expensesData.slice(0, 5)" :key="expense.id" class="py-5">
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <p class="text-sm font-medium text-gray-900">
-                                                    {{ expense.expenseCategory?.name }}
-                                                </p>
-                                                <p class="text-sm text-gray-500">
-                                                    {{ expense.description || 'No description' }}
-                                                </p>
-                                                <p class="text-xs text-gray-400">
-                                                    {{ formatDate(expense.date) }}
-                                                </p>
-                                            </div>
-                                            <div class="text-right">
-                                                <p class="text-sm font-medium text-red-600">
-                                                    -{{ formatCurrency(expense.amount) }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mt-6">
-                                <Link href="/admin/expenses"
-                                    class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                                View all expenses
-                                <span aria-hidden="true"> &rarr;</span>
-                                </Link>
-                            </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="font-medium text-slate-900 dark:text-white">{{ link.title }}</p>
+                            <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ link.sub }}</p>
                         </div>
-                    </div>
-
-
-
+                        <ChevronRightIcon class="h-5 w-5 shrink-0 text-slate-300 dark:text-slate-600" />
+                    </Link>
                 </div>
             </div>
         </div>
@@ -304,202 +115,139 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { computed } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import {
     ArrowPathIcon,
-    ChartBarIcon,
-    CurrencyDollarIcon,
     BanknotesIcon,
-    ArchiveBoxIcon,
-    ArrowUpIcon,
-    ArrowDownIcon,
-    ArrowTrendingUpIcon
+    ChartBarIcon,
+    ChevronRightIcon,
+    CurrencyDollarIcon,
+    CubeIcon,
+    ShoppingCartIcon,
+    BuildingStorefrontIcon,
+    DocumentChartBarIcon,
 } from '@heroicons/vue/24/outline'
-import {
-    format,
-    startOfMonth,
-    endOfMonth,
-    startOfWeek,
-    differenceInWeeks,
-    differenceInDays,
-    sub,
-    parseISO,
-    isValid
-} from 'date-fns'
+import { format, startOfMonth, subDays } from 'date-fns'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import { formatCurrency } from '@/utils'
 
 const props = defineProps({
-    salesData: Array,
-    expensesData: Array,
-    bankTransactions: Array,
-    extraIncomeData: Array,
-    summary: Object,
-    dailySummary: Array,
-    bankingSummary: Array,
-    filters: Object
+    stats: {
+        type: Object,
+        required: true,
+    },
+    filters: {
+        type: Object,
+        required: true,
+    },
 })
 
-const selectedRange = ref(props.filters?.startDate ? 'custom' : 'month')
-
-// Calculate profit trend
-const profitTrend = computed(() => {
-    try {
-        const currentProfit = props.summary.profit.net_profit || 0
-        const previousProfit = props.summary.profit.previous_period_profit || 0
-
-        if (previousProfit === 0) return 0
-
-        let percentageChange = ((currentProfit - previousProfit) / Math.abs(previousProfit)) * 100
-        return Number(percentageChange.toFixed(1))
-    } catch (error) {
-        console.error('Error calculating profit trend:', error)
-        return 0
-    }
+const preset = computed(() => {
+    const s = props.filters?.startDate
+    const e = props.filters?.endDate
+    if (!s || !e) return 'month'
+    const today = format(new Date(), 'yyyy-MM-dd')
+    if (s === e && s === today) return 'today'
+    const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd')
+    if (s === monthStart && e === today) return 'month'
+    const thirty = format(subDays(new Date(), 30), 'yyyy-MM-dd')
+    if (s === thirty && e === today) return '30d'
+    return 'custom'
 })
 
-const calculateProfitPercentage = computed(() => {
-    const costValue = props.summary.stock.current_value || 0
-    const potentialProfit = props.summary.stock.potential_profit || 0
+const metricCards = computed(() => [
+    {
+        key: 'sales_total',
+        label: 'Total sales',
+        format: 'currency',
+        icon: CurrencyDollarIcon,
+        iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+        blob: 'bg-emerald-500',
+        hint: `${props.stats.sales_count ?? 0} invoices`,
+    },
+    {
+        key: 'expenses_total',
+        label: 'Total expenses',
+        format: 'currency',
+        icon: ChartBarIcon,
+        iconBg: 'bg-gradient-to-br from-rose-500 to-orange-600',
+        blob: 'bg-rose-500',
+        hint: 'Operating (excl. Fixed Asset)',
+    },
+    {
+        key: 'net_profit',
+        label: 'Net (sales + other − expenses)',
+        format: 'currency',
+        icon: BanknotesIcon,
+        iconBg: 'bg-gradient-to-br from-violet-500 to-purple-700',
+        blob: 'bg-violet-500',
+        hint: null,
+    },
+    {
+        key: 'bank_balance',
+        label: 'Bank balance (to date)',
+        format: 'currency',
+        icon: BuildingStorefrontIcon,
+        iconBg: 'bg-gradient-to-br from-sky-500 to-blue-700',
+        blob: 'bg-sky-500',
+        hint: 'Active accounts',
+    },
+    {
+        key: 'sales_due',
+        label: 'Outstanding (due)',
+        format: 'currency',
+        icon: DocumentChartBarIcon,
+        iconBg: 'bg-gradient-to-br from-amber-500 to-yellow-600',
+        blob: 'bg-amber-500',
+        hint: 'Sales in selected period',
+    },
+    {
+        key: 'extra_income',
+        label: 'Extra income',
+        format: 'currency',
+        icon: CurrencyDollarIcon,
+        iconBg: 'bg-gradient-to-br from-cyan-500 to-indigo-600',
+        blob: 'bg-cyan-500',
+        hint: null,
+    },
+    {
+        key: 'products_count',
+        label: 'Active products',
+        format: 'number',
+        icon: CubeIcon,
+        iconBg: 'bg-gradient-to-br from-slate-600 to-slate-800',
+        blob: 'bg-slate-600',
+        hint: 'Catalog',
+    },
+])
 
-    if (costValue === 0) return 0
+const quickLinks = [
+    { title: 'POS / Sales', sub: 'New sale', href: '/admin/pos', icon: ShoppingCartIcon },
+    { title: 'Sales list', sub: 'All invoices', href: '/admin/sales', icon: DocumentChartBarIcon },
+    { title: 'Products', sub: 'Stock & pricing', href: '/admin/products', icon: CubeIcon },
+    { title: 'Bank', sub: 'Transactions', href: '/admin/bank-transactions', icon: BanknotesIcon },
+]
 
-    return Number(((potentialProfit / costValue) * 100).toFixed(1))
-})
-
-
-
-
-// Current period display
-const currentPeriod = computed(() => {
-    try {
-        const start = parseISO(props.filters.startDate)
-        const end = parseISO(props.filters.endDate)
-
-        if (!isValid(start) || !isValid(end)) {
-            return 'Select Date Range'
-        }
-
-        if (format(start, 'yyyy-MM-dd') === format(end, 'yyyy-MM-dd')) {
-            return format(start, 'MMMM d, yyyy')
-        }
-        return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`
-    } catch (error) {
-        console.error('Error formatting period:', error)
-        return 'Invalid Date Range'
+function applyPreset(key) {
+    const end = new Date()
+    let start = new Date()
+    if (key === 'today') {
+        start = end
+    } else if (key === 'month') {
+        start = startOfMonth(end)
+    } else if (key === '30d') {
+        start = subDays(end, 30)
+    } else {
+        return
     }
-})
-
-function formatDate(date) {
-    try {
-        const parsedDate = typeof date === 'string' ? parseISO(date) : date
-        return isValid(parsedDate) ? format(parsedDate, 'MMM d, yyyy') : 'Invalid Date'
-    } catch {
-        return 'Invalid Date'
-    }
-}
-
-function getWeekOfMonth(date) {
-    try {
-        const parsedDate = typeof date === 'string' ? parseISO(date) : date
-        if (!isValid(parsedDate)) return 1
-
-        const start = startOfMonth(parsedDate)
-        const firstWeek = startOfWeek(start)
-        const targetWeek = startOfWeek(parsedDate)
-
-        return differenceInWeeks(targetWeek, firstWeek) + 1
-    } catch {
-        return 1
-    }
-}
-
-function updateDateRange(range) {
-    let startDate = new Date()
-    let endDate = new Date()
-
-    switch (range) {
-        case 'today':
-            break
-        case 'week':
-            startDate = sub(endDate, { weeks: 1 })
-            break
-        case 'month':
-            startDate = sub(endDate, { months: 1 })
-            break
-        case 'year':
-            startDate = sub(endDate, { years: 1 })
-            break
-        default:
-            return
-    }
-
     router.get(
         route('admin.dashboard'),
         {
-            start_date: format(startDate, 'yyyy-MM-dd'),
-            end_date: format(endDate, 'yyyy-MM-dd')
+            start_date: format(start, 'yyyy-MM-dd'),
+            end_date: format(end, 'yyyy-MM-dd'),
         },
-        {
-            preserveState: true,
-            preserveScroll: true
-        }
+        { preserveScroll: true, preserveState: true },
     )
 }
-
-function refreshData() {
-    router.reload()
-}
-
-// Watch for changes
-watch(selectedRange, (newValue) => {
-    updateDateRange(newValue)
-})
-
-// Lifecycle
-onMounted(() => {
-    if (!props.filters.startDate) {
-        updateDateRange('month')
-    }
-})
 </script>
-
-<style scoped>
-.chart-container {
-    position: relative;
-    height: 300px;
-}
-
-.stats-grid {
-    display: grid;
-    gap: 1.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-}
-
-@media (min-width: 1024px) {
-    .stats-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
-.stat-card {
-    @apply relative overflow-hidden rounded-lg bg-white px-4 pt-5 pb-12 shadow sm:px-6 sm:pt-6;
-}
-
-.stat-icon {
-    @apply absolute rounded-md p-3;
-}
-
-.stat-value {
-    @apply ml-16 text-2xl font-semibold text-gray-900;
-}
-
-.stat-label {
-    @apply ml-16 truncate text-sm font-medium text-gray-500;
-}
-
-.stat-footer {
-    @apply absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6;
-}
-</style>

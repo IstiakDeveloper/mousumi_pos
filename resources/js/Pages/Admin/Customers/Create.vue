@@ -36,6 +36,18 @@
                                     class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"></textarea>
                             </div>
                             <div class="mb-4">
+                                <label for="branch_code" class="block text-sm font-medium text-gray-700">Branch Code</label>
+                                <input type="text" id="branch_code" v-model="form.branch_code"
+                                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                                    placeholder="e.g. 0004">
+                            </div>
+                            <div class="mb-4">
+                                <label for="branch_name" class="block text-sm font-medium text-gray-700">Branch Name</label>
+                                <input type="text" id="branch_name" v-model="form.branch_name"
+                                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                                    placeholder="e.g. Bhabanipur">
+                            </div>
+                            <div class="mb-4">
                                 <label for="credit_limit" class="block text-sm font-medium text-gray-700">Credit
                                     Limit</label>
                                 <input type="number" id="credit_limit" v-model="form.credit_limit"
@@ -86,6 +98,8 @@ export default {
                 email: '',
                 phone: '',
                 address: '',
+                branch_code: '',
+                branch_name: '',
                 credit_limit: 0,
                 balance: 0,
                 points: 0,
@@ -102,6 +116,8 @@ export default {
                         email: '',
                         phone: '',
                         address: '',
+                        branch_code: '',
+                        branch_name: '',
                         credit_limit: 0,
                         balance: 0,
                         points: 0,

@@ -144,7 +144,7 @@
                                         </th>
 
                                         <!-- Profit Info Section -->
-                                        <th colspan="2"
+                                        <th colspan="3"
                                             class="px-2 py-1 text-xs font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-orange-50">
                                             Profit Information
                                         </th>
@@ -209,6 +209,9 @@
                                         <th
                                             class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-orange-50">
                                             Total</th>
+                                        <th
+                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-orange-50">
+                                            %</th>
 
                                         <!-- Available Info Headers -->
                                         <th
@@ -275,6 +278,12 @@
                                         ]">
                                             {{ formatCurrency(product.total_profit) }}
                                         </td>
+                                        <td :class="[
+                                            'px-2 py-1 whitespace-nowrap text-center border-r bg-orange-50/30',
+                                            product.profit_percentage < 0 ? 'text-red-600' : 'text-green-600'
+                                        ]">
+                                            {{ formatNumber(product.profit_percentage) }}%
+                                        </td>
 
                                         <!-- Available Info -->
                                         <td class="px-2 py-1 text-center border-r whitespace-nowrap bg-purple-50/30">{{
@@ -317,6 +326,12 @@
                                             totalProfit < 0 ? 'text-red-600' : 'text-green-600'
                                         ]">
                                             {{ formatCurrency(totalProfit) }}
+                                        </td>
+                                        <td :class="[
+                                            'px-2 py-1 text-center border-r bg-orange-100',
+                                            profitMargin < 0 ? 'text-red-600' : 'text-green-600'
+                                        ]">
+                                            {{ profitMargin }}%
                                         </td>
                                         <!-- Available Info Totals -->
                                         <td class="px-2 py-1 text-center bg-purple-100 border-r">{{
@@ -540,6 +555,7 @@ export default defineComponent({
                 'Sale Total': product.sale_after_discount,
                 'Profit Per Unit': product.profit_per_unit,
                 'Total Profit': product.total_profit,
+                'Profit %': product.profit_percentage.toFixed(2),
                 'Available Stock': product.available_quantity,
                 'Stock Value': product.available_stock_value,
             }))
@@ -564,6 +580,7 @@ export default defineComponent({
                 'Sale Total': totalSaleAfterDiscount.value,
                 'Profit Per Unit': '',
                 'Total Profit': totalProfit.value,
+                'Profit %': profitMargin.value,
                 'Available Stock': totalAvailableQuantity.value,
                 'Stock Value': totalAvailableValue.value,
             })

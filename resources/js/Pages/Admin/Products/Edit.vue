@@ -278,7 +278,10 @@
 
                                         <!-- Upload New Images -->
                                         <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors"
-                                            @dragover.prevent @drop.prevent="onFilesDrop">
+                                            tabindex="0"
+                                            @dragover.prevent
+                                            @drop.prevent="onFilesDrop"
+                                            @paste.prevent="onPasteImages">
                                             <div class="text-center">
                                                 <PhotoIcon class="mx-auto h-12 w-12 text-gray-400" />
                                                 <div
@@ -292,7 +295,7 @@
                                                     <p class="pl-1">or drag and drop</p>
                                                 </div>
                                                 <p class="text-xs leading-5 text-gray-600 dark:text-gray-400">
-                                                    PNG, JPG, GIF up to 2MB each
+                                                    Paste (Ctrl+V), upload, or drag and drop. Images will be auto resized + converted to WebP.
                                                 </p>
                                             </div>
                                         </div>
@@ -508,8 +511,8 @@ const setExistingImageAsPrimary = (imageId) => {
 // Methods for handling new images
 const handleFilesForUpdate = (files) => {
     const validFiles = files.filter(file => {
-        if (file.size > 2 * 1024 * 1024) {
-            alert(`File ${file.name} is too large. Maximum size is 2MB.`);
+        if (file.size > 10 * 1024 * 1024) {
+            alert(`File ${file.name} is too large. Maximum size is 10MB.`);
             return false;
         }
         if (!file.type.startsWith('image/')) {
@@ -532,6 +535,22 @@ const handleFilesForUpdate = (files) => {
     // If no primary image is set and this is the first upload, set as primary
     if (primaryImageId.value === null && primaryImageIndex.value === null && imagesPreviews.value.length === validFiles.length) {
         primaryImageIndex.value = 0;
+    }
+};
+
+const onPasteImages = (event) => {
+    const items = Array.from(event.clipboardData?.items || []);
+    const files = items
+        .filter(i => i.kind === 'file' && i.type?.startsWith('image/'))
+        .map(i => i.getAsFile())
+        .filter(Boolean);
+
+    if (files.length) {
+        handleFilesForUpdate(files);
+        // If no primary is set yet, default to first new image
+        if (primaryImageId.value === null && primaryImageIndex.value === null) {
+            primaryImageIndex.value = 0;
+        }
     }
 };
 

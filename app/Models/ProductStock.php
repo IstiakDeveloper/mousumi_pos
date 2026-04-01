@@ -20,6 +20,7 @@ class ProductStock extends Model
         'created_by',
         'available_quantity',
         'type',
+        'date',
         'bank_account_id',
     ];
 

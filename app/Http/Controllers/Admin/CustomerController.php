@@ -8,7 +8,9 @@ use App\Models\Customer;
 use App\Models\Sale;
 use App\Models\SalePayment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class CustomerController extends Controller
@@ -25,7 +27,9 @@ class CustomerController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('branch_name', 'like', "%{$search}%")
+                    ->orWhere('branch_code', 'like', "%{$search}%");
             });
         }
 
@@ -34,19 +38,23 @@ class CustomerController extends Controller
             $query->where('status', $request->status);
         }
 
-        $customers = $query->latest()
-            ->paginate(10)
-            ->through(fn ($customer) => [
+        /** @var \Illuminate\Pagination\LengthAwarePaginator $customers */
+        $customers = $query->latest()->paginate(10);
+        $customers->setCollection(
+            $customers->getCollection()->transform(fn ($customer) => [
                 'id' => $customer->id,
                 'name' => $customer->name,
                 'phone' => $customer->phone,
                 'email' => $customer->email,
                 'address' => $customer->address,
+                'branch_code' => $customer->branch_code,
+                'branch_name' => $customer->branch_name,
                 'total_sales' => $customer->total_sales ?? 0,
                 'total_due' => $customer->total_due ?? 0,
                 'status' => $customer->status,
                 'created_at' => $customer->created_at->format('d M, Y'),
-            ]);
+            ])
+        );
 
         return Inertia::render('Admin/Customers/Index', [
             'customers' => $customers,
@@ -114,8 +122,10 @@ class CustomerController extends Controller
                     'phone' => $customer->phone,
                     'email' => $customer->email,
                     'address' => $customer->address,
-                    'credit_limit' => number_format($customer->credit_limit, 2, '.', ''),
-                    'balance' => number_format($customer->balance, 2, '.', ''),
+                    'branch_code' => $customer->branch_code,
+                    'branch_name' => $customer->branch_name,
+                    'credit_limit' => number_format((float) $customer->credit_limit, 2, '.', ''),
+                    'balance' => number_format((float) $customer->balance, 2, '.', ''),
                     'status' => $customer->status,
                 ],
                 'sales' => $sales,
@@ -129,7 +139,7 @@ class CustomerController extends Controller
                 'bankAccounts' => $bankAccounts,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error in customer show: '.$e->getMessage());
+            Log::error('Error in customer show: '.$e->getMessage());
 
             return back()->with('error', 'An error occurred while loading customer details.');
         }
@@ -147,6 +157,8 @@ class CustomerController extends Controller
             'email' => 'nullable|email|unique:customers',
             'phone' => 'required|string|unique:customers',
             'address' => 'nullable|string',
+            'branch_code' => 'nullable|string|max:10',
+            'branch_name' => 'nullable|string|max:255',
             'credit_limit' => 'nullable|numeric|min:0',
             'status' => 'boolean',
         ]);
@@ -176,6 +188,8 @@ class CustomerController extends Controller
             'email' => 'nullable|email|unique:customers,email,'.$customer->id,
             'phone' => 'required|string|unique:customers,phone,'.$customer->id,
             'address' => 'nullable|string',
+            'branch_code' => 'nullable|string|max:10',
+            'branch_name' => 'nullable|string|max:255',
             'credit_limit' => 'nullable|numeric|min:0',
             'status' => 'boolean',
         ]);
@@ -215,7 +229,7 @@ class CustomerController extends Controller
                 'payment_method' => 'bank', // Always bank
                 'bank_account_id' => $bankAccount->id,
                 'note' => $validatedData['note'],
-                'created_by' => auth()->id(),
+                'created_by' => Auth::id(),
             ]);
 
             // Update sale amounts and status
@@ -233,7 +247,7 @@ class CustomerController extends Controller
                 'amount' => $validatedData['amount'],
                 'description' => "Payment received for invoice {$sale->invoice_no} from customer {$customer->name}",
                 'date' => now(),
-                'created_by' => auth()->id(),
+                'created_by' => Auth::id(),
             ]);
 
             // Update bank account balance
@@ -245,7 +259,7 @@ class CustomerController extends Controller
             return back()->with('success', 'Payment added successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Payment Error: '.$e->getMessage());
+            Log::error('Payment Error: '.$e->getMessage());
 
             return back()->with('error', 'Error adding payment: '.$e->getMessage());
         }
