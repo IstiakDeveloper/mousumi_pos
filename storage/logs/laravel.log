@@ -199,3 +199,32 @@ Stack trace:
 [2026-04-01 13:09:40] local.INFO: Extra Incomes: {"2026-02-28":{"stdClass":{"date":"2026-02-28","total_amount":"110.00"}}} 
 [2026-04-01 13:09:41] local.INFO: Date Range {"start_date":"2026-02-01","end_date":"2026-02-28"} 
 [2026-04-01 13:09:55] local.INFO: Date Range {"start_date":"2026-04-01","end_date":"2026-04-30"} 
+[2026-04-02 06:13:55] local.INFO: POS Store Request: {"customer_id":10,"items":[{"product_id":3,"name":"Ispahani Tea Pack (400g)","sku":"I-7961","unit_price":200,"quantity":1,"max_stock":24},{"product_id":4,"name":"Sugar (1kg)","sku":"C-8503","unit_price":125,"quantity":1,"max_stock":107},{"product_id":6,"name":"Lifebuoy Handwash Refil (170ml)","sku":"L-6999","unit_price":65,"quantity":1,"max_stock":214}],"subtotal":390,"discount":0,"total":390,"paid":390,"due":0,"bank_account_id":1,"note":null}  
+[2026-04-02 06:13:55] local.INFO: Validation passed  
+[2026-04-02 06:13:55] local.INFO: Transaction started  
+[2026-04-02 06:13:55] local.INFO: Sale created with ID: 203  
+[2026-04-02 06:13:55] local.INFO: Processing item 0: {"product_id":3,"name":"Ispahani Tea Pack (400g)","sku":"I-7961","unit_price":200,"quantity":1,"max_stock":24}  
+[2026-04-02 06:13:55] local.INFO: Stock check: before=24.000000, after=23  
+[2026-04-02 06:13:55] local.INFO: Sale item created for product ID: 3  
+[2026-04-02 06:13:55] local.ERROR: POS Error: SQLSTATE[HY000]: General error: 1364 Field 'date' doesn't have a default value (Connection: mysql, SQL: insert into `product_stocks` (`product_id`, `quantity`, `available_quantity`, `type`, `unit_cost`, `total_cost`, `created_by`, `updated_at`, `created_at`) values (3, -1, 23, sale, 182.00, 182, 4, 2026-04-02 06:13:55, 2026-04-02 06:13:55)) at C:\2024\MOUSUMI\mousumi_pos\vendor\laravel\framework\src\Illuminate\Database\Connection.php:825  
+[2026-04-02 06:19:53] local.INFO: POS Store Request: {"customer_id":10,"items":[{"product_id":3,"name":"Ispahani Tea Pack (400g)","sku":"I-7961","unit_price":200,"quantity":1,"max_stock":24},{"product_id":5,"name":"Lifebuoy Handwash Pump (200ml)","sku":"L-1770","unit_price":105,"quantity":1,"max_stock":19},{"product_id":6,"name":"Lifebuoy Handwash Refil (170ml)","sku":"L-6999","unit_price":65,"quantity":1,"max_stock":214}],"subtotal":370,"discount":0,"total":370,"paid":370,"due":0,"bank_account_id":1,"note":null}  
+[2026-04-02 06:19:53] local.INFO: Validation passed  
+[2026-04-02 06:19:53] local.INFO: Transaction started  
+[2026-04-02 06:19:53] local.INFO: Sale created with ID: 204  
+[2026-04-02 06:19:53] local.INFO: Processing item 0: {"product_id":3,"name":"Ispahani Tea Pack (400g)","sku":"I-7961","unit_price":200,"quantity":1,"max_stock":24}  
+[2026-04-02 06:19:53] local.INFO: Stock check: before=24.000000, after=23  
+[2026-04-02 06:19:53] local.INFO: Sale item created for product ID: 3  
+[2026-04-02 06:19:53] local.INFO: Product stock updated for product ID: 3  
+[2026-04-02 06:19:53] local.INFO: Stock movement recorded for product ID: 3  
+[2026-04-02 06:19:53] local.INFO: Processing item 1: {"product_id":5,"name":"Lifebuoy Handwash Pump (200ml)","sku":"L-1770","unit_price":105,"quantity":1,"max_stock":19}  
+[2026-04-02 06:19:53] local.INFO: Stock check: before=19.000000, after=18  
+[2026-04-02 06:19:53] local.INFO: Sale item created for product ID: 5  
+[2026-04-02 06:19:53] local.INFO: Product stock updated for product ID: 5  
+[2026-04-02 06:19:53] local.INFO: Stock movement recorded for product ID: 5  
+[2026-04-02 06:19:53] local.INFO: Processing item 2: {"product_id":6,"name":"Lifebuoy Handwash Refil (170ml)","sku":"L-6999","unit_price":65,"quantity":1,"max_stock":214}  
+[2026-04-02 06:19:53] local.INFO: Stock check: before=214.000000, after=213  
+[2026-04-02 06:19:53] local.INFO: Sale item created for product ID: 6  
+[2026-04-02 06:19:53] local.INFO: Product stock updated for product ID: 6  
+[2026-04-02 06:19:53] local.INFO: Stock movement recorded for product ID: 6  
+[2026-04-02 06:19:53] local.INFO: Processing payment of 370 to bank account ID: 1  
+[2026-04-02 06:19:53] local.INFO: Transaction committed successfully with invoice number: INV-20260402-0001  

@@ -135,8 +135,15 @@ class PosController extends Controller
 
             Log::info('Validation passed');
 
+            $createdBy = auth()->id();
+            if ($createdBy === null) {
+                throw new \Exception('You must be logged in to process a sale.');
+            }
+
             DB::beginTransaction();
             Log::info('Transaction started');
+
+            $saleDate = now()->toDateString();
 
             // Generate a unique invoice number
             $date = date('Ymd');
@@ -165,7 +172,7 @@ class PosController extends Controller
                 'due' => $request->total - $request->paid,
                 'payment_status' => $request->paid >= $request->total ? 'paid' : ($request->paid > 0 ? 'partial' : 'due'),
                 'note' => $request->note ?? null,
-                'created_by' => auth()->id() ?? null,
+                'created_by' => $createdBy,
             ]);
 
             Log::info('Sale created with ID: '.$sale->id);
@@ -208,9 +215,10 @@ class PosController extends Controller
                     'quantity' => -$item['quantity'], // negative for sales
                     'available_quantity' => $afterQuantity,
                     'type' => 'sale',
+                    'date' => $saleDate,
                     'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
                     'total_cost' => $currentStock ? ($currentStock->unit_cost * $item['quantity']) : 0,
-                    'created_by' => auth()->id() ?? null,
+                    'created_by' => $createdBy,
                 ]);
 
                 Log::info("Product stock updated for product ID: {$item['product_id']}");
@@ -224,7 +232,7 @@ class PosController extends Controller
                     'before_quantity' => $beforeQuantity,
                     'after_quantity' => $afterQuantity,
                     'type' => 'out',
-                    'created_by' => auth()->id() ?? null,
+                    'created_by' => $createdBy,
                 ]);
 
                 Log::info("Stock movement recorded for product ID: {$item['product_id']}");
@@ -256,13 +264,12 @@ class PosController extends Controller
                 $bankAccount->transactions()->create([
                     'transaction_type' => 'in',
                     'amount' => $request->paid,
-                    'date' => now(),
+                    'date' => $saleDate,
                     'description' => "Payment received for invoice {$sale->invoice_no}",
-                    'created_by' => auth()->id() ?? null,
+                    'created_by' => $createdBy,
                 ]);
 
-                $bankAccount->increment('current_balance', $request->paid);
-                Log::info('Bank account balance updated');
+                // running_balance + current_balance: BankTransactionObserver
             }
 
             DB::commit();
