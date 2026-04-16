@@ -13,6 +13,7 @@ use App\Models\SaleItem;
 use App\Models\StockMovement;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -37,11 +38,16 @@ class PosController extends Controller
 
     public function products()
     {
-        return Product::with(['productStocks', 'primaryImage'])
+        return Product::with([
+                'productStocks',
+                'primaryImage',
+                'images' => fn ($q) => $q->orderByDesc('is_primary')->orderBy('sort_order')->orderBy('id'),
+            ])
             ->where('status', true)
             ->get()
             ->map(function ($product) {
                 $latestStock = $product->productStocks->sortByDesc('id')->first();
+                $img = $product->primaryImage ?: $product->images->first();
 
                 return [
                     'id' => $product->id,
@@ -49,14 +55,21 @@ class PosController extends Controller
                     'sku' => $product->sku,
                     'selling_price' => $product->selling_price,
                     'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
-                    'image' => $product->primaryImage ? $product->primaryImage->image : null,
+                    'image' => $img ? $img->image : null,
+                    'image_url' => $img
+                        ? asset('storage/'.$img->image)
+                        : null,
                 ];
             });
     }
 
     public function productsByCategory(Request $request)
     {
-        $query = Product::with(['productStocks', 'primaryImage'])
+        $query = Product::with([
+                'productStocks',
+                'primaryImage',
+                'images' => fn ($q) => $q->orderByDesc('is_primary')->orderBy('sort_order')->orderBy('id'),
+            ])
             ->where('status', true);
 
         if ($request->filled('category_id')) {
@@ -65,6 +78,7 @@ class PosController extends Controller
 
         return $query->get()->map(function ($product) {
             $latestStock = $product->productStocks->sortByDesc('id')->first();
+            $img = $product->primaryImage ?: $product->images->first();
 
             return [
                 'id' => $product->id,
@@ -72,14 +86,21 @@ class PosController extends Controller
                 'sku' => $product->sku,
                 'selling_price' => $product->selling_price,
                 'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
-                'image' => $product->primaryImage ? $product->primaryImage->image : null,
+                'image' => $img ? $img->image : null,
+                'image_url' => $img
+                    ? asset('storage/'.$img->image)
+                    : null,
             ];
         });
     }
 
     public function searchProducts(Request $request)
     {
-        $query = Product::with(['productStocks', 'primaryImage'])
+        $query = Product::with([
+                'productStocks',
+                'primaryImage',
+                'images' => fn ($q) => $q->orderByDesc('is_primary')->orderBy('sort_order')->orderBy('id'),
+            ])
             ->where('status', true);
 
         if ($request->filled('search')) {
@@ -93,6 +114,7 @@ class PosController extends Controller
 
         return $query->take(10)->get()->map(function ($product) {
             $latestStock = $product->productStocks->sortByDesc('id')->first();
+            $img = $product->primaryImage ?: $product->images->first();
 
             return [
                 'id' => $product->id,
@@ -100,7 +122,10 @@ class PosController extends Controller
                 'sku' => $product->sku,
                 'selling_price' => $product->selling_price,
                 'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
-                'image' => $product->primaryImage ? $product->primaryImage->image : null,
+                'image' => $img ? $img->image : null,
+                'image_url' => $img
+                    ? asset('storage/'.$img->image)
+                    : null,
             ];
         });
     }
@@ -108,11 +133,35 @@ class PosController extends Controller
     public function searchByBarcode(Request $request)
     {
         $barcode = $request->input('barcode');
-        $product = Product::where('barcode', $barcode)
-            ->orWhere('sku', $barcode)
+        $product = Product::with(['productStocks', 'primaryImage'])
+            ->where('status', true)
+            ->where(function ($q) use ($barcode) {
+                $q->where('barcode', $barcode)->orWhere('sku', $barcode);
+            })
             ->first();
 
-        return response()->json($product ? [$product] : []);
+        if (! $product) {
+            return response()->json([]);
+        }
+
+        $latestStock = $product->productStocks->sortByDesc('id')->first();
+        $img = $product->primaryImage;
+        if (! $img) {
+            $product->load(['images' => fn ($q) => $q->orderByDesc('is_primary')->orderBy('sort_order')->orderBy('id')]);
+            $img = $product->images->first();
+        }
+
+        return response()->json([[
+            'id' => $product->id,
+            'name' => $product->name,
+            'sku' => $product->sku,
+            'selling_price' => $product->selling_price,
+            'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
+            'image' => $img ? $img->image : null,
+            'image_url' => $img
+                ? asset('storage/'.$img->image)
+                : null,
+        ]]);
     }
 
     public function store(Request $request)
@@ -135,7 +184,7 @@ class PosController extends Controller
 
             Log::info('Validation passed');
 
-            $createdBy = auth()->id();
+            $createdBy = Auth::id();
             if ($createdBy === null) {
                 throw new \Exception('You must be logged in to process a sale.');
             }

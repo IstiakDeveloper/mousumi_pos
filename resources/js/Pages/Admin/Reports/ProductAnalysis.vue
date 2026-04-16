@@ -115,110 +115,110 @@
                         </div>
 
                         <!-- Table Container -->
-                        <div class="overflow-x-auto">
+                        <div class="max-h-[70vh] overflow-auto">
                             <table class="min-w-full text-xs divide-y divide-gray-200">
                                 <thead>
                                     <tr class="bg-gray-50">
                                         <!-- Product Info Section -->
                                         <th colspan="2"
-                                            class="px-2 py-1 text-xs font-medium tracking-wider text-left text-gray-500 uppercase border-r">
+                                            class="sticky top-0 z-20 px-2 py-1 text-xs font-medium tracking-wider text-left text-gray-500 uppercase border-r bg-gray-50">
                                             Product Information
                                         </th>
 
                                         <!-- Before Stock Section -->
                                         <th colspan="3"
-                                            class="px-2 py-1 text-xs font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-yellow-50">
+                                            class="sticky top-0 z-20 px-2 py-1 text-xs font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-yellow-50">
                                             Before Stock Information
                                         </th>
 
                                         <!-- Buy Info Section -->
                                         <th colspan="3"
-                                            class="px-2 py-1 text-xs font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-blue-50">
+                                            class="sticky top-0 z-20 px-2 py-1 text-xs font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-blue-50">
                                             Buy Information
                                         </th>
 
                                         <!-- Sale Info Section -->
                                         <th colspan="5"
-                                            class="px-2 py-1 text-xs font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-green-50">
+                                            class="sticky top-0 z-20 px-2 py-1 text-xs font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-green-50">
                                             Sale Information
                                         </th>
 
                                         <!-- Profit Info Section -->
                                         <th colspan="3"
-                                            class="px-2 py-1 text-xs font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-orange-50">
+                                            class="sticky top-0 z-20 px-2 py-1 text-xs font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-orange-50">
                                             Profit Information
                                         </th>
 
                                         <!-- Available Info Section -->
                                         <th colspan="2"
-                                            class="px-2 py-1 text-xs font-medium tracking-wider text-center text-gray-500 uppercase bg-purple-50">
+                                            class="sticky top-0 z-20 px-2 py-1 text-xs font-medium tracking-wider text-center text-gray-500 uppercase bg-purple-50">
                                             Available Information
                                         </th>
                                     </tr>
                                     <tr class="text-xs bg-gray-50">
                                         <!-- Product Info Headers -->
                                         <th
-                                            class="sticky left-0 px-2 py-1 font-medium tracking-wider text-left text-gray-500 uppercase border-r bg-gray-50">
+                                            class="sticky top-7 left-0 z-30 px-2 py-1 font-medium tracking-wider text-left text-gray-500 uppercase border-r bg-gray-50">
                                             SL</th>
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-left text-gray-500 uppercase border-r">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-left text-gray-500 uppercase border-r bg-gray-50">
                                             Name</th>
                                         <!-- Before Stock Headers -->
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-yellow-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-yellow-50">
                                             Qty</th>
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-yellow-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-yellow-50">
                                             Price</th>
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-yellow-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-yellow-50">
                                             Value</th>
 
                                         <!-- Buy Info Headers -->
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-blue-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-blue-50">
                                             Qty</th>
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-blue-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-blue-50">
                                             Price</th>
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-blue-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-blue-50">
                                             Total</th>
 
                                         <!-- Sale Info Headers -->
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-green-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-green-50">
                                             Qty</th>
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-green-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-green-50">
                                             Price</th>
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-green-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-green-50">
                                             Subtotal</th>
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-green-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-green-50">
                                             Discount</th>
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-green-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-green-50">
                                             Total</th>
 
                                         <!-- Profit Info Headers -->
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-orange-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-orange-50">
                                             Per Unit</th>
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-orange-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-orange-50">
                                             Total</th>
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-orange-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-orange-50">
                                             %</th>
 
                                         <!-- Available Info Headers -->
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-purple-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase border-r bg-purple-50">
                                             Stock</th>
                                         <th
-                                            class="px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase bg-purple-50">
+                                            class="sticky top-7 z-20 px-2 py-1 font-medium tracking-wider text-center text-gray-500 uppercase bg-purple-50">
                                             Value</th>
                                     </tr>
                                 </thead>

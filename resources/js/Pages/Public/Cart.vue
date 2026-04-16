@@ -19,7 +19,7 @@
                         class="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center gap-4">
                             <div class="h-16 w-16 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-700">
-                                <img v-if="item.product.image" :src="`/storage/${item.product.image}`" class="h-full w-full object-cover" />
+                                <img v-if="item.product.image_url || item.product.image" :src="item.product.image_url || `/storage/${item.product.image}`" class="h-full w-full object-cover" />
                             </div>
                             <div>
                                 <p class="font-semibold text-gray-900 dark:text-white">{{ item.product.name }}</p>

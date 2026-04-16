@@ -386,6 +386,7 @@ const addToCart = (product) => {
     }
 
     const existingItem = cartItems.value.find(item => item.product_id === product.id)
+    const imageUrl = product.image_url ?? (product.image ? `/storage/${product.image}` : null)
 
     if (existingItem) {
         // Check if we can increment quantity
@@ -397,6 +398,7 @@ const addToCart = (product) => {
         }
         existingItem.quantity++
         existingItem.max_stock = product.stock // Track max available
+        existingItem.image = imageUrl
     } else {
         cartItems.value.push({
             product_id: product.id,
@@ -404,7 +406,8 @@ const addToCart = (product) => {
             sku: product.sku,
             unit_price: Number(product.selling_price),
             quantity: 1,
-            max_stock: product.stock // Track max available
+            max_stock: product.stock, // Track max available
+            image: imageUrl,
         })
     }
 

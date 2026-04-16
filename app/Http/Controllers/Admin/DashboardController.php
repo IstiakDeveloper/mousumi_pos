@@ -41,6 +41,12 @@ class DashboardController extends Controller
             ->whereNull('deleted_at')
             ->sum('amount');
 
+        $buyTotal = (float) DB::table('product_stocks')
+            ->whereNull('deleted_at')
+            ->where('type', 'purchase')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->sum('total_cost');
+
         $openingTotal = (float) BankAccount::query()
             ->where('status', true)
             ->sum('opening_balance');
@@ -55,7 +61,26 @@ class DashboardController extends Controller
         $bankBalance = $openingTotal + $txNet;
 
         $salesTotal = (float) ($salesAgg->total ?? 0);
-        $netProfit = $salesTotal + $extraIncome - $expensesTotal;
+        // COGS (Cost of goods sold) based on weighted average buy price per product.
+        // avg_cost = SUM(purchase.total_cost) / SUM(purchase.quantity)
+        $avgCosts = DB::table('product_stocks')
+            ->whereNull('deleted_at')
+            ->where('type', 'purchase')
+            ->where('quantity', '>', 0)
+            ->groupBy('product_id')
+            ->selectRaw('product_id, (SUM(total_cost) / NULLIF(SUM(quantity), 0)) as avg_cost');
+
+        $cogs = (float) DB::table('sale_items as si')
+            ->join('sales as s', 's.id', '=', 'si.sale_id')
+            ->leftJoinSub($avgCosts, 'ac', function ($join) {
+                $join->on('ac.product_id', '=', 'si.product_id');
+            })
+            ->whereNull('s.deleted_at')
+            ->whereBetween('s.created_at', [$startDate, $endDate])
+            ->selectRaw('COALESCE(SUM(si.quantity * COALESCE(ac.avg_cost, 0)), 0) as cogs')
+            ->value('cogs');
+
+        $netProfit = $salesTotal - $cogs + $extraIncome - $expensesTotal;
 
         $productsCount = Product::query()->where('status', true)->count();
 
@@ -65,11 +90,13 @@ class DashboardController extends Controller
 
         return Inertia::render('Admin/Dashboard/Index', [
             'stats' => [
+                'buy_total' => $buyTotal,
                 'sales_total' => $salesTotal,
                 'sales_count' => (int) ($salesAgg->cnt ?? 0),
                 'sales_due' => (float) ($salesAgg->due ?? 0),
                 'expenses_total' => $expensesTotal,
                 'extra_income' => $extraIncome,
+                'cogs' => $cogs,
                 'net_profit' => $netProfit,
                 'bank_balance' => $bankBalance,
                 'products_count' => $productsCount,

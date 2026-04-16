@@ -2,13 +2,18 @@
     <div class="space-y-6">
       <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div v-for="stat in stats" :key="stat.name" class="bg-white rounded-lg shadow p-6">
+        <div v-for="(stat, idx) in stats" :key="stat.name" class="bg-white rounded-lg shadow p-6">
           <div class="flex items-center">
             <div class="p-3 rounded-full" :class="stat.bgColor">
               <i :class="['fas', stat.icon, stat.iconColor, 'text-2xl']"></i>
             </div>
             <div class="ml-4">
-              <h3 class="text-sm font-medium text-gray-500">{{ stat.name }}</h3>
+              <div class="flex items-center gap-2">
+                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 text-[11px] font-semibold text-gray-700">
+                  {{ idx + 1 }}
+                </span>
+                <h3 class="text-sm font-medium text-gray-500">{{ stat.name }}</h3>
+              </div>
               <p class="text-2xl font-semibold text-gray-900">{{ stat.value }}</p>
               <p class="text-sm text-gray-600">
                 <span :class="stat.changeColor">{{ stat.change }}</span>
@@ -47,6 +52,44 @@
   })
 
   const stats = [
+    {
+      name: 'Total Buy',
+      value: '—',
+      change: '—',
+      icon: 'fa-cart-plus',
+      bgColor: 'bg-indigo-100',
+      iconColor: 'text-indigo-600',
+      changeColor: 'text-gray-600'
+    },
+    {
+      name: 'Total Sale',
+      value: '—',
+      change: '—',
+      icon: 'fa-dollar-sign',
+      bgColor: 'bg-green-100',
+      iconColor: 'text-green-600',
+      changeColor: 'text-gray-600'
+    },
+    {
+      name: 'Profit',
+      value: '—',
+      change: '—',
+      icon: 'fa-chart-line',
+      bgColor: 'bg-emerald-100',
+      iconColor: 'text-emerald-600',
+      changeColor: 'text-gray-600'
+    },
+    {
+      name: 'Bank Balance',
+      value: '—',
+      change: '—',
+      icon: 'fa-university',
+      bgColor: 'bg-sky-100',
+      iconColor: 'text-sky-600',
+      changeColor: 'text-gray-600'
+    },
+
+    // Keep the remaining cards after Bank Balance (as-is)
     {
       name: 'Total Revenue',
       value: '$45,231.89',

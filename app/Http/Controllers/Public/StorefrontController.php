@@ -23,7 +23,10 @@ class StorefrontController extends Controller
 
         /** @var \Illuminate\Pagination\LengthAwarePaginator $products */
         $products = Product::query()
-            ->with(['primaryImage'])
+            ->with([
+                'primaryImage',
+                'images' => fn ($q) => $q->orderByDesc('is_primary')->orderBy('sort_order')->orderBy('id'),
+            ])
             ->where('status', true)
             ->select('products.*')
             ->selectRaw('(
@@ -47,14 +50,19 @@ class StorefrontController extends Controller
             ->latest()
             ->paginate(24);
 
-        $products->getCollection()->transform(fn ($p) => [
-            'id' => $p->id,
-            'name' => $p->name,
-            'sku' => $p->sku,
-            'selling_price' => (float) $p->selling_price,
-            'image' => $p->primaryImage?->image,
-            'available_quantity' => (int) round((float) ($p->available_quantity ?? 0)),
-        ]);
+        $products->getCollection()->transform(function ($p) {
+            $img = $p->primaryImage ?: $p->images->first();
+
+            return [
+                'id' => $p->id,
+                'name' => $p->name,
+                'sku' => $p->sku,
+                'selling_price' => (float) $p->selling_price,
+                'image' => $img?->image,
+                'image_url' => $img ? asset('storage/'.$img->image) : null,
+                'available_quantity' => (int) round((float) ($p->available_quantity ?? 0)),
+            ];
+        });
 
         [$cartItems, $cartSubtotal] = $this->buildCartView($request);
 
@@ -262,7 +270,10 @@ class StorefrontController extends Controller
         }
 
         $products = Product::query()
-            ->with(['primaryImage'])
+            ->with([
+                'primaryImage',
+                'images' => fn ($q) => $q->orderByDesc('is_primary')->orderBy('sort_order')->orderBy('id'),
+            ])
             ->whereIn('id', $productIds)
             ->get()
             ->keyBy('id');
@@ -283,7 +294,10 @@ class StorefrontController extends Controller
                     'name' => $p->name,
                     'sku' => $p->sku,
                     'selling_price' => (float) $p->selling_price,
-                    'image' => $p->primaryImage?->image,
+                    'image' => ($p->primaryImage ?: $p->images->first())?->image,
+                    'image_url' => ($p->primaryImage ?: $p->images->first())
+                        ? asset('storage/'.(($p->primaryImage ?: $p->images->first())->image))
+                        : null,
                     'available_quantity' => (int) $available,
                 ],
                 'quantity' => (int) $qty,

@@ -59,7 +59,7 @@
                 <!-- Metric cards -->
                 <div class="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <article
-                        v-for="card in metricCards"
+                        v-for="(card, idx) in metricCards"
                         :key="card.key"
                         class="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition-all hover:border-indigo-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800/80 dark:hover:border-indigo-500/40"
                     >
@@ -69,9 +69,16 @@
                         >
                             <component :is="card.icon" class="h-6 w-6" aria-hidden="true" />
                         </div>
-                        <p class="mt-4 text-sm font-medium text-slate-500 dark:text-slate-400">
-                            {{ card.label }}
-                        </p>
+                        <div class="mt-4 flex items-center gap-2">
+                            <span
+                                class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700 dark:bg-gray-700 dark:text-slate-200"
+                            >
+                                {{ idx + 1 }}
+                            </span>
+                            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">
+                                {{ card.label }}
+                            </p>
+                        </div>
                         <p class="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-slate-900 dark:text-white">
                             <template v-if="card.format === 'currency'">{{ formatCurrency(stats[card.key]) }}</template>
                             <template v-else>{{ Number(stats[card.key] ?? 0).toLocaleString() }}</template>
@@ -158,6 +165,15 @@ const preset = computed(() => {
 
 const metricCards = computed(() => [
     {
+        key: 'buy_total',
+        label: 'Total buy',
+        format: 'currency',
+        icon: ShoppingCartIcon,
+        iconBg: 'bg-gradient-to-br from-indigo-500 to-blue-700',
+        blob: 'bg-indigo-500',
+        hint: 'Purchases in selected period',
+    },
+    {
         key: 'sales_total',
         label: 'Total sales',
         format: 'currency',
@@ -167,17 +183,8 @@ const metricCards = computed(() => [
         hint: `${props.stats.sales_count ?? 0} invoices`,
     },
     {
-        key: 'expenses_total',
-        label: 'Total expenses',
-        format: 'currency',
-        icon: ChartBarIcon,
-        iconBg: 'bg-gradient-to-br from-rose-500 to-orange-600',
-        blob: 'bg-rose-500',
-        hint: 'Operating (excl. Fixed Asset)',
-    },
-    {
         key: 'net_profit',
-        label: 'Net (sales + other − expenses)',
+        label: 'Profit',
         format: 'currency',
         icon: BanknotesIcon,
         iconBg: 'bg-gradient-to-br from-violet-500 to-purple-700',
@@ -192,6 +199,17 @@ const metricCards = computed(() => [
         iconBg: 'bg-gradient-to-br from-sky-500 to-blue-700',
         blob: 'bg-sky-500',
         hint: 'Active accounts',
+    },
+
+    // Keep the remaining cards after Bank Balance
+    {
+        key: 'expenses_total',
+        label: 'Total expenses',
+        format: 'currency',
+        icon: ChartBarIcon,
+        iconBg: 'bg-gradient-to-br from-rose-500 to-orange-600',
+        blob: 'bg-rose-500',
+        hint: 'Operating (excl. Fixed Asset)',
     },
     {
         key: 'sales_due',

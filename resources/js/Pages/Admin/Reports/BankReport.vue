@@ -149,15 +149,15 @@
                     <!-- Monthly Summary -->
                     <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700">
                         <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Monthly Summary</h4>
-                        <div class="overflow-x-auto">
+                        <div class="max-h-80 overflow-auto">
                             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
-                                <thead>
+                                <thead class="bg-gray-50 dark:bg-gray-700">
                                     <tr>
-                                        <th class="px-4 py-2 text-left">Month</th>
-                                        <th class="px-4 py-2 text-right">Inflows</th>
-                                        <th class="px-4 py-2 text-right">Outflows</th>
-                                        <th class="px-4 py-2 text-right">Net</th>
-                                        <th class="px-4 py-2 text-right">Transactions</th>
+                                        <th class="sticky top-0 z-10 px-4 py-2 text-left bg-gray-50 dark:bg-gray-700">Month</th>
+                                        <th class="sticky top-0 z-10 px-4 py-2 text-right bg-gray-50 dark:bg-gray-700">Inflows</th>
+                                        <th class="sticky top-0 z-10 px-4 py-2 text-right bg-gray-50 dark:bg-gray-700">Outflows</th>
+                                        <th class="sticky top-0 z-10 px-4 py-2 text-right bg-gray-50 dark:bg-gray-700">Net</th>
+                                        <th class="sticky top-0 z-10 px-4 py-2 text-right bg-gray-50 dark:bg-gray-700">Transactions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -181,16 +181,16 @@
                     </div>
 
                     <!-- Detailed Transactions -->
-                    <div class="overflow-x-auto">
+                    <div class="max-h-[32rem] overflow-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
-                                    <th class="px-4 py-3 text-left">Date</th>
-                                    <th class="px-4 py-3 text-left">Description</th>
-                                    <th class="px-4 py-3 text-left">Type</th>
-                                    <th class="px-4 py-3 text-right">Amount</th>
-                                    <th class="px-4 py-3 text-right">Balance</th>
-                                    <th class="px-4 py-3 text-left">Created By</th>
+                                    <th class="sticky top-0 z-10 px-4 py-3 text-left bg-gray-50 dark:bg-gray-700">Date</th>
+                                    <th class="sticky top-0 z-10 px-4 py-3 text-left bg-gray-50 dark:bg-gray-700">Description</th>
+                                    <th class="sticky top-0 z-10 px-4 py-3 text-left bg-gray-50 dark:bg-gray-700">Type</th>
+                                    <th class="sticky top-0 z-10 px-4 py-3 text-right bg-gray-50 dark:bg-gray-700">Amount</th>
+                                    <th class="sticky top-0 z-10 px-4 py-3 text-right bg-gray-50 dark:bg-gray-700">Balance</th>
+                                    <th class="sticky top-0 z-10 px-4 py-3 text-left bg-gray-50 dark:bg-gray-700">Created By</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">

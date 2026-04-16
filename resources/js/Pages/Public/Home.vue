@@ -56,7 +56,7 @@
                         <div v-for="p in products.data" :key="p.id"
                         class="group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
                         <div class="aspect-square bg-gray-100 dark:bg-gray-800">
-                            <img v-if="p.image" :src="`/storage/${p.image}`" :alt="p.name"
+                            <img v-if="p.image_url || p.image" :src="p.image_url || `/storage/${p.image}`" :alt="p.name"
                                 class="h-full w-full object-cover transition group-hover:scale-[1.02]" />
                             <div v-else class="flex h-full w-full items-center justify-center text-xs text-gray-400">
                                 No image
@@ -114,7 +114,7 @@
                         <div v-for="it in localCartItems" :key="it.product.id"
                             class="flex items-center gap-3 rounded-2xl border border-gray-200 p-3 dark:border-gray-800">
                             <div class="h-14 w-14 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800">
-                                <img v-if="it.product.image" :src="`/storage/${it.product.image}`" class="h-full w-full object-cover" />
+                                <img v-if="it.product.image_url || it.product.image" :src="it.product.image_url || `/storage/${it.product.image}`" class="h-full w-full object-cover" />
                             </div>
                             <div class="min-w-0 flex-1">
                                 <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ it.product.name }}</p>

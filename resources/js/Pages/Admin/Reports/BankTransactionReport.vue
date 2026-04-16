@@ -81,7 +81,7 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
 
         <div class="py-6">
             <div class="mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+                <div class="bg-white shadow-xl sm:rounded-lg">
                     <!-- Filter Section -->
                     <div class="p-6 bg-white border-b border-gray-200">
                         <div class="flex flex-wrap gap-4 items-center">
@@ -124,56 +124,56 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                     </div>
 
                     <!-- Transaction Table -->
-                    <div class="overflow-x-auto p-6">
-                        <table class="w-full border-collapse">
+                    <div class="max-h-[70vh] overflow-auto p-6">
+                        <table class="w-full border-separate border-spacing-0">
                             <thead>
                                 <tr>
                                     <th rowspan="2"
-                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-center text-sm font-semibold text-gray-900">
+                                        class="sticky top-0 z-30 border border-gray-300 bg-gray-50 px-4 py-2 text-center text-sm font-semibold text-gray-900">
                                         Date
                                     </th>
                                     <th colspan="5"
-                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-center text-sm font-semibold text-gray-900">
+                                        class="sticky top-0 z-30 border border-gray-300 bg-gray-50 px-4 py-2 text-center text-sm font-semibold text-gray-900">
                                         Deposit
                                     </th>
                                     <th colspan="4"
-                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-center text-sm font-semibold text-gray-900">
+                                        class="sticky top-0 z-30 border border-gray-300 bg-gray-50 px-4 py-2 text-center text-sm font-semibold text-gray-900">
                                         Withdrawal
                                     </th>
                                     <th rowspan="2"
-                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-right text-sm font-semibold text-gray-900">
+                                        class="sticky top-0 z-30 border border-gray-300 bg-gray-50 px-4 py-2 text-right text-sm font-semibold text-gray-900">
                                         Bank Balance
                                     </th>
                                 </tr>
                                 <tr>
                                     <!-- IN subcategories -->
                                     <th
-                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
+                                        class="sticky top-10 z-30 border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
                                         Fund</th>
                                     <th
-                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">Sale
+                                        class="sticky top-10 z-30 border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">Sale
                                         Receive</th>
                                     <th
-                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
+                                        class="sticky top-10 z-30 border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
                                         Others</th>
                                     <th
-                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
+                                        class="sticky top-10 z-30 border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
                                         Refund</th>
                                     <th
-                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-green-600">
+                                        class="sticky top-10 z-30 border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-green-600">
                                         Total</th>
                                     <!-- OUT subcategories -->
                                     <th
-                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
+                                        class="sticky top-10 z-30 border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
                                         Fund</th>
                                     <th
-                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
+                                        class="sticky top-10 z-30 border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
                                         Purchase</th>
                                     <th
-                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
+                                        class="sticky top-10 z-30 border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-gray-900">
                                         Expense</th>
                                     <th
-                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-red-600">
+                                        class="sticky top-10 z-30 border border-gray-300 bg-gray-50 px-4 py-2 text-ceneter text-sm font-semibold text-red-600">
                                         Total</th>
                                 </tr>
                             </thead>
