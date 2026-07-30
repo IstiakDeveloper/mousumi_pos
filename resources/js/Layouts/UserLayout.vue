@@ -32,7 +32,18 @@
             </div>
 
             <!-- Right Navigation -->
-            <div class="flex items-center">
+            <div class="flex items-center gap-3">
+              <!-- Mousumi Apps Launcher -->
+              <a href="https://app.mousumibd.org"
+                  target="_self"
+                  class="group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 text-white hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-500 font-bold text-xs shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+                  title="Return to Mousumi Apps">
+                  <div class="flex items-center justify-center w-5 h-5 rounded-lg bg-purple-500 dark:bg-white/20 text-white p-0.5 shadow-sm group-hover:rotate-12 transition-transform duration-300">
+                      <i class="fas fa-th-large text-xs"></i>
+                  </div>
+                  <span class="tracking-wide">Mousumi Apps</span>
+              </a>
+
               <!-- Search -->
               <div class="hidden md:block">
                 <div class="relative">
