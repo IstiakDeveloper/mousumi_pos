@@ -320,6 +320,7 @@ import InputLabel from '@/Components/InputLabel.vue'
 import Pagination from '@/Components/Pagination.vue'
 import Modal from '@/Components/Modal.vue'
 import debounce from 'lodash/debounce'
+import { formatDate } from '@/utils'
 
 const page = usePage();
 const user = page.props.auth.user;
@@ -427,10 +428,6 @@ const clearFilters = () => {
     filterData()
 }
 
-const formatDate = (date) => {
-    if (!date) return ''
-    return new Date(date).toLocaleDateString()
-}
 
 const formatTime = (datetime) => {
     if (!datetime) return ''

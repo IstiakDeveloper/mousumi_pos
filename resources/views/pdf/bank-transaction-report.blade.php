@@ -187,7 +187,7 @@
 
                 @foreach($dailyTransactions as $transaction)
                 <tr>
-                    <td class="text-left">{{ \Carbon\Carbon::parse($transaction['date'])->format('d/m/Y') }}</td>
+                    <td class="text-left">{{ \Carbon\Carbon::parse($transaction['date'])->format('d-m-Y') }}</td>
 
                     <!-- Deposit Columns -->
                     <td class="text-center bg-deposit text-green">{{ number_format($transaction['in']['fund'], 2) }}</td>
@@ -229,7 +229,7 @@
         <div class="footer">
             Page <span class="page-number"></span>
             <br>
-            Generated on: {{ now()->format('d M Y H:i:s') }}
+            Generated on: {{ now()->format('d-m-Y H:i:s') }}
         </div>
     </div>
 </body>

@@ -325,8 +325,8 @@ class ProductStockReportController extends Controller
                 'email' => config('app.email', 'Company Email'),
             ],
             'filters' => [
-                'from_date' => $fromDate->format('d M, Y'),
-                'to_date' => $toDate->format('d M, Y'),
+                'from_date' => $fromDate->format('d-m-Y'),
+                'to_date' => $toDate->format('d-m-Y'),
             ],
         ];
 

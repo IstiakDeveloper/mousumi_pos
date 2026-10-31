@@ -358,7 +358,7 @@ class BankReportController extends Controller
                     $runningBalance += $amount;
 
                     $monthTransactions[] = [
-                        'date' => Carbon::parse($transaction->date)->format('d M, Y'),
+                        'date' => Carbon::parse($transaction->date)->format('d-m-Y'),
                         'description' => $transaction->description,
                         'type' => $transaction->transaction_type,
                         'inflow' => $transaction->transaction_type == 'in' ? $transaction->amount : 0,
@@ -427,8 +427,8 @@ class BankReportController extends Controller
             'reports' => $reports,
             'summary' => $summary,
             'date_range' => [
-                'from' => $fromDate->format('d M, Y'),
-                'to' => $toDate->format('d M, Y'),
+                'from' => $fromDate->format('d-m-Y'),
+                'to' => $toDate->format('d-m-Y'),
             ],
         ];
 

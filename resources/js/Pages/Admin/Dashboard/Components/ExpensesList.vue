@@ -39,6 +39,7 @@
 
 <script setup>
 import { defineProps } from 'vue';
+import { formatDate } from '@/utils';
 
 const props = defineProps({
     expenses: {
@@ -46,10 +47,6 @@ const props = defineProps({
         required: true
     }
 });
-
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString();
-};
 
 const formatCurrency = (amount) => {
     const number = new Intl.NumberFormat('en-US', {

@@ -50,7 +50,7 @@ class CustomerSalesReportController extends Controller
             ->map(function ($sale) {
                 return [
                     'id' => $sale->id,
-                    'date' => $sale->created_at->format('Y-m-d'),
+                    'date' => $sale->created_at->format('d-m-Y'),
                     'invoice_no' => $sale->invoice_no,
                     'total' => $sale->total,
                     'paid' => $sale->paid,
@@ -65,7 +65,7 @@ class CustomerSalesReportController extends Controller
                     }),
                     'payments' => $sale->salePayments->map(function ($payment) {
                         return [
-                            'date' => $payment->created_at->format('Y-m-d'),
+                            'date' => $payment->created_at->format('d-m-Y'),
                             'amount' => $payment->amount,
                             'method' => $payment->payment_method,
                         ];

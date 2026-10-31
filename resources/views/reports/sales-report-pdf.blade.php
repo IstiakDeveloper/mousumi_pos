@@ -303,7 +303,7 @@
     @endforeach
 
     <div class="footer">
-        Generated on {{ now()->format('d M, Y h:i A') }}
+        Generated on {{ now()->format('d-m-Y h:i A') }}
     </div>
 </body>
 

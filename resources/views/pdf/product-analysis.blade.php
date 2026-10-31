@@ -175,8 +175,8 @@
         <!-- Report Title and Period -->
         <div class="report-title">Product Analysis Report</div>
         <div class="report-period">
-            Period: {{ \Carbon\Carbon::parse($start_date)->format('d M Y') }} to
-            {{ \Carbon\Carbon::parse($end_date)->format('d M Y') }}
+            Period: {{ \Carbon\Carbon::parse($start_date)->format('d-m-Y') }} to
+            {{ \Carbon\Carbon::parse($end_date)->format('d-m-Y') }}
         </div>
 
         <!-- Product Analysis Table -->
@@ -303,7 +303,7 @@
         <div class="footer">
             Page <span class="page-number"></span>
             <br>
-            Generated on: {{ now()->format('d M Y H:i:s') }}
+            Generated on: {{ now()->format('d-m-Y H:i:s') }}
         </div>
     </div>
 </body>

@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import DateInput from '@/Components/DateInput.vue';
 
 const props = defineProps({
     modelValue: {
@@ -44,7 +45,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'input', 'change']);
 
 // Convert modelValue to string for input display
 const inputValue = computed({
@@ -63,13 +64,36 @@ const baseClasses = 'block w-full rounded-md border-gray-300 shadow-sm focus:bor
 const inputClasses = computed(() => {
     return `${baseClasses} ${props.class}`.trim();
 });
+
+const onTextInput = (event) => {
+    inputValue.value = event.target.value;
+    emit('input', event);
+};
+
+const onDate = (value) => {
+    emit('update:modelValue', value ?? '');
+    emit('input', value ?? '');
+    emit('change', value ?? '');
+};
 </script>
 
 <template>
+    <DateInput
+        v-if="type === 'date'"
+        :model-value="modelValue"
+        :min="min == null ? '' : String(min)"
+        :max="max == null ? '' : String(max)"
+        :required="required"
+        :disabled="disabled"
+        :class="inputClasses"
+        :placeholder="placeholder || 'dd-mm-yyyy'"
+        @update:model-value="onDate"
+    />
     <input
+        v-else
         :type="type"
         :value="inputValue"
-        @input="inputValue = $event.target.value"
+        @input="onTextInput"
         :placeholder="placeholder"
         :disabled="disabled"
         :readonly="readonly"

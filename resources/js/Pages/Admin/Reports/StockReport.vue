@@ -48,26 +48,26 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         From Date
                     </label>
-                    <input type="date" v-model="filters.from_date"
+                    <DateInput v-model="filters.from_date"
                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                        @change="applyFilters">
+                        @change="applyFilters" />
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         To Date
                     </label>
-                    <input type="date" v-model="filters.to_date"
+                    <DateInput v-model="filters.to_date"
                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                        @change="applyFilters">
+                        @change="applyFilters" />
                 </div>
             </div>
         </div>
         <div v-if="reports.length > 0" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Overall Summary ({{ filters.from_date }}
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Overall Summary ({{ formatDate(filters.from_date) }}
                     to {{
-                    filters.to_date }})</h3>
+                    formatDate(filters.to_date) }})</h3>
             </div>
 
             <div class="p-4">
@@ -282,6 +282,7 @@ import { ref, computed, onMounted } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import { DocumentArrowDownIcon } from '@heroicons/vue/24/outline'
+import { formatDate } from '@/utils'
 
 const props = defineProps({
     products: {
@@ -323,13 +324,6 @@ const formatPrice = (amount) => {
     }).format(amount || 0);
 };
 
-const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-};
 
 const getStockClass = (stock) => {
     if (stock <= 0) return 'text-red-600';

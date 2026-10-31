@@ -20,33 +20,26 @@ class ExpenseController extends Controller
 
         // Apply filters
         $filteredExpenses = $query
+            ->whereDoesntHave('category', fn ($q) => $q->where('name', 'Fixed Asset'))
             ->when($request->category_id, fn ($q) => $q->where('expense_category_id', $request->category_id))
             ->when($request->bank_id, fn ($q) => $q->where('bank_account_id', $request->bank_id))
             ->when($request->from_date, fn ($q) => $q->whereDate('date', '>=', $request->from_date))
             ->when($request->to_date, fn ($q) => $q->whereDate('date', '<=', $request->to_date));
 
-        // Pagination
+        $totalExpenses = (clone $filteredExpenses)->sum('amount');
+
         $expenses = $filteredExpenses
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
-        // Calculate summary
-        $totalExpenses = $filteredExpenses->sum('amount');
-        $fixedAssetExpenses = $filteredExpenses
-            ->whereHas('category', function ($q) {
-                $q->where('name', 'LIKE', '%Fixed Asset%');
-            })
-            ->sum('amount');
-
         return Inertia::render('Admin/Expenses/Index', [
             'expenses' => $expenses,
-            'categories' => ExpenseCategory::where('status', true)->get(),
+            'categories' => ExpenseCategory::where('status', true)->where('name', '!=', 'Fixed Asset')->get(),
             'bankAccounts' => BankAccount::where('status', true)->get(),
             'filters' => $request->only(['category_id', 'bank_id', 'from_date', 'to_date']),
             'summary' => [
                 'totalExpenses' => $totalExpenses,
-                'fixedAssetExpenses' => $fixedAssetExpenses,
             ],
         ]);
     }
@@ -62,6 +55,12 @@ class ExpenseController extends Controller
             'date' => 'required|date',
             'attachment' => 'nullable|file|max:2048',
         ]);
+
+        if ($this->isFixedAssetCategory((int) $validated['expense_category_id'])) {
+            return redirect()->back()->withErrors([
+                'expense_category_id' => 'Fixed assets are recorded under Fixed Assets, not as an expense.',
+            ])->withInput();
+        }
 
         DB::beginTransaction();
         try {
@@ -224,6 +223,13 @@ class ExpenseController extends Controller
 
             return redirect()->back()->with('error', 'Failed to delete expense');
         }
+    }
+
+    private function isFixedAssetCategory(int $categoryId): bool
+    {
+        $category = ExpenseCategory::find($categoryId);
+
+        return $category && preg_match('/fixed\s*asset|স্থায়ী\s*সম্পদ/ui', $category->name) === 1;
     }
 
     public function restore($id)

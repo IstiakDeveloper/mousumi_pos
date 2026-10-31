@@ -3,21 +3,12 @@
 
 
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="flex items-center justify-between bg-blue-100 p-4 rounded-lg">
-                    <div>
-                        <h3 class="text-lg font-semibold text-blue-800">Total Expenses</h3>
-                        <p class="text-2xl font-bold text-blue-900">{{ formatAmount(summary.totalExpenses - summary.fixedAssetExpenses) }} </p>
-                    </div>
-                    <IconCurrencyDollar class="w-12 h-12 text-blue-600" />
+            <div class="flex items-center justify-between bg-blue-100 p-4 rounded-lg">
+                <div>
+                    <h3 class="text-lg font-semibold text-blue-800">Total Expenses</h3>
+                    <p class="text-2xl font-bold text-blue-900">{{ formatAmount(summary.totalExpenses) }}</p>
                 </div>
-                <div class="flex items-center justify-between bg-green-100 p-4 rounded-lg">
-                    <div>
-                        <h3 class="text-lg font-semibold text-green-800">Fixed Asset Expenses</h3>
-                        <p class="text-2xl font-bold text-green-900">{{ formatAmount(summary.fixedAssetExpenses) }}</p>
-                    </div>
-                    <IconBuildingFactory2 class="w-12 h-12 text-green-600" />
-                </div>
+                <IconCurrencyDollar class="w-12 h-12 text-blue-600" />
             </div>
         </div>
 
@@ -57,11 +48,11 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">From Date</label>
-                    <input type="date" v-model="filters.from_date" @change="getExpenses" class="w-full rounded-lg">
+                    <DateInput v-model="filters.from_date" @change="getExpenses" class="w-full rounded-lg" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">To Date</label>
-                    <input type="date" v-model="filters.to_date" @change="getExpenses" class="w-full rounded-lg">
+                    <DateInput v-model="filters.to_date" @change="getExpenses" class="w-full rounded-lg" />
                 </div>
             </div>
         </div>
@@ -148,7 +139,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium mb-1">Date</label>
-                            <input type="date" v-model="form.date" class="w-full rounded-lg">
+                            <DateInput v-model="form.date" class="w-full rounded-lg" />
                         </div>
                         <div>
                             <label class="block text-sm font-medium mb-1">Attachment</label>
@@ -176,6 +167,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue'
 import Modal from '@/Components/Modal.vue'
 import Pagination from '@/Components/Pagination.vue'
 import { PlusIcon } from '@heroicons/vue/24/outline'
+import { formatDate } from '@/utils'
 
 
 const props = defineProps({
@@ -281,10 +273,6 @@ const deleteExpense = (expense) => {
     if (confirm('Are you sure you want to delete this expense?')) {
         router.delete(route('admin.expenses.destroy', expense.id))
     }
-}
-
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString()
 }
 
 const formatAmount = (amount) => {

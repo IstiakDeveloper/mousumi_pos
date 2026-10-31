@@ -137,6 +137,29 @@
                                     {{ formatCurrency(payment?.fund_refund || 0) }}
                                 </td>
                             </tr>
+                            <tr class="bg-gray-50">
+                                <td colspan="2" class="px-4 py-2 font-medium text-gray-900">Fixed Assets</td>
+                            </tr>
+                            <template v-if="payment?.fixed_assets?.items && payment.fixed_assets.items.length > 0">
+                                <tr v-for="item in payment.fixed_assets.items" :key="`${item.date}-${item.name}-${item.amount}`">
+                                    <td class="px-4 py-2 pl-8 text-sm text-gray-700">
+                                        {{ formatDate(item.date) }} — {{ item.name }}
+                                    </td>
+                                    <td class="px-4 py-2 text-right text-red-600">
+                                        {{ formatCurrency(item.amount) }}
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr v-else>
+                                <td class="px-4 py-2 pl-8 text-sm text-gray-500 italic">No fixed asset purchase</td>
+                                <td class="px-4 py-2 text-right text-gray-500">{{ formatCurrency(0) }}</td>
+                            </tr>
+                            <tr class="bg-gray-100 font-semibold">
+                                <td class="px-4 py-2 text-gray-800">Total Fixed Assets</td>
+                                <td class="px-4 py-2 text-right text-red-600 font-bold">
+                                    {{ formatCurrency(payment?.fixed_assets?.total || 0) }}
+                                </td>
+                            </tr>
                             <!-- Expenses Header Row -->
                             <tr class="bg-gray-50">
                                 <td colspan="2" class="px-4 py-2 font-medium text-gray-900">Expenses</td>
@@ -189,7 +212,7 @@
 import { defineComponent } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { router } from '@inertiajs/vue3';
-import { formatCurrency } from '@/Utils';
+import { formatCurrency, formatDate } from '@/Utils';
 
 export default defineComponent({
     components: { AdminLayout },
@@ -251,6 +274,7 @@ export default defineComponent({
     },
     methods: {
         formatCurrency,
+        formatDate,
         handleDateChange() {
             router.get(route('admin.reports.receipt-payment'), {
                 year: this.selectedYear,

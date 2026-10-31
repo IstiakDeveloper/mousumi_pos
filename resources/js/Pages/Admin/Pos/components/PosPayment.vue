@@ -163,7 +163,7 @@
             <!-- Sale Info -->
             <div class="flex items-center justify-between px-1 text-xs text-gray-600 dark:text-gray-400">
                 <span>Invoice: #{{ generateInvoiceNo() }}</span>
-                <span>{{ new Date().toLocaleDateString('en-BD') }}</span>
+                <span>{{ formatDate(new Date()) }}</span>
             </div>
 
             <!-- Reset Button -->
@@ -204,6 +204,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { formatDate } from '@/utils'
 
 const props = defineProps({
     customers: {

@@ -41,11 +41,11 @@ class PendingSaleController extends Controller
         $pendingSales->getCollection()->transform(fn ($o) => [
             'id' => $o->id,
             'public_order_no' => $o->public_order_no,
-            'date' => $o->created_at->format('d M, Y h:i A'),
+            'date' => $o->created_at->format('d-m-Y h:i A'),
             'status' => $o->status,
             'sale_id' => $o->sale_id,
-            'approved_at' => $o->approved_at?->format('d M, Y h:i A'),
-            'rejected_at' => $o->rejected_at?->format('d M, Y h:i A'),
+            'approved_at' => $o->approved_at?->format('d-m-Y h:i A'),
+            'rejected_at' => $o->rejected_at?->format('d-m-Y h:i A'),
             'customer' => $o->customer ? [
                 'id' => $o->customer->id,
                 'name' => $o->customer->name,

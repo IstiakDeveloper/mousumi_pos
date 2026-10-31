@@ -85,8 +85,8 @@ class DashboardController extends Controller
         $productsCount = Product::query()->where('status', true)->count();
 
         $periodLabel = $startDate->isSameDay($endDate)
-            ? $startDate->format('M j, Y')
-            : $startDate->format('M j') . ' – ' . $endDate->format('M j, Y');
+            ? $startDate->format('d-m-Y')
+            : $startDate->format('d-m-Y').' – '.$endDate->format('d-m-Y');
 
         return Inertia::render('Admin/Dashboard/Index', [
             'stats' => [

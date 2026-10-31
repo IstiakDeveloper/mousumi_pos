@@ -59,18 +59,18 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         From Date
                     </label>
-                    <input type="date" v-model="filters.from_date"
+                    <DateInput v-model="filters.from_date"
                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                        @change="applyFilters">
+                        @change="applyFilters" />
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         To Date
                     </label>
-                    <input type="date" v-model="filters.to_date"
+                    <DateInput v-model="filters.to_date"
                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                        @change="applyFilters">
+                        @change="applyFilters" />
                 </div>
 
                 <!-- Download Button -->

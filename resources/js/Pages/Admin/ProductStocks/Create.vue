@@ -107,7 +107,7 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Stock Date <span class="text-red-500">*</span>
                         </label>
-                        <input type="date" v-model="form.date" :max="new Date().toISOString().split('T')[0]" required
+                        <DateInput v-model="form.date" :max="new Date().toISOString().split('T')[0]" required
                             class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                             <svg class="inline w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">

@@ -397,7 +397,7 @@ class ProductStockController extends Controller
                     'available_quantity' => $stock->available_quantity,
                     'note' => $stock->note,
                     'created_by' => $stock->createdBy?->name ?? 'N/A',
-                    'created_at' => $stock->created_at->format('d M Y, h:i A'),
+                    'created_at' => $stock->created_at->format('d-m-Y h:i A'),
                     'can_delete' => $stock->type === 'purchase' && Auth::user()->role->name === 'Admin',
                 ];
             });

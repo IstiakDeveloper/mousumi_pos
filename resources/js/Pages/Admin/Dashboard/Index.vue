@@ -55,6 +55,32 @@
                         </button>
                     </div>
                 </div>
+                <div class="mt-4 flex flex-wrap items-end gap-2">
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">From</label>
+                        <DateInput
+                            v-model="customStart"
+                            class="w-36 rounded-lg border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-gray-700 dark:bg-gray-800 dark:text-slate-200"
+                        />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">To</label>
+                        <DateInput
+                            v-model="customEnd"
+                            class="w-36 rounded-lg border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-gray-700 dark:bg-gray-800 dark:text-slate-200"
+                        />
+                    </div>
+                    <button
+                        type="button"
+                        class="rounded-full px-4 py-2 text-sm font-medium transition-colors"
+                        :class="preset === 'custom'
+                            ? 'bg-indigo-600 text-white shadow-md'
+                            : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-gray-800 dark:text-slate-200 dark:ring-gray-700'"
+                        @click="applyCustom"
+                    >
+                        Apply
+                    </button>
+                </div>
 
                 <!-- Metric cards -->
                 <div class="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -122,7 +148,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import {
     ArrowPathIcon,
@@ -149,6 +175,17 @@ const props = defineProps({
         required: true,
     },
 })
+
+const customStart = ref(props.filters.startDate || '')
+const customEnd = ref(props.filters.endDate || '')
+
+watch(
+    () => [props.filters.startDate, props.filters.endDate],
+    ([start, end]) => {
+        customStart.value = start || ''
+        customEnd.value = end || ''
+    },
+)
 
 const preset = computed(() => {
     const s = props.filters?.startDate
@@ -246,6 +283,28 @@ const quickLinks = [
     { title: 'Products', sub: 'Stock & pricing', href: '/admin/products', icon: CubeIcon },
     { title: 'Bank', sub: 'Transactions', href: '/admin/bank-transactions', icon: BanknotesIcon },
 ]
+
+function applyCustom() {
+    let start = customStart.value
+    let end = customEnd.value
+    if (!start && !end) {
+        return
+    }
+    if (!start) {
+        start = end
+    }
+    if (!end) {
+        end = start
+    }
+    if (start > end) {
+        [start, end] = [end, start]
+    }
+    router.get(
+        route('admin.dashboard'),
+        { start_date: start, end_date: end },
+        { preserveScroll: true, preserveState: true },
+    )
+}
 
 function applyPreset(key) {
     const end = new Date()

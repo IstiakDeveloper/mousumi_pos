@@ -60,9 +60,9 @@
                                 <label for="date" class="block text-sm font-medium text-gray-700 dark:text-gray-200">
                                     Transaction Date
                                 </label>
-                                <input type="date" id="date" v-model="form.date" :max="today"
+                                <DateInput id="date" v-model="form.date" :max="today"
                                        class="mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-700
-                                              bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 rounded-md" required>
+                                              bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 rounded-md" required />
                                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Can be backdated for historical records</p>
                             </div>
 

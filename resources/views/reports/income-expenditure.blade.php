@@ -191,7 +191,7 @@
             <tbody>
                 @foreach($extraIncome as $income)
                 <tr>
-                    <td>{{ \Carbon\Carbon::parse($income->date)->format('d/m/Y') }}</td>
+                    <td>{{ \Carbon\Carbon::parse($income->date)->format('d-m-Y') }}</td>
                     <td>{{ $income->title }}</td>
                     <td>{{ $income->bankAccount->account_name }}</td>
                     <td class="amount">BDT {{ number_format($income->amount, 2) }}</td>
@@ -214,7 +214,7 @@
             <tbody>
                 @foreach($expenses as $expense)
                 <tr>
-                    <td>{{ \Carbon\Carbon::parse($expense->date)->format('d/m/Y') }}</td>
+                    <td>{{ \Carbon\Carbon::parse($expense->date)->format('d-m-Y') }}</td>
                     <td>{{ $expense->expenseCategory->name }}</td>
                     <td>{{ $expense->description }}</td>
                     <td class="amount">BDT {{ number_format($expense->amount, 2) }}</td>
@@ -225,7 +225,7 @@
 
         <!-- Footer -->
         <div class="footer">
-            Generated on {{ \Carbon\Carbon::now()->format('d/m/Y h:i A') }}
+            Generated on {{ \Carbon\Carbon::now()->format('d-m-Y h:i A') }}
         </div>
     </div>
 </body>

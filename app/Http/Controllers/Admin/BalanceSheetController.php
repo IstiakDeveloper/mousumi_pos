@@ -7,6 +7,7 @@ use App\Models\BankAccount;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\ExtraIncome;
+use App\Models\FixedAssetItem;
 use App\Models\Fund;
 use App\Models\Product;
 use App\Models\Sale;
@@ -108,17 +109,11 @@ class BalanceSheetController extends Controller
 
         $customerDue = 0;
 
-        // 3. Fixed Assets up to the end date
-        $fixedAssetsCategory = ExpenseCategory::where('name', 'Fixed Asset')->first();
+        $fixedAssets = (float) FixedAssetItem::query()
+            ->where('status', 'active')
+            ->whereDate('purchase_date', '<=', $endDate->toDateString())
+            ->sum('current_value');
 
-        // Initial newar karon hocche 555 taka barai dite hobe
-        $fixedAssetsInitial = $fixedAssetsCategory
-            ? Expense::where('expense_category_id', $fixedAssetsCategory->id)
-                ->where('date', '<=', $endDate)
-                ->sum('amount')
-            : 0;
-
-        $fixedAssets = $fixedAssetsInitial - 555;
         // 4. Stock Value up to the end date
         // Use the actual first transaction date for accurate calculation
         $cumulativeStartDate = Carbon::parse('2024-12-29')->startOfDay();

@@ -13,6 +13,7 @@ import UserLayout from './Layouts/UserLayout.vue';
 import ConfirmDialog from './Components/ConfirmDialog.vue';
 import Alert from './Components/Alert.vue';
 import LoadingSpinner from './Components/LoadingSpinner.vue';
+import DateInput from './Components/DateInput.vue';
 
 // Import FontAwesome
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -39,6 +40,7 @@ createInertiaApp({
         app.component('ConfirmDialog', ConfirmDialog);
         app.component('Alert', Alert);
         app.component('LoadingSpinner', LoadingSpinner);
+        app.component('DateInput', DateInput);
 
         // Register plugins
         app.use(plugin);

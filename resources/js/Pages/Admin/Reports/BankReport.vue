@@ -30,18 +30,18 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         From Date
                     </label>
-                    <input type="date" v-model="filters.from_date"
+                    <DateInput v-model="filters.from_date"
                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                        @change="applyFilters">
+                        @change="applyFilters" />
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         To Date
                     </label>
-                    <input type="date" v-model="filters.to_date"
+                    <DateInput v-model="filters.to_date"
                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                        @change="applyFilters">
+                        @change="applyFilters" />
                 </div>
 
                 <!-- Action Buttons -->
@@ -227,6 +227,7 @@ import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import { DocumentArrowDownIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
+import { formatDate } from '@/utils'
 
 const props = defineProps({
     accounts: {
@@ -270,13 +271,6 @@ const formatPrice = (amount) => {
     }).format(amount || 0)
 }
 
-const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    })
-}
 
 const getBalanceColorClass = (amount) => {
     if (amount > 0) return 'text-green-600 dark:text-green-400'

@@ -296,7 +296,7 @@
                 <div class="invoice-title">Sale Invoice</div>
                 <div class="invoice-details">
                     <p><strong>Invoice No:</strong> {{ $sale->invoice_no }}</p>
-                    <p><strong>Date:</strong> {{ $sale->created_at->format('d/m/Y H:i') }}</p>
+                    <p><strong>Date:</strong> {{ $sale->created_at->format('d-m-Y H:i') }}</p>
                     <p><strong>Payment Method:</strong> {{ ucfirst($sale->payment_method) }}</p>
                 </div>
             </div>

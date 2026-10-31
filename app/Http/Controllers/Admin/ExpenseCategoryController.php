@@ -20,6 +20,12 @@ class ExpenseCategoryController extends Controller
 
     public function store(Request $request)
     {
+        if ($this->isReservedAssetName($request->input('name'))) {
+            return redirect()->back()->withErrors([
+                'name' => 'Fixed assets are recorded under Fixed Assets, not as an expense category.',
+            ])->withInput();
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:expense_categories',
             'description' => 'nullable|string',
@@ -33,6 +39,12 @@ class ExpenseCategoryController extends Controller
 
     public function update(Request $request, ExpenseCategory $category)
     {
+        if ($this->isReservedAssetName($request->input('name'))) {
+            return redirect()->back()->withErrors([
+                'name' => 'Fixed assets are recorded under Fixed Assets, not as an expense category.',
+            ])->withInput();
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:expense_categories,name,'.$category->id,
             'description' => 'nullable|string',
@@ -54,5 +66,10 @@ class ExpenseCategoryController extends Controller
         $category->delete();
 
         return redirect()->back()->with('success', 'Category deleted successfully');
+    }
+
+    private function isReservedAssetName(?string $name): bool
+    {
+        return $name !== null && preg_match('/fixed\s*asset|স্থায়ী\s*সম্পদ/ui', $name) === 1;
     }
 }

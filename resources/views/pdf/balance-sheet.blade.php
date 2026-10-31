@@ -152,13 +152,11 @@
         <!-- Report Title and Period -->
         <div class="report-title">Balance Sheet Report</div>
         <div class="report-period">
-            Period: {{ \Carbon\Carbon::parse($start_date)->format('d M Y') }} to
-            {{ \Carbon\Carbon::parse($end_date)->format('d M Y') }}
+            Period: {{ \Carbon\Carbon::parse($start_date)->format('d-m-Y') }} to
+            {{ \Carbon\Carbon::parse($end_date)->format('d-m-Y') }}
         </div>
 
-        <!-- Balance Sheet Content -->
         <div class="balance-sheet">
-            <!-- Fund & Liabilities Section -->
             <div class="section">
                 <div class="section-header">Fund & Liabilities</div>
                 <table>
@@ -171,13 +169,11 @@
                     <tbody>
                         <tr>
                             <td>Fund</td>
-                            <td class="text-right green">{{ number_format($fund_and_liabilities['fund']['period'], 2) }}
-                            </td>
+                            <td class="text-right green">{{ number_format($fund_and_liabilities['fund']['period'], 2) }}</td>
                         </tr>
                         <tr>
                             <td>Net Profit</td>
-                            <td
-                                class="text-right {{ $fund_and_liabilities['net_profit']['period'] >= 0 ? 'green' : 'red' }}">
+                            <td class="text-right {{ $fund_and_liabilities['net_profit']['period'] >= 0 ? 'green' : 'red' }}">
                                 {{ number_format($fund_and_liabilities['net_profit']['period'], 2) }}
                             </td>
                         </tr>
@@ -195,7 +191,6 @@
                 </table>
             </div>
 
-            <!-- Property & Assets Section -->
             <div class="section">
                 <div class="section-header">Property & Assets</div>
                 <table>
@@ -208,13 +203,11 @@
                     <tbody>
                         <tr>
                             <td>Bank Balance</td>
-                            <td class="text-right">
-                                {{ number_format($property_and_assets['bank_balance']['period'], 2) }}</td>
+                            <td class="text-right">{{ number_format($property_and_assets['bank_balance']['period'], 2) }}</td>
                         </tr>
                         <tr>
                             <td>Customer Due</td>
-                            <td class="text-right">
-                                {{ number_format($property_and_assets['customer_due']['period'], 2) }}</td>
+                            <td class="text-right">{{ number_format($property_and_assets['customer_due']['period'], 2) }}</td>
                         </tr>
                         <tr>
                             <td>Fixed Assets</td>
@@ -222,8 +215,7 @@
                         </tr>
                         <tr>
                             <td>Stock Value</td>
-                            <td class="text-right">
-                                {{ number_format($property_and_assets['stock_value']['period'], 2) }}</td>
+                            <td class="text-right">{{ number_format($property_and_assets['stock_value']['period'], 2) }}</td>
                         </tr>
                         <tr class="total-row">
                             <td>Total Property & Assets</td>
@@ -238,7 +230,7 @@
         <div class="footer">
             Page <span class="page-number"></span>
             <br>
-            Generated on: {{ now()->format('d M Y H:i:s') }}
+            Generated on: {{ now()->format('d-m-Y H:i:s') }}
         </div>
     </div>
 </body>

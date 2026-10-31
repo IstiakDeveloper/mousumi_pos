@@ -14,8 +14,10 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExpenseCategoryController;
 use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\ExtraIncomeController;
+use App\Http\Controllers\Admin\FixedAssetController;
 use App\Http\Controllers\Admin\FundManagementController;
 use App\Http\Controllers\Admin\IncomeExpenditureController;
+use App\Http\Controllers\Admin\PendingSaleController;
 use App\Http\Controllers\Admin\PosController;
 use App\Http\Controllers\Admin\ProductAnalysisReportController;
 use App\Http\Controllers\Admin\ProductController;
@@ -25,17 +27,13 @@ use App\Http\Controllers\Admin\ReceiptPaymentController;
 use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\SaleReportController;
 use App\Http\Controllers\Admin\UnitController;
-use App\Http\Controllers\Admin\PendingSaleController;
 use App\Http\Controllers\ExtraIncomeCategoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Public\StorefrontController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Cache;
-
 use Inertia\Inertia;
-
 
 // Route::get('/', function () {
 //     return Inertia::render('Welcome', [
@@ -46,7 +44,6 @@ use Inertia\Inertia;
 //     ]);
 // });
 
-
 // Public storefront (no login required)
 Route::get('/', [StorefrontController::class, 'index'])->name('home');
 Route::get('/cart', [StorefrontController::class, 'cart'])->name('cart');
@@ -55,11 +52,10 @@ Route::post('/cart/update', [StorefrontController::class, 'updateCart'])->name('
 Route::post('/cart/remove', [StorefrontController::class, 'removeFromCart'])->name('cart.remove');
 Route::get('/checkout', [StorefrontController::class, 'checkout'])->name('checkout');
 Route::post('/checkout/submit', [StorefrontController::class, 'submitOrder'])->name('checkout.submit');
-Route::get('/about', fn() => Inertia::render('About'))->name('about');
-Route::get('/contact', fn() => Inertia::render('Contact'))->name('contact');
-Route::get('/privacy', fn() => Inertia::render('Privacy'))->name('privacy');
-Route::get('/terms', fn() => Inertia::render('Terms'))->name('terms');
-
+Route::get('/about', fn () => Inertia::render('About'))->name('about');
+Route::get('/contact', fn () => Inertia::render('Contact'))->name('contact');
+Route::get('/privacy', fn () => Inertia::render('Privacy'))->name('privacy');
+Route::get('/terms', fn () => Inertia::render('Terms'))->name('terms');
 
 Route::get('/storage-link', function () {
     Artisan::call('storage:link');
@@ -87,13 +83,13 @@ Route::get('/run-backup', function () {
             'status' => ($result === 0) ? 'success' : 'error',
             'message' => 'Backup process completed',
             'output' => $output,
-            'result_code' => $result
+            'result_code' => $result,
         ]);
     } catch (\Exception $e) {
         return response()->json([
             'status' => 'error',
             'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
+            'trace' => $e->getTraceAsString(),
         ]);
     }
 });
@@ -141,7 +137,6 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('extra-income-categories', ExtraIncomeCategoryController::class);
     Route::resource('funds', FundManagementController::class);
 
-
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
     Route::get('/pos/search-products', [PosController::class, 'searchProducts'])->name('pos.search-products');
     Route::post('/pos/store', [PosController::class, 'store'])->name('pos.store');
@@ -173,7 +168,6 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::post('/pending-sales/{pendingSale}/items/add', [PendingSaleController::class, 'addItem'])->name('pending-sales.items.add');
     Route::post('/pending-sales/{pendingSale}/items/{item}/update', [PendingSaleController::class, 'updateItem'])->name('pending-sales.items.update');
     Route::post('/pending-sales/{pendingSale}/items/{item}/remove', [PendingSaleController::class, 'removeItem'])->name('pending-sales.items.remove');
-
 
     Route::get('/reports/bank', [BankReportController::class, 'index'])->name('reports.bank');
     Route::get('/reports/bank/download', [BankReportController::class, 'downloadPdf'])
@@ -210,10 +204,17 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/reports/balance-sheet/download', [BalanceSheetController::class, 'downloadPdf'])
         ->name('reports.balance-sheet.download');
 
-
     Route::resource('expenses', ExpenseController::class);
     Route::post('expenses/{expense}/restore', [ExpenseController::class, 'restore'])->name('expenses.restore');
     Route::resource('expense-categories', ExpenseCategoryController::class);
+
+    Route::get('fixed-assets', [FixedAssetController::class, 'index'])->name('fixed-assets.index');
+    Route::post('fixed-assets', [FixedAssetController::class, 'store'])->name('fixed-assets.store');
+    Route::put('fixed-assets/{fixedAsset}', [FixedAssetController::class, 'update'])->name('fixed-assets.update');
+    Route::delete('fixed-assets/{fixedAsset}', [FixedAssetController::class, 'destroy'])->name('fixed-assets.destroy');
+    Route::post('fixed-assets/{fixedAsset}/items', [FixedAssetController::class, 'storeItem'])->name('fixed-assets.items.store');
+    Route::put('fixed-assets/items/{item}', [FixedAssetController::class, 'updateItem'])->name('fixed-assets.items.update');
+    Route::delete('fixed-assets/items/{item}', [FixedAssetController::class, 'destroyItem'])->name('fixed-assets.items.destroy');
 
     Route::controller(ProductAnalysisReportController::class)->group(function () {
         Route::get('/reports/product-analysis', 'index')->name('reports.product-analysis');
@@ -247,4 +248,4 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::get('/users', [DashboardController::class, 'users'])->name('admin.users');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

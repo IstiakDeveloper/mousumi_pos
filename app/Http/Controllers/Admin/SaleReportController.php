@@ -48,7 +48,7 @@ class SaleReportController extends Controller
                 return Carbon::parse($sale->created_at)->format('Y-m-d');
             })->map(function ($daySales) {
                 return [
-                    'date' => Carbon::parse($daySales->first()->created_at)->format('d M, Y'),
+                    'date' => Carbon::parse($daySales->first()->created_at)->format('d-m-Y'),
                     'sales' => $daySales->map(function ($sale) {
                         return [
                             'id' => $sale->id,
@@ -196,7 +196,7 @@ class SaleReportController extends Controller
                 return Carbon::parse($sale->created_at)->format('Y-m-d');
             })->map(function ($daySales) {
                 return [
-                    'date' => Carbon::parse($daySales->first()->created_at)->format('d M, Y'),
+                    'date' => Carbon::parse($daySales->first()->created_at)->format('d-m-Y'),
                     'sales' => $daySales->map(function ($sale) {
                         return [
                             'created_at' => $sale->created_at->format('h:i A'),
@@ -318,8 +318,8 @@ class SaleReportController extends Controller
                     }),
             ],
             'filters' => [
-                'from_date' => $fromDate->format('d M, Y'),
-                'to_date' => $toDate->format('d M, Y'),
+                'from_date' => $fromDate->format('d-m-Y'),
+                'to_date' => $toDate->format('d-m-Y'),
             ],
         ];
     }

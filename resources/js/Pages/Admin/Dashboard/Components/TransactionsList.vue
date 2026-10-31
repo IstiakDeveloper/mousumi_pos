@@ -45,6 +45,7 @@
 
 <script setup>
 import { defineProps } from 'vue';
+import { formatDate } from '@/utils';
 
 const props = defineProps({
     transactions: {
@@ -53,9 +54,6 @@ const props = defineProps({
     }
 });
 
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString();
-};
 
 const formatCurrency = (amount) => {
     const number = new Intl.NumberFormat('en-US', {

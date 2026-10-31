@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import { router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { formatDate } from '@/utils';
 
 const props = defineProps({
     bankAccounts: Array,
@@ -35,11 +36,6 @@ const months = [
 ];
 
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
-
-const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-GB');
-};
 
 const downloadPdf = () => {
     // Create URL with current filters

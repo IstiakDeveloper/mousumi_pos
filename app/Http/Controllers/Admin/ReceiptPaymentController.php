@@ -7,6 +7,7 @@ use App\Models\BankAccount;
 use App\Models\BankTransaction;
 use App\Models\Expense;
 use App\Models\ExtraIncome;
+use App\Models\FixedAssetItem;
 use App\Models\Fund;
 use App\Models\Sale;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -176,12 +177,13 @@ class ReceiptPaymentController extends Controller
         $expenses = Expense::whereBetween('date', [$startDate, $endDate])
             ->where('bank_account_id', $this->bankAccountId)
             ->whereNull('deleted_at')
+            ->whereDoesntHave('category', fn ($query) => $query->where('name', 'Fixed Asset'))
             ->sum('amount');
 
-        // Get expenses by category
         $expensesByCategory = Expense::whereBetween('date', [$startDate, $endDate])
             ->where('bank_account_id', $this->bankAccountId)
             ->whereNull('deleted_at')
+            ->whereDoesntHave('category', fn ($query) => $query->where('name', 'Fixed Asset'))
             ->select('expense_category_id', DB::raw('SUM(amount) as total_amount'))
             ->groupBy('expense_category_id')
             ->with('category')
@@ -193,15 +195,32 @@ class ReceiptPaymentController extends Controller
                 ];
             });
 
-        // Calculate closing balance same way as BankTransactionReport
+        $fixedAssetItems = FixedAssetItem::query()
+            ->with('asset')
+            ->where('status', 'active')
+            ->where('bank_account_id', $this->bankAccountId)
+            ->whereBetween('purchase_date', [$startDate, $endDate])
+            ->orderBy('purchase_date')
+            ->orderBy('id')
+            ->get();
+
+        $fixedAssetTotal = (float) $fixedAssetItems->sum('purchase_price');
+
         $closingCashAtBank = $this->calculateClosingBalance($startDate, $endDate);
 
-        // Calculate total payment including closing cash at bank
-        $totalPayment = $netPurchaseAmount + $fundRefund + $expenses + $closingCashAtBank;
+        $totalPayment = $netPurchaseAmount + $fundRefund + $fixedAssetTotal + $expenses + $closingCashAtBank;
 
         return [
             'purchase' => (float) $netPurchaseAmount,
             'fund_refund' => (float) $fundRefund,
+            'fixed_assets' => [
+                'total' => $fixedAssetTotal,
+                'items' => $fixedAssetItems->map(fn (FixedAssetItem $item) => [
+                    'name' => $item->item_name,
+                    'date' => $item->purchase_date?->toDateString(),
+                    'amount' => (float) $item->purchase_price,
+                ])->values(),
+            ],
             'expenses' => [
                 'total' => (float) $expenses,
                 'categories' => $expensesByCategory,

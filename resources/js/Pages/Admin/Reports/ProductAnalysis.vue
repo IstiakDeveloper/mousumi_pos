@@ -6,11 +6,11 @@
                 <div class="flex items-center space-x-2">
                     <!-- Date Range Selector -->
                     <div class="flex items-center space-x-1">
-                        <input type="date" v-model="filters.start_date" @change="handleDateChange"
+                        <DateInput v-model="filters.start_date" @change="handleDateChange"
                             :max="filters.end_date"
                             class="text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
                         <span class="text-xs text-gray-500">to</span>
-                        <input type="date" v-model="filters.end_date" @change="handleDateChange"
+                        <DateInput v-model="filters.end_date" @change="handleDateChange"
                             :min="filters.start_date" :max="today"
                             class="text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
                     </div>

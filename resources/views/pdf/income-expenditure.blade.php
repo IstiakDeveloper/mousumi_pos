@@ -163,8 +163,8 @@
             @if (isset($filters['month_name']))
                 Period: {{ $filters['month_name'] }} {{ $filters['year'] }}
             @else
-                Period: {{ \Carbon\Carbon::parse($filters['start_date'])->format('d M Y') }} to
-                {{ \Carbon\Carbon::parse($filters['end_date'])->format('d M Y') }}
+                Period: {{ \Carbon\Carbon::parse($filters['start_date'])->format('d-m-Y') }} to
+                {{ \Carbon\Carbon::parse($filters['end_date'])->format('d-m-Y') }}
             @endif
         </div>
 
@@ -272,7 +272,7 @@
         <div class="footer">
             Page <span class="page-number"></span>
             <br>
-            Generated on: {{ now()->format('d M Y H:i:s') }}
+            Generated on: {{ now()->format('d-m-Y H:i:s') }}
         </div>
     </div>
 </body>

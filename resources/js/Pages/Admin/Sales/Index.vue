@@ -69,14 +69,14 @@
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Start Date
                                 </label>
-                                <input type="date" v-model="filters.start_date"
+                                <DateInput v-model="filters.start_date"
                                     class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 rounded-md shadow-sm" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     End Date
                                 </label>
-                                <input type="date" v-model="filters.end_date"
+                                <DateInput v-model="filters.end_date"
                                     class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 rounded-md shadow-sm" />
                             </div>
 
@@ -153,6 +153,10 @@
                             </th>
                             <th scope="col"
                                 class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Discount
+                            </th>
+                            <th scope="col"
+                                class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 Total
                             </th>
                             <th scope="col"
@@ -208,6 +212,11 @@
 
                             <!-- Amount Columns -->
                             <td class="px-6 py-4 whitespace-nowrap text-right">
+                                <div class="text-sm text-amber-600 dark:text-amber-400">
+                                    ৳{{ formatNumber(sale.discount) }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right">
                                 <div class="text-sm text-gray-900 dark:text-gray-100">
                                     ৳{{ formatNumber(sale.total) }}
                                 </div>
@@ -257,7 +266,7 @@
 
                         <!-- Empty State -->
                         <tr v-if="sales.data.length === 0">
-                            <td colspan="8" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="9" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                                 No sales found
                             </td>
                         </tr>

@@ -339,6 +339,7 @@ import InputLabel from '@/Components/InputLabel.vue'
 import Pagination from '@/Components/Pagination.vue'
 import Modal from '@/Components/Modal.vue'
 import debounce from 'lodash/debounce'
+import { formatDate } from '@/utils'
 
 const props = defineProps({
   funds: {
@@ -395,10 +396,6 @@ const formatCurrency = (amount) => {
   return `৳ ${number}`
 }
 
-const formatDate = (date) => {
-  if (!date) return ''
-  return new Date(date).toLocaleDateString()
-}
 
 const formatTime = (datetime) => {
   if (!datetime) return ''

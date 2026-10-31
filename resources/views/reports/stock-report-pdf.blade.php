@@ -289,7 +289,7 @@
                         <tbody>
                             @foreach ($report['purchases'] as $purchase)
                                 <tr>
-                                    <td>{{ \Carbon\Carbon::parse($purchase['date'])->format('d M, Y') }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($purchase['date'])->format('d-m-Y') }}</td>
                                     <td class="text-right">{{ $purchase['quantity'] }}</td>
                                     <td class="text-right">BDT{{ number_format($purchase['unit_cost'], 2) }}</td>
                                     <td class="text-right">BDT{{ number_format($purchase['total_cost'], 2) }}</td>
@@ -320,7 +320,7 @@
                         <tbody>
                             @foreach ($report['sales'] as $sale)
                                 <tr>
-                                    <td>{{ \Carbon\Carbon::parse($sale['date'])->format('d M, Y') }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($sale['date'])->format('d-m-Y') }}</td>
                                     <td>{{ $sale['invoice_no'] }}</td>
                                     <td class="text-right text-red">{{ $sale['quantity'] }}</td>
                                     <td class="text-right">BDT{{ number_format($sale['unit_price'], 2) }}</td>
@@ -336,7 +336,7 @@
     @endforeach
 
     <div class="footer">
-        <div>Generated on: {{ now()->format('d M, Y h:i A') }}</div>
+        <div>Generated on: {{ now()->format('d-m-Y h:i A') }}</div>
         <div>Page {PAGE_NUM} of {PAGE_COUNT}</div>
     </div>
 </body>

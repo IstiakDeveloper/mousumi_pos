@@ -102,19 +102,17 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From Date</label>
-                            <input
+                            <DateInput
                                 v-model="localFilters.date_from"
                                 @change="applyFilters"
-                                type="date"
-                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To Date</label>
-                            <input
+                            <DateInput
                                 v-model="localFilters.date_to"
                                 @change="applyFilters"
-                                type="date"
-                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                         <div class="flex items-end">
                             <button
@@ -286,7 +284,7 @@
 <script>
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import { Head, router } from '@inertiajs/vue3';
-import { format } from 'date-fns'
+import { formatDate as formatBdDate } from '@/utils'
 
 export default {
     components: {
@@ -323,7 +321,7 @@ export default {
             return `৳ ${number}`
         },
         formatDate(date) {
-            return format(new Date(date), 'MMM dd, yyyy')
+            return formatBdDate(date)
         },
         formatTransactionType(type) {
             return type === 'in' ? 'Money In' : 'Money Out'

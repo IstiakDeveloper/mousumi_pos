@@ -52,7 +52,7 @@ class SaleController extends Controller
                 return [
                     'id' => $sale->id,
                     'invoice_no' => $sale->invoice_no,
-                    'date' => $sale->created_at->format('d M, Y h:i A'),
+                    'date' => $sale->created_at->format('d-m-Y h:i A'),
                     'customer' => $sale->customer ? [
                         'id' => $sale->customer->id,
                         'name' => $sale->customer->name,
@@ -106,7 +106,7 @@ class SaleController extends Controller
             'sale' => [
                 'id' => $sale->id,
                 'invoice_no' => $sale->invoice_no,
-                'date' => $sale->created_at->format('d M, Y h:i A'),
+                'date' => $sale->created_at->format('d-m-Y h:i A'),
                 'customer' => $sale->customer ? [
                     'id' => $sale->customer->id,
                     'name' => $sale->customer->name,

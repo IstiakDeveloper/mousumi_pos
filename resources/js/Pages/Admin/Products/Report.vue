@@ -43,6 +43,7 @@
 
   <script setup>
   import { computed } from 'vue'
+  import { formatDate } from '@/utils'
 
   // Get props from Inertia
   const props = defineProps({
@@ -52,7 +53,7 @@
     }
   })
 
-  const currentDate = computed(() => new Date().toLocaleDateString())
+  const currentDate = computed(() => formatDate(new Date()))
 
   const printReport = () => {
     const printContents = document.getElementById('printSection').innerHTML

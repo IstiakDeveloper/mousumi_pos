@@ -450,6 +450,7 @@ const dropdownNavItems = [
         allowedRoles: ['admin', 'manager'],
         items: [
             { name: 'Expenses', href: '/admin/expenses', icon: 'fa-file-invoice-dollar', allowedRoles: ['admin', 'manager'] },
+            { name: 'Fixed Assets', href: '/admin/fixed-assets', icon: 'fa-building', allowedRoles: ['admin', 'manager'] },
             { name: 'Categories', href: '/admin/expense-categories', icon: 'fa-folder', allowedRoles: ['admin'] }
         ]
     },

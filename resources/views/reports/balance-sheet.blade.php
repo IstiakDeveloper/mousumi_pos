@@ -164,7 +164,7 @@
         <div class="report-title">
             <h1>Balance Sheet</h1>
             <p>As of {{ $month }} {{ $year }}</p>
-            <p>Generated on: {{ now()->format('d M Y, h:i A') }}</p>
+            <p>Generated on: {{ now()->format('d-m-Y h:i A') }}</p>
         </div>
 
         <!-- Summary Grid -->

@@ -79,9 +79,9 @@ class ProductAnalysisReportController extends Controller
             $data = [
                 'products' => $analysis['products'],
                 'totals' => $analysis['totals'],
-                'start_date' => $startDate->format('d M Y'),
-                'end_date' => $endDate->format('d M Y'),
-                'generated_at' => Carbon::now($timezone)->format('d M Y h:i A'),
+                'start_date' => $startDate->format('d-m-Y'),
+                'end_date' => $endDate->format('d-m-Y'),
+                'generated_at' => Carbon::now($timezone)->format('d-m-Y h:i A'),
                 'company_name' => config('app.name', 'Your Company Name'),
             ];
 

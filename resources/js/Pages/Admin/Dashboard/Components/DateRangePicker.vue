@@ -3,21 +3,17 @@
     <div class="flex items-center space-x-4">
         <div class="flex items-center space-x-2">
             <label class="text-sm font-medium text-gray-700">Start Date:</label>
-            <input
-                type="date"
+            <DateInput
                 v-model="localStartDate"
                 class="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                @change="emitUpdate"
-            >
+                @change="emitUpdate" />
         </div>
         <div class="flex items-center space-x-2">
             <label class="text-sm font-medium text-gray-700">End Date:</label>
-            <input
-                type="date"
+            <DateInput
                 v-model="localEndDate"
                 class="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                @change="emitUpdate"
-            >
+                @change="emitUpdate" />
         </div>
     </div>
 </template>

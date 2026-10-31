@@ -150,8 +150,8 @@
         <!-- Report Title and Period -->
         <div class="report-title">Receipt & Payment Statement</div>
         <div class="report-period">
-            Period: {{ \Carbon\Carbon::parse($start_date)->format('d M Y') }} to
-            {{ \Carbon\Carbon::parse($end_date)->format('d M Y') }}
+            Period: {{ \Carbon\Carbon::parse($start_date)->format('d-m-Y') }} to
+            {{ \Carbon\Carbon::parse($end_date)->format('d-m-Y') }}
         </div>
 
         <!-- Statement Content -->
@@ -259,6 +259,36 @@
                                 {{ number_format(floatval($payment['fund_refund']), 2) }}
                             </td>
                         </tr>
+                        <tr>
+                            <td colspan="2" style="padding: 8px; font-weight: 600; background-color: #f3f4f6;">
+                                Fixed Assets
+                            </td>
+                        </tr>
+                        @if (!empty($payment['fixed_assets']['items']) && count($payment['fixed_assets']['items']) > 0)
+                            @foreach ($payment['fixed_assets']['items'] as $item)
+                                <tr>
+                                    <td style="padding: 8px; padding-left: 24px; font-size: 0.7em;">
+                                        {{ \Carbon\Carbon::parse($item['date'])->format('d-m-Y') }} — {{ $item['name'] }}
+                                    </td>
+                                    <td style="padding: 8px; text-align: right; color: #dc2626;">
+                                        {{ number_format(floatval($item['amount']), 2) }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr>
+                                <td style="padding: 8px; padding-left: 24px; font-size: 0.7em; font-style: italic; color: #6b7280;">
+                                    No fixed asset purchase
+                                </td>
+                                <td style="padding: 8px; text-align: right; color: #6b7280;">0.00</td>
+                            </tr>
+                        @endif
+                        <tr style="background-color: #f3f4f6;">
+                            <td style="padding: 8px; font-weight: 600;">Total Fixed Assets</td>
+                            <td style="padding: 8px; text-align: right; color: #dc2626; font-weight: 700;">
+                                {{ number_format(floatval($payment['fixed_assets']['total'] ?? 0), 2) }}
+                            </td>
+                        </tr>
                         <!-- Expenses Header Row -->
                         <tr>
                             <td colspan="2" style="padding: 8px; font-weight: 600; background-color: #f3f4f6;">
@@ -321,7 +351,7 @@
         <div class="footer">
             Page <span class="page-number"></span>
             <br>
-            Generated on: {{ now()->format('d M Y H:i:s') }}
+            Generated on: {{ now()->format('d-m-Y H:i:s') }}
         </div>
     </div>
 </body>

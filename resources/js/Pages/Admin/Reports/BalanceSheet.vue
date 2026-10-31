@@ -42,7 +42,6 @@
             <div id="balance-sheet-content" class="mx-auto max-w-7xl">
 
                 <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
-                    <!-- Fund & Liabilities -->
                     <div class="overflow-hidden bg-white border rounded-lg shadow-sm">
                         <div class="px-4 py-3 border-b bg-gray-50">
                             <h3 class="text-lg font-semibold text-gray-800">Fund & Liabilities</h3>
@@ -55,15 +54,12 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Fund Row -->
                                 <tr class="border-b">
                                     <td class="px-4 py-2 border-r">Fund</td>
                                     <td class="px-4 py-2 text-right text-green-600">
                                         {{ formatCurrency(fund_and_liabilities.fund.period) }}
                                     </td>
                                 </tr>
-
-                                <!-- Net Profit Row -->
                                 <tr class="border-b">
                                     <td class="px-4 py-2 font-semibold border-r">Net Profit</td>
                                     <td class="px-4 py-2 text-right" :class="{
@@ -73,18 +69,14 @@
                                         {{ formatCurrency(fund_and_liabilities.net_profit.period) }}
                                     </td>
                                 </tr>
-
-                                <!-- Empty Rows for Spacing -->
                                 <tr class="border-b">
-                                    <td class="px-4 py-5 border-r"></td>
-                                    <td class="px-4 py-5 text-right"></td>
+                                    <td class="px-4 py-2 border-r">&nbsp;</td>
+                                    <td class="px-4 py-2"></td>
                                 </tr>
                                 <tr class="border-b">
-                                    <td class="px-4 py-5 border-r"></td>
-                                    <td class="px-4 py-5 text-right"></td>
+                                    <td class="px-4 py-2 border-r">&nbsp;</td>
+                                    <td class="px-4 py-2"></td>
                                 </tr>
-
-                                <!-- Total Row -->
                                 <tr class="font-bold bg-gray-50">
                                     <td class="px-4 py-2 border-r">Total</td>
                                     <td class="px-4 py-2 text-right">
@@ -95,7 +87,6 @@
                         </table>
                     </div>
 
-                    <!-- Property & Assets -->
                     <div class="overflow-hidden bg-white border rounded-lg shadow-sm">
                         <div class="px-4 py-3 border-b bg-gray-50">
                             <h3 class="text-lg font-semibold text-gray-800">Property & Assets</h3>
@@ -108,40 +99,30 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Bank Balance Row -->
                                 <tr class="border-b">
                                     <td class="px-4 py-2 border-r">Bank Balance</td>
                                     <td class="px-4 py-2 text-right">
                                         {{ formatCurrency(property_and_assets.bank_balance.period) }}
                                     </td>
                                 </tr>
-
-                                <!-- Customer Due Row -->
                                 <tr class="border-b">
                                     <td class="px-4 py-2 border-r">Customer Due</td>
                                     <td class="px-4 py-2 text-right">
                                         {{ formatCurrency(property_and_assets.customer_due.period) }}
                                     </td>
                                 </tr>
-
-                                <!-- Fixed Assets Row -->
                                 <tr class="border-b">
                                     <td class="px-4 py-2 border-r">Fixed Assets</td>
                                     <td class="px-4 py-2 text-right">
                                         {{ formatCurrency(property_and_assets.fixed_assets) }}
                                     </td>
                                 </tr>
-
-                                <!-- Stock Value Row -->
                                 <tr class="border-b">
                                     <td class="px-4 py-2 border-r">Stock Value</td>
                                     <td class="px-4 py-2 text-right">
                                         {{ formatCurrency(property_and_assets.stock_value.period) }}
                                     </td>
                                 </tr>
-
-
-                                <!-- Total Row -->
                                 <tr class="font-bold bg-gray-50">
                                     <td class="px-4 py-2 border-r">Total</td>
                                     <td class="px-4 py-2 text-right">

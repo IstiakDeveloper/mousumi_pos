@@ -52,7 +52,7 @@ class CustomerController extends Controller
                 'total_sales' => $customer->total_sales ?? 0,
                 'total_due' => $customer->total_due ?? 0,
                 'status' => $customer->status,
-                'created_at' => $customer->created_at->format('d M, Y'),
+                'created_at' => $customer->created_at->format('d-m-Y'),
             ])
         );
 
@@ -74,7 +74,7 @@ class CustomerController extends Controller
                     return [
                         'id' => $sale->id,
                         'invoice_no' => $sale->invoice_no,
-                        'date' => $sale->created_at->format('d M, Y'),
+                        'date' => $sale->created_at->format('d-m-Y'),
                         'total' => number_format($sale->total, 2, '.', ''),
                         'paid' => number_format($sale->paid, 2, '.', ''),
                         'due' => number_format($sale->due, 2, '.', ''),
@@ -93,7 +93,7 @@ class CustomerController extends Controller
                 ->map(function ($payment) {
                     return [
                         'id' => $payment->id,
-                        'date' => $payment->created_at->format('d M, Y'),
+                        'date' => $payment->created_at->format('d-m-Y'),
                         'amount' => number_format($payment->amount, 2, '.', ''),
                         'invoice_no' => $payment->sale->invoice_no,
                         'bank_account' => optional($payment->bankAccount)->bank_name,
