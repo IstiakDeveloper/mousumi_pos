@@ -120,11 +120,11 @@
                     <!-- From Date -->
                     <div class="lg:col-span-2">
                         <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">From Date</label>
-                        <input
+                        <DateInput
                             v-model="filterForm.from_date"
-                            type="date"
+                            placeholder="From Date"
                             @change="applyFilters"
-                            class="w-full py-2 px-3 text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
+                            class="w-full py-1.5 px-3 text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
                         />
                     </div>
 
@@ -132,11 +132,11 @@
                     <div class="lg:col-span-3">
                         <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">To Date</label>
                         <div class="flex items-center gap-2">
-                            <input
+                            <DateInput
                                 v-model="filterForm.to_date"
-                                type="date"
+                                placeholder="To Date"
                                 @change="applyFilters"
-                                class="w-full py-2 px-3 text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
+                                class="w-full py-1.5 px-3 text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
                             />
                             <button
                                 v-if="hasActiveFilters"
@@ -395,9 +395,8 @@
 
                         <!-- If Super Admin: Editable Date Picker -->
                         <div v-if="isSuperAdmin">
-                            <input
+                            <DateInput
                                 v-model="form.purchase_date"
-                                type="date"
                                 required
                                 class="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
                             />
@@ -405,9 +404,8 @@
 
                         <!-- If Non-Super-Admin: Fixed Date Display (Disabled) -->
                         <div v-else class="relative">
-                            <input
-                                :value="form.purchase_date"
-                                type="date"
+                            <DateInput
+                                :model-value="form.purchase_date"
                                 disabled
                                 class="w-full text-sm rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                             />
@@ -515,6 +513,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue'
 import Modal from '@/Components/Modal.vue'
 import { PlusIcon } from '@heroicons/vue/24/outline'
 import { formatDate } from '@/utils'
+import DateInput from '@/Components/DateInput.vue'
 
 const props = defineProps({
     assets: Array,
