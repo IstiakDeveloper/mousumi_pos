@@ -99,8 +99,8 @@ class Product extends Model
             ->selectRaw('sale_items.product_id as product_id')
             ->selectRaw('CAST(COALESCE(SUM(sale_items.quantity), 0) AS DECIMAL(15,6)) as sale_quantity')
             ->selectRaw('CAST(COALESCE(SUM(sale_items.subtotal), 0) AS DECIMAL(15,2)) as total_sale_amount')
-            ->selectRaw('CAST(COALESCE(SUM(CASE WHEN sales.subtotal > 0 THEN (sale_items.subtotal / sales.subtotal) * sales.discount ELSE 0 END), 0) AS DECIMAL(15,2)) as sale_discount')
-            ->selectRaw('CAST(COALESCE(SUM(sale_items.subtotal - CASE WHEN sales.subtotal > 0 THEN (sale_items.subtotal / sales.subtotal) * sales.discount ELSE 0 END), 0) AS DECIMAL(15,2)) as sale_amount_after_discount');
+            ->selectRaw('CAST(COALESCE(SUM(CASE WHEN sales.subtotal > 0 THEN (sale_items.subtotal / sales.subtotal) * sales.discount ELSE 0 END), 0) AS DECIMAL(15,6)) as sale_discount')
+            ->selectRaw('CAST(COALESCE(SUM(sale_items.subtotal - CASE WHEN sales.subtotal > 0 THEN (sale_items.subtotal / sales.subtotal) * sales.discount ELSE 0 END), 0) AS DECIMAL(15,6)) as sale_amount_after_discount');
 
         $products = static::with(['category', 'unit'])
             ->where('products.status', true)
@@ -208,7 +208,7 @@ class Product extends Model
                 product_id,
                 CASE
                     WHEN SUM(quantity) > 0
-                    THEN CAST(SUM(total_cost) AS REAL) / SUM(quantity)
+                    THEN CAST(SUM(total_cost) AS DOUBLE) / SUM(quantity)
                     ELSE 0
                 END as weighted_avg_cost
             ')
