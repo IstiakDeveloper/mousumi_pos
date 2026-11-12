@@ -179,7 +179,7 @@
 import { defineComponent } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { router } from '@inertiajs/vue3';
-import { formatCurrency } from '@/Utils';
+import { formatCurrency } from '@/utils';
 
 export default defineComponent({
     components: { AdminLayout },

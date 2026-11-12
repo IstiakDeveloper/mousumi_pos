@@ -212,7 +212,7 @@
 import { defineComponent } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { router } from '@inertiajs/vue3';
-import { formatCurrency, formatDate } from '@/Utils';
+import { formatCurrency, formatDate } from '@/utils';
 
 export default defineComponent({
     components: { AdminLayout },
