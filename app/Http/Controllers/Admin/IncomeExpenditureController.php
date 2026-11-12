@@ -80,60 +80,49 @@ class IncomeExpenditureController extends Controller
 
     private function calculateExtraIncome(Carbon $startDate, Carbon $endDate)
     {
-        // Get all category IDs that have ever had a transaction up to endDate
+        $categoryNames = ExtraIncomeCategory::query()->pluck('name', 'id');
+
         $allCategoryIds = ExtraIncome::select('category_id')
             ->distinct()
             ->whereNotNull('category_id')
-            ->where('date', '<=', $endDate) // FIX: Only consider categories with transactions up to endDate
+            ->where('date', '<=', $endDate)
             ->pluck('category_id');
 
-        // Get current period data - Use whereBetween to match Product model
         $currentPeriodData = ExtraIncome::whereBetween('date', [$startDate, $endDate])
             ->select('category_id', DB::raw('SUM(amount) as total_amount'))
             ->groupBy('category_id')
-            ->pluck('total_amount', 'category_id')
-            ->toArray();
+            ->get()
+            ->pluck('total_amount', 'category_id');
 
-        // Create the results array with all categories
+        $cumulativeData = ExtraIncome::where('date', '<=', $endDate)
+            ->select('category_id', DB::raw('SUM(amount) as total_amount'))
+            ->groupBy('category_id')
+            ->get()
+            ->pluck('total_amount', 'category_id');
+
         $extraIncomeCategories = collect();
 
         foreach ($allCategoryIds as $categoryId) {
-            // Get the category name
-            $category = ExtraIncomeCategory::find($categoryId);
-            $categoryName = $category ? $category->name : 'Uncategorized';
-
-            // FIX: Calculate cumulative amount up to endDate only
-            $cumulative = ExtraIncome::where('category_id', $categoryId)
-                ->where('date', '<=', $endDate)
-                ->sum('amount');
-
-            // Get period amount (0 if not present in current period)
-            $periodAmount = $currentPeriodData[$categoryId] ?? 0;
-
-            // Add to results only if cumulative amount exists
-            if ($cumulative > 0) {
-                $extraIncomeCategories->push([
-                    'name' => $categoryName,
-                    'period' => (float) $periodAmount,
-                    'cumulative' => (float) $cumulative,
-                ]);
+            $cumulative = (float) ($cumulativeData[$categoryId] ?? 0);
+            if ($cumulative <= 0) {
+                continue;
             }
+
+            $extraIncomeCategories->push([
+                'name' => $categoryNames[$categoryId] ?? 'Uncategorized',
+                'period' => (float) ($currentPeriodData[$categoryId] ?? 0),
+                'cumulative' => $cumulative,
+            ]);
         }
 
-        // FIX: Handle uncategorized income - only up to endDate
-        $uncategorizedPeriod = ExtraIncome::whereBetween('date', [$startDate, $endDate])
-            ->whereNull('category_id')
-            ->sum('amount');
-
-        $uncategorizedCumulative = ExtraIncome::whereNull('category_id')
-            ->where('date', '<=', $endDate)
-            ->sum('amount');
+        $uncategorizedPeriod = (float) ($currentPeriodData[''] ?? $currentPeriodData[null] ?? 0);
+        $uncategorizedCumulative = (float) ($cumulativeData[''] ?? $cumulativeData[null] ?? 0);
 
         if ($uncategorizedCumulative > 0) {
             $extraIncomeCategories->push([
                 'name' => 'Uncategorized',
-                'period' => (float) $uncategorizedPeriod,
-                'cumulative' => (float) $uncategorizedCumulative,
+                'period' => $uncategorizedPeriod,
+                'cumulative' => $uncategorizedCumulative,
             ]);
         }
 
@@ -158,22 +147,25 @@ class IncomeExpenditureController extends Controller
             ->where('status', true)
             ->get();
 
-        // Prepare categories with their expenses
-        $categoriesWithExpenses = $expenseCategories->map(function ($category) use ($startDate, $endDate) {
-            // Period expenses - Use whereBetween to match Product model
-            $periodExpenses = Expense::where('expense_category_id', $category->id)
-                ->whereBetween('date', [$startDate, $endDate])
-                ->sum('amount');
+        $periodByCategory = Expense::query()
+            ->whereBetween('date', [$startDate, $endDate])
+            ->select('expense_category_id', DB::raw('SUM(amount) as total_amount'))
+            ->groupBy('expense_category_id')
+            ->get()
+            ->pluck('total_amount', 'expense_category_id');
 
-            // FIX: Cumulative expenses up to endDate only
-            $cumulativeExpenses = Expense::where('expense_category_id', $category->id)
-                ->where('date', '<=', $endDate)
-                ->sum('amount');
+        $cumulativeByCategory = Expense::query()
+            ->where('date', '<=', $endDate)
+            ->select('expense_category_id', DB::raw('SUM(amount) as total_amount'))
+            ->groupBy('expense_category_id')
+            ->get()
+            ->pluck('total_amount', 'expense_category_id');
 
+        $categoriesWithExpenses = $expenseCategories->map(function ($category) use ($periodByCategory, $cumulativeByCategory) {
             return [
                 'name' => $category->name,
-                'period' => (float) $periodExpenses,
-                'cumulative' => (float) $cumulativeExpenses,
+                'period' => (float) ($periodByCategory[$category->id] ?? 0),
+                'cumulative' => (float) ($cumulativeByCategory[$category->id] ?? 0),
             ];
         });
 

@@ -194,53 +194,72 @@ class ProductStockReportController extends Controller
 
     private function generateReports($products, $fromDate, $toDate)
     {
-        $reports = $products->map(function ($product) use ($fromDate, $toDate) {
-            $purchases = ProductStock::where('product_id', $product->id)
-                ->where('type', 'purchase')
-                ->whereBetween('created_at', [$fromDate, $toDate])
-                ->orderBy('created_at')
-                ->get()
-                ->map(function ($stock) {
-                    return [
-                        'date' => $stock->created_at,
-                        'quantity' => round($stock->quantity),
-                        'unit_cost' => round($stock->unit_cost, 2),
-                        'total_cost' => round($stock->total_cost, 2),
-                        'available_quantity' => round($stock->available_quantity),
-                        'note' => $stock->note,
-                    ];
-                });
+        $productIds = $products->pluck('id');
 
-            // Get sales from SaleItem instead of ProductStock
-            $sales = SaleItem::with('sale')
-                ->where('product_id', $product->id)
+        $stocksByProduct = $productIds->isEmpty()
+            ? collect()
+            : ProductStock::query()
+                ->whereIn('product_id', $productIds)
+                ->orderBy('id')
+                ->get([
+                    'id',
+                    'product_id',
+                    'type',
+                    'quantity',
+                    'unit_cost',
+                    'total_cost',
+                    'available_quantity',
+                    'note',
+                    'created_at',
+                ])
+                ->groupBy('product_id');
+
+        $salesByProduct = $productIds->isEmpty()
+            ? collect()
+            : SaleItem::with('sale')
+                ->whereIn('product_id', $productIds)
                 ->whereHas('sale', function ($query) use ($fromDate, $toDate) {
                     $query->whereBetween('created_at', [$fromDate, $toDate]);
                 })
                 ->get()
-                ->map(function ($item) {
-                    return [
-                        'date' => $item->sale->created_at,
-                        'quantity' => round($item->quantity),
-                        'invoice_no' => $item->sale->invoice_no,
-                        'unit_price' => round($item->unit_price, 2),
-                        'total' => round($item->subtotal, 2),
-                        'available_quantity' => round($this->getAvailableQuantityAtTime($item->product_id, $item->sale->created_at)),
-                    ];
-                });
+                ->groupBy('product_id');
 
-            // Get the stock at start date
-            $openingStock = ProductStock::where('product_id', $product->id)
-                ->where('created_at', '<', $fromDate)
-                ->orderByDesc('id')
-                ->first();
+        $reports = $products->map(function ($product) use ($fromDate, $toDate, $stocksByProduct, $salesByProduct) {
+            $stocks = $stocksByProduct->get($product->id, collect())->sortByDesc('id')->values();
 
-            // Get current stock
-            $currentStock = ProductStock::where('product_id', $product->id)
-                ->orderByDesc('id')
-                ->first();
+            $purchases = $stocks->filter(function ($stock) use ($fromDate, $toDate) {
+                return $stock->type === 'purchase' && $stock->created_at->between($fromDate, $toDate);
+            })->sortBy(function ($stock) {
+                return $stock->created_at->format('Y-m-d H:i:s').'-'.str_pad((string) $stock->id, 10, '0', STR_PAD_LEFT);
+            })->values()->map(function ($stock) {
+                return [
+                    'date' => $stock->created_at,
+                    'quantity' => round($stock->quantity),
+                    'unit_cost' => round($stock->unit_cost, 2),
+                    'total_cost' => round($stock->total_cost, 2),
+                    'available_quantity' => round($stock->available_quantity),
+                    'note' => $stock->note,
+                ];
+            });
 
-            // Calculate weighted average cost
+            $productSales = $salesByProduct->get($product->id, collect());
+            $sales = $productSales->map(function ($item) use ($stocks) {
+                return [
+                    'date' => $item->sale->created_at,
+                    'quantity' => round($item->quantity),
+                    'invoice_no' => $item->sale->invoice_no,
+                    'unit_price' => round($item->unit_price, 2),
+                    'total' => round($item->subtotal, 2),
+                    'available_quantity' => round($this->availableQuantityFromStocks($stocks, $item->sale->created_at)),
+                ];
+            });
+
+            $openingStock = $stocks->first(function ($stock) use ($fromDate) {
+                return $stock->created_at->lt($fromDate);
+            });
+
+            $currentStock = $stocks->first();
+
             $totalPurchaseQty = $purchases->sum('quantity');
             $totalPurchaseCost = $purchases->sum('total_cost');
             $avgCost = $totalPurchaseQty > 0 ? ($totalPurchaseCost / $totalPurchaseQty) : $product->cost_price;
@@ -283,14 +302,13 @@ class ProductStockReportController extends Controller
         ];
     }
 
-    // Helper function to get available quantity at a specific time
-    private function getAvailableQuantityAtTime($productId, $date)
+    private function availableQuantityFromStocks($stocks, $date)
     {
-        return ProductStock::where('product_id', $productId)
-            ->where('created_at', '<=', $date)
-            ->orderByDesc('id')
-            ->first()
-            ?->available_quantity ?? 0;
+        $match = $stocks->first(function ($stock) use ($date) {
+            return $stock->created_at->lte($date);
+        });
+
+        return $match?->available_quantity ?? 0;
     }
 
     public function downloadPdf(Request $request)

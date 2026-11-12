@@ -27,7 +27,7 @@ class SaleReportController extends Controller
         $toDate = $request->to_date ? Carbon::parse($request->to_date) : Carbon::now()->endOfMonth();
 
         // Base query for sales
-        $query = Sale::with(['customer', 'saleItems.product', 'salePayments.bankAccount', 'createdBy'])
+        $query = Sale::with(['customer', 'salePayments.bankAccount', 'createdBy'])
             ->when($request->customer_id, function ($q) use ($request) {
                 return $q->where('customer_id', $request->customer_id);
             })
@@ -175,7 +175,6 @@ class SaleReportController extends Controller
         // Build the base query
         $query = Sale::with([
             'customer',
-            'saleItems.product',
             'salePayments.bankAccount',
             'createdBy',
         ])->when($request->customer_id, function ($q) use ($request) {
@@ -184,8 +183,10 @@ class SaleReportController extends Controller
             return $q->where('payment_status', $request->payment_status);
         })->whereBetween('created_at', [$fromDate->startOfDay(), $toDate->endOfDay()]);
 
+        $loadedSales = $query->get();
+
         // Get sales grouped by month
-        $salesByMonth = $query->get()->groupBy(function ($sale) {
+        $salesByMonth = $loadedSales->groupBy(function ($sale) {
             return Carbon::parse($sale->created_at)->format('Y-m');
         });
 
@@ -286,7 +287,7 @@ class SaleReportController extends Controller
         }
 
         // Get all payments for the entire query
-        $allPayments = $query->get()->flatMap->salePayments;
+        $allPayments = $loadedSales->flatMap->salePayments;
 
         return [
             'monthly_reports' => $monthlyReports,

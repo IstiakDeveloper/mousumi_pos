@@ -80,23 +80,53 @@ class Product extends Model
     {
         $beforeStockPositions = static::getBeforeStockPositions($startDate);
         $stockPositions = static::getCurrentStockPositions($endDate);
+        $weightedAvgCosts = static::getWeightedAvgCosts($endDate);
+
+        $buyStats = DB::table('product_stocks')
+            ->select('product_id')
+            ->selectRaw('CAST(COALESCE(SUM(quantity), 0) AS DECIMAL(15,6)) as buy_quantity')
+            ->selectRaw('CAST(COALESCE(SUM(total_cost), 0) AS DECIMAL(15,6)) as total_buy_cost')
+            ->whereNull('deleted_at')
+            ->where('type', 'purchase')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->groupBy('product_id');
+
+        $saleStats = DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->whereBetween('sales.created_at', [$startDate, $endDate])
+            ->whereNull('sales.deleted_at')
+            ->groupBy('sale_items.product_id')
+            ->selectRaw('sale_items.product_id as product_id')
+            ->selectRaw('CAST(COALESCE(SUM(sale_items.quantity), 0) AS DECIMAL(15,6)) as sale_quantity')
+            ->selectRaw('CAST(COALESCE(SUM(sale_items.subtotal), 0) AS DECIMAL(15,2)) as total_sale_amount')
+            ->selectRaw('CAST(COALESCE(SUM(CASE WHEN sales.subtotal > 0 THEN (sale_items.subtotal / sales.subtotal) * sales.discount ELSE 0 END), 0) AS DECIMAL(15,2)) as sale_discount')
+            ->selectRaw('CAST(COALESCE(SUM(sale_items.subtotal - CASE WHEN sales.subtotal > 0 THEN (sale_items.subtotal / sales.subtotal) * sales.discount ELSE 0 END), 0) AS DECIMAL(15,2)) as sale_amount_after_discount');
 
         $products = static::with(['category', 'unit'])
-            ->where('status', true) // Only active products
+            ->where('products.status', true)
+            ->leftJoinSub($buyStats, 'buy_stats', function ($join) {
+                $join->on('buy_stats.product_id', '=', 'products.id');
+            })
+            ->leftJoinSub($saleStats, 'sale_stats', function ($join) {
+                $join->on('sale_stats.product_id', '=', 'products.id');
+            })
             ->select('products.*')
-            ->addSelect([
-                'all_time_buy_price' => static::getAllTimeBuyPriceQuery(),
-                'buy_quantity' => static::getBuyQuantityQuery($startDate, $endDate),
-                'total_buy_cost' => static::getTotalBuyCostQuery($startDate, $endDate),
-                'sale_quantity' => static::getSaleQuantityQuery($startDate, $endDate),
-                'total_sale_amount' => static::getTotalSaleAmountQuery($startDate, $endDate),
-                'sale_discount' => static::getTotalSaleDiscountQuery($startDate, $endDate),
-                'sale_amount_after_discount' => static::getSaleAmountAfterDiscountQuery($startDate, $endDate),
-            ])
+            ->selectRaw('COALESCE(buy_stats.buy_quantity, 0) as buy_quantity')
+            ->selectRaw('COALESCE(buy_stats.total_buy_cost, 0) as total_buy_cost')
+            ->selectRaw('COALESCE(sale_stats.sale_quantity, 0) as sale_quantity')
+            ->selectRaw('COALESCE(sale_stats.total_sale_amount, 0) as total_sale_amount')
+            ->selectRaw('COALESCE(sale_stats.sale_discount, 0) as sale_discount')
+            ->selectRaw('COALESCE(sale_stats.sale_amount_after_discount, 0) as sale_amount_after_discount')
             ->orderBy('products.name')
             ->get()
-            ->map(function ($product, $index) use ($stockPositions, $beforeStockPositions, $endDate) {
-                return static::calculateProductMetrics($product, $index, $stockPositions, $beforeStockPositions, $endDate);
+            ->map(function ($product, $index) use ($stockPositions, $beforeStockPositions, $weightedAvgCosts) {
+                return static::calculateProductMetrics(
+                    $product,
+                    $index,
+                    $stockPositions,
+                    $beforeStockPositions,
+                    (float) ($weightedAvgCosts[$product->id] ?? 0)
+                );
             })
             ->filter(function ($product) {
                 // Include products with any activity: before stock, purchases, sales, or current stock
@@ -115,25 +145,15 @@ class Product extends Model
 
     protected static function getBeforeStockPositions($startDate)
     {
-        return DB::table(function ($query) use ($startDate) {
-            $query->from('product_stocks')
-                ->select('product_id')
-                ->selectRaw('
-                    FIRST_VALUE(available_quantity) OVER (
-                        PARTITION BY product_id
-                        ORDER BY created_at DESC, id DESC
-                    ) as before_quantity
-                ')
-                ->selectRaw('
-                    FIRST_VALUE(unit_cost) OVER (
-                        PARTITION BY product_id
-                        ORDER BY created_at DESC, id DESC
-                    ) as before_avg_cost
-                ')
-                ->where('created_at', '<', $startDate);
-        }, 'before_stocks')
-            ->select('product_id', 'before_quantity', 'before_avg_cost')
-            ->distinct()
+        $ranked = DB::table('product_stocks')
+            ->select('product_id', 'available_quantity', 'unit_cost')
+            ->selectRaw('ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY created_at DESC, id DESC) as rn')
+            ->where('created_at', '<', $startDate);
+
+        return DB::query()
+            ->fromSub($ranked, 'ranked_stocks')
+            ->where('rn', 1)
+            ->select('product_id', 'available_quantity as before_quantity', 'unit_cost as before_avg_cost')
             ->get()
             ->keyBy('product_id');
     }
@@ -143,155 +163,60 @@ class Product extends Model
         // ALWAYS calculate from purchases - sales for accuracy
         // Don't rely on product_stocks.available_quantity which may have discrepancies
 
-        $products = Product::where('status', true)->pluck('id');
+        $productIds = static::where('status', true)->pluck('id');
+
+        $purchases = DB::table('product_stocks')
+            ->where('type', 'purchase')
+            ->where('created_at', '<=', $endDate)
+            ->whereNull('deleted_at')
+            ->groupBy('product_id')
+            ->selectRaw('product_id, SUM(quantity) as total_quantity')
+            ->get()
+            ->pluck('total_quantity', 'product_id');
+
+        $sales = DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->where('sales.created_at', '<=', $endDate)
+            ->whereNull('sales.deleted_at')
+            ->groupBy('sale_items.product_id')
+            ->selectRaw('sale_items.product_id as product_id, SUM(sale_items.quantity) as total_quantity')
+            ->get()
+            ->pluck('total_quantity', 'product_id');
+
         $stockPositions = collect();
 
-        foreach ($products as $productId) {
-            // Calculate total purchases up to end date
-            $totalPurchases = ProductStock::where('product_id', $productId)
-                ->where('type', 'purchase')
-                ->where('created_at', '<=', $endDate)
-                ->whereNull('deleted_at')
-                ->sum('quantity');
-
-            // Calculate total sales up to end date
-            $totalSales = DB::table('sale_items')
-                ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-                ->where('sale_items.product_id', $productId)
-                ->where('sales.created_at', '<=', $endDate)
-                ->whereNull('sales.deleted_at')
-                ->sum('sale_items.quantity');
-
-            $availableQty = $totalPurchases - $totalSales;
+        foreach ($productIds as $productId) {
+            $availableQty = (float) ($purchases[$productId] ?? 0) - (float) ($sales[$productId] ?? 0);
 
             $stockPositions[$productId] = (object) [
                 'product_id' => $productId,
-                'available_quantity' => max(0, $availableQty), // Ensure non-negative
+                'available_quantity' => max(0, $availableQty),
             ];
         }
 
         return $stockPositions;
     }
 
-    protected static function getWeightedAvgCostQuery()
+    protected static function getWeightedAvgCosts($endDate)
     {
-        return '
-            CASE
-                WHEN SUM(CASE WHEN ps2.quantity > 0 THEN ps2.quantity ELSE 0 END) > 0
-                THEN CAST(
-                    SUM(CASE WHEN ps2.quantity > 0 THEN (ps2.quantity * ps2.unit_cost) ELSE 0 END) /
-                    SUM(CASE WHEN ps2.quantity > 0 THEN ps2.quantity ELSE 0 END)
-                    AS DECIMAL(15,6)
-                )
-                ELSE 0
-            END as weighted_avg_cost
-        ';
-    }
-
-    protected static function getAllTimeBuyPriceQuery()
-    {
-        return ProductStock::selectRaw('
-            CASE
-                WHEN SUM(CASE WHEN type = "purchase" THEN quantity ELSE 0 END) > 0
-                THEN CAST(
-                    SUM(CASE WHEN type = "purchase" THEN total_cost ELSE 0 END) /
-                    SUM(CASE WHEN type = "purchase" THEN quantity ELSE 0 END)
-                    AS DECIMAL(15,6)
-                )
-                ELSE 0
-            END')
-            ->whereColumn('product_id', 'products.id')
-            ->where('type', 'purchase');
-    }
-
-    protected static function getBuyQuantityQuery($startDate, $endDate)
-    {
-        return ProductStock::selectRaw('CAST(COALESCE(SUM(quantity), 0) AS DECIMAL(15,6))')
-            ->whereColumn('product_id', 'products.id')
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->where('type', 'purchase');
-    }
-
-    protected static function getTotalBuyCostQuery($startDate, $endDate)
-    {
-        return ProductStock::selectRaw('CAST(COALESCE(SUM(total_cost), 0) AS DECIMAL(15,6))')
-            ->whereColumn('product_id', 'products.id')
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->where('type', 'purchase');
-    }
-
-    protected static function getSaleQuantityQuery($startDate, $endDate)
-    {
-        return DB::table('sale_items')
-            ->selectRaw('CAST(COALESCE(SUM(sale_items.quantity), 0) AS DECIMAL(15,6))')
-            ->whereColumn('sale_items.product_id', 'products.id')
-            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-            ->whereBetween('sales.created_at', [$startDate, $endDate])
-            ->whereNull('sales.deleted_at');
-    }
-
-    protected static function getTotalSaleAmountQuery($startDate, $endDate)
-    {
-        return DB::table('sale_items')
-            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-            ->whereColumn('sale_items.product_id', 'products.id')
-            ->whereBetween('sales.created_at', [$startDate, $endDate])
-            ->whereNull('sales.deleted_at')
+        return DB::table('product_stocks')
+            ->where('type', 'purchase')
+            ->where('created_at', '<=', $endDate)
+            ->whereNull('deleted_at')
+            ->groupBy('product_id')
             ->selectRaw('
-                CAST(
-                    COALESCE(
-                        SUM(sale_items.subtotal), 0
-                    ) AS DECIMAL(15,2)
-                )
-            ');
+                product_id,
+                CASE
+                    WHEN SUM(quantity) > 0
+                    THEN CAST(SUM(total_cost) AS REAL) / SUM(quantity)
+                    ELSE 0
+                END as weighted_avg_cost
+            ')
+            ->get()
+            ->pluck('weighted_avg_cost', 'product_id');
     }
 
-    protected static function getTotalSaleDiscountQuery($startDate, $endDate)
-    {
-        return DB::table('sale_items')
-            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-            ->whereColumn('sale_items.product_id', 'products.id')
-            ->whereBetween('sales.created_at', [$startDate, $endDate])
-            ->whereNull('sales.deleted_at')
-            ->selectRaw('
-                CAST(
-                    COALESCE(
-                        SUM(
-                            CASE
-                                WHEN sales.subtotal > 0
-                                THEN (sale_items.subtotal / sales.subtotal) * sales.discount
-                                ELSE 0
-                            END
-                        ), 0
-                    ) AS DECIMAL(15,2)
-                )
-            ');
-    }
-
-    protected static function getSaleAmountAfterDiscountQuery($startDate, $endDate)
-    {
-        return DB::table('sale_items')
-            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-            ->whereColumn('sale_items.product_id', 'products.id')
-            ->whereBetween('sales.created_at', [$startDate, $endDate])
-            ->whereNull('sales.deleted_at')
-            ->selectRaw('
-                CAST(
-                    COALESCE(
-                        SUM(
-                            sale_items.subtotal -
-                            CASE
-                                WHEN sales.subtotal > 0
-                                THEN (sale_items.subtotal / sales.subtotal) * sales.discount
-                                ELSE 0
-                            END
-                        ), 0
-                    ) AS DECIMAL(15,2)
-                )
-            ');
-    }
-
-    protected static function calculateProductMetrics($product, $index, $stockPositions, $beforeStockPositions, $endDate)
+    protected static function calculateProductMetrics($product, $index, $stockPositions, $beforeStockPositions, float $weightedAvgCost)
     {
         $stockPosition = $stockPositions[$product->id] ?? null;
         $beforeStockPosition = $beforeStockPositions[$product->id] ?? null;
@@ -314,21 +239,7 @@ class Product extends Model
         // Get available quantity from stock position (either from stock_movements or product_stocks)
         $availableQuantity = $stockPosition ? (float) $stockPosition->available_quantity : 0;
 
-        // Calculate weighted average cost for ALL purchases up to end date
-        // This is needed for accurate profit calculation
-        $allTimePurchases = ProductStock::where('product_id', $product->id)
-            ->where('type', 'purchase')
-            ->where('created_at', '<=', $endDate)
-            ->selectRaw('
-                CASE
-                    WHEN SUM(quantity) > 0
-                    THEN SUM(total_cost) / SUM(quantity)
-                    ELSE 0
-                END as weighted_avg_cost
-            ')
-            ->first();
-
-        $weightedAvgCost = $allTimePurchases ? (float) $allTimePurchases->weighted_avg_cost : 0;
+        // Weighted average cost of all purchases up to the end date.
         $effectiveCost = $weightedAvgCost > 0 ? $weightedAvgCost : ($beforeAvgCost > 0 ? $beforeAvgCost : $buyPrice);
 
         // Calculate monthly stock value flow:
