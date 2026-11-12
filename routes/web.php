@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\ReceiptPaymentController;
 use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\SaleReportController;
 use App\Http\Controllers\Admin\UnitController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\ExtraIncomeCategoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Public\StorefrontController;
@@ -228,6 +229,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/reports/receipt-payment/pdf', [ReceiptPaymentController::class, 'downloadPdf'])
         ->name('reports.receipt-payment.pdf');
 
+    Route::resource('users', UserController::class);
+    Route::post('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+
 });
 
 Route::get('products/search', [ProductController::class, 'search'])->name('api.products.search');
@@ -236,16 +240,10 @@ Route::get('/dashboard', function () {
     return redirect('/admin/dashboard');
 })->name('dashboard');
 
-// NOTE: Home route is the public storefront above.
-
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
-Route::middleware(['auth'])->prefix('admin')->group(function () {
-    Route::get('/users', [DashboardController::class, 'users'])->name('admin.users');
 });
 
 require __DIR__.'/auth.php';

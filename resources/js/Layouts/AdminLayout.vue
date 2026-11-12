@@ -10,149 +10,141 @@
         ]">
 
             <!-- Fixed Header -->
-            <div class="flex-shrink-0">
-                <div
-                    class="flex items-center justify-between h-14 px-4 bg-slate-900/0 dark:bg-white/5 backdrop-blur-sm">
-                    <Link href="/admin/dashboard" class="flex items-center gap-2.5">
-                    <div class="p-1.5 rounded-lg bg-slate-900/5 dark:bg-white/10 backdrop-blur-sm">
-                        <img src="/logo.svg" alt="Logo" class="w-7 h-7" />
-                    </div>
-                    <span
-                        class="text-[15px] leading-5 font-semibold text-slate-900 dark:text-slate-100">
-                        Mousumi Prokashon/ Variety Store
-                    </span>
+            <div class="flex-shrink-0 border-b border-slate-200/70 dark:border-white/10">
+                <div class="flex items-center justify-between h-14 px-3.5">
+                    <Link href="/admin/dashboard" class="flex items-center gap-2.5 min-w-0">
+                        <div class="p-1 rounded-md bg-indigo-50 dark:bg-white/10 flex-shrink-0">
+                            <img src="/logo.svg" alt="Logo" class="w-6 h-6" />
+                        </div>
+                        <div class="min-w-0">
+                            <span class="block text-[13px] font-bold text-slate-900 dark:text-slate-100 truncate leading-tight tracking-tight">
+                                Mousumi Prokashon
+                            </span>
+                            <span class="block text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate leading-tight">
+                                Variety Store & POS
+                            </span>
+                        </div>
                     </Link>
                     <button
-                        class="p-2 transition-colors rounded-lg lg:hidden hover:bg-slate-900/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                        class="p-1.5 transition-colors rounded-md lg:hidden hover:bg-slate-200/60 dark:hover:bg-white/10 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                         @click="toggleSidebar">
-                        <i class="text-lg fas fa-times"></i>
+                        <i class="text-sm fas fa-times"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Scrollable Navigation -->
-            <div class="flex-1 overflow-y-auto">
-                <nav class="px-3 mt-4">
-                    <div class="space-y-1.5">
-                        <!-- Single Items -->
-                        <Link v-for="item in filteredSingleNavItems" :key="item.name" :href="item.href" :class="[
-                            'flex items-center px-3 py-2.5 text-[13px] rounded-lg transition-all duration-200',
-                            'hover:bg-slate-900/5 dark:hover:bg-white/10 backdrop-blur-sm group',
-                            isActivePath(item.href)
-                                ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-black/5 dark:bg-white/10 dark:text-white dark:shadow-black/10'
-                                : 'text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
-                        ]">
-                        <div :class="[
-                            'p-1.5 rounded-lg mr-2.5 transition-all duration-200',
-                            isActivePath(item.href)
-                                ? 'bg-indigo-100 text-indigo-700 dark:bg-white/10 dark:text-white'
-                                : 'bg-slate-900/5 text-slate-600 group-hover:bg-slate-900/8 group-hover:text-slate-900 dark:bg-white/10 dark:text-slate-300 dark:group-hover:bg-white/12 dark:group-hover:text-white'
-                        ]">
-                            <i :class="['fas', item.icon, 'w-4 h-4']"></i>
+            <div class="flex-1 overflow-y-auto px-2 py-2">
+                <nav class="space-y-2">
+                    <div v-for="section in filteredNavSections" :key="section.title" class="space-y-0.5">
+                        <!-- Section Category Header -->
+                        <div class="px-2 pt-1.5 pb-0.5 text-[9.5px] font-bold tracking-wider text-slate-400 uppercase select-none dark:text-slate-500 flex items-center justify-between">
+                            <span>{{ section.title }}</span>
                         </div>
-                        <span class="font-medium">{{ item.name }}</span>
-                        <span
-                            v-if="item.badgeKey && (counts[item.badgeKey] || 0) > 0"
-                            class="ml-auto inline-flex items-center justify-center min-w-6 h-5 px-1.5 rounded-full text-[11px] font-semibold bg-indigo-600 text-white dark:bg-indigo-500">
-                            {{ counts[item.badgeKey] }}
-                        </span>
-                        </Link>
 
-                        <!-- Dropdown Items -->
-                        <div v-for="(group, index) in filteredDropdownNavItems" :key="index" class="space-y-1">
-                            <button @click="toggleDropdown(group.name)" :class="[
-                                'w-full flex items-center justify-between px-3 py-2.5 text-[13px] rounded-lg transition-all duration-200',
-                                'hover:bg-slate-900/5 dark:hover:bg-white/10 backdrop-blur-sm group',
-                                isDropdownActive(group.name)
-                                    ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-black/5 dark:bg-white/10 dark:text-white dark:shadow-black/10'
-                                    : 'text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
-                            ]">
-                                <div class="flex items-center">
-                                    <div :class="[
-                                        'p-1.5 rounded-lg mr-2.5 transition-all duration-200',
-                                        isDropdownActive(group.name)
-                                            ? 'bg-indigo-100 text-indigo-700 dark:bg-white/10 dark:text-white'
-                                            : 'bg-slate-900/5 text-slate-600 group-hover:bg-slate-900/8 group-hover:text-slate-900 dark:bg-white/10 dark:text-slate-300 dark:group-hover:bg-white/12 dark:group-hover:text-white'
-                                    ]">
-                                        <i :class="['fas', group.icon, 'w-4 h-4']"></i>
-                                    </div>
-                                    <span class="font-medium">{{ group.name }}</span>
-                                </div>
-                                <i :class="[
-                                    'fas fa-chevron-right transition-transform duration-200',
-                                    activeDropdowns.includes(group.name) && 'rotate-90'
-                                ]"></i>
-                            </button>
-
-                            <!-- Dropdown Content -->
-                            <TransitionRoot :show="activeDropdowns.includes(group.name)"
-                                enter="transition-all duration-300 ease-in-out"
-                                enter-from="transform opacity-0 scale-95 -translate-y-2"
-                                enter-to="transform opacity-100 scale-100 translate-y-0"
-                                leave="transition-all duration-200 ease-in-out"
-                                leave-from="transform opacity-100 scale-100 translate-y-0"
-                                leave-to="transform opacity-0 scale-95 -translate-y-2">
-                                <div
-                                    class="pl-3 ml-3 space-y-1 border-l border-slate-200/70 dark:border-white/10">
-                                    <Link v-for="subItem in group.items" :key="subItem.name" :href="subItem.href"
-                                        :class="[
-                                            'flex items-center px-3 py-2 text-[13px] rounded-lg transition-all duration-200',
-                                            'hover:bg-slate-900/5 dark:hover:bg-white/10 group',
-                                            isActivePath(subItem.href)
-                                                ? 'bg-indigo-50 text-indigo-700 dark:bg-white/10 dark:text-white'
-                                                : 'text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
-                                        ]">
+                        <!-- Section Items -->
+                        <div class="space-y-0.5">
+                            <template v-for="item in section.items" :key="item.name">
+                                <!-- Link Item -->
+                                <Link v-if="item.type === 'link'" :href="item.href" :class="[
+                                    'flex items-center px-2 py-1.5 text-[12px] rounded-md transition-all duration-150 group',
+                                    isActivePath(item.href)
+                                        ? 'bg-indigo-600 text-white font-medium shadow-xs dark:bg-indigo-600'
+                                        : 'text-slate-700 hover:bg-slate-200/60 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white'
+                                ]">
                                     <i :class="[
                                         'fas',
-                                        subItem.icon,
-                                        'w-4 h-4 mr-2.5',
-                                        isActivePath(subItem.href)
-                                            ? 'text-indigo-700 dark:text-white'
-                                            : 'text-slate-400 group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-white'
+                                        item.icon,
+                                        'w-4 text-center mr-2 text-[11px] flex-shrink-0 transition-colors',
+                                        isActivePath(item.href)
+                                            ? 'text-white'
+                                            : 'text-slate-400 group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-200'
                                     ]"></i>
-                                    <span class="font-medium">{{ subItem.name }}</span>
-                                    </Link>
+                                    <span class="truncate">{{ item.name }}</span>
+                                    <span
+                                        v-if="item.badgeKey && (counts[item.badgeKey] || 0) > 0"
+                                        class="ml-auto inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full text-[9px] font-bold bg-amber-500 text-white">
+                                        {{ counts[item.badgeKey] }}
+                                    </span>
+                                </Link>
+
+                                <!-- Dropdown Item -->
+                                <div v-else-if="item.type === 'dropdown'" class="space-y-0.5">
+                                    <button @click="toggleDropdown(item.name)" :class="[
+                                        'w-full flex items-center justify-between px-2 py-1.5 text-[12px] rounded-md transition-all duration-150 group',
+                                        isDropdownActive(item)
+                                            ? 'text-indigo-700 font-semibold bg-indigo-50/80 dark:bg-white/10 dark:text-indigo-300'
+                                            : 'text-slate-700 hover:bg-slate-200/60 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white font-normal'
+                                    ]">
+                                        <div class="flex items-center min-w-0">
+                                            <i :class="[
+                                                'fas',
+                                                item.icon,
+                                                'w-4 text-center mr-2 text-[11px] flex-shrink-0 transition-colors',
+                                                isDropdownActive(item)
+                                                    ? 'text-indigo-600 dark:text-indigo-300'
+                                                    : 'text-slate-400 group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-200'
+                                            ]"></i>
+                                            <span class="truncate">{{ item.name }}</span>
+                                        </div>
+                                        <i :class="[
+                                            'fas fa-chevron-right text-[9px] transition-transform duration-150 text-slate-400 dark:text-slate-500 ml-1.5 flex-shrink-0',
+                                            activeDropdowns.includes(item.name) && 'rotate-90'
+                                        ]"></i>
+                                    </button>
+
+                                    <!-- Dropdown Content -->
+                                    <TransitionRoot :show="activeDropdowns.includes(item.name)"
+                                        enter="transition-all duration-150 ease-out"
+                                        enter-from="transform opacity-0 -translate-y-1"
+                                        enter-to="transform opacity-100 translate-y-0"
+                                        leave="transition-all duration-100 ease-in"
+                                        leave-from="transform opacity-100 translate-y-0"
+                                        leave-to="transform opacity-0 -translate-y-1">
+                                        <div class="pl-2 ml-3 my-0.5 space-y-0.5 border-l border-slate-300/80 dark:border-white/15">
+                                            <Link v-for="subItem in item.items" :key="subItem.name" :href="subItem.href"
+                                                :class="[
+                                                    'flex items-center px-2 py-1 text-[11.5px] rounded transition-all duration-150 group',
+                                                    isActivePath(subItem.href)
+                                                        ? 'bg-indigo-600 text-white font-medium shadow-xs'
+                                                        : 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white'
+                                                ]">
+                                                <i :class="[
+                                                    'fas',
+                                                    subItem.icon,
+                                                    'w-3.5 text-center mr-1.5 text-[10px] flex-shrink-0',
+                                                    isActivePath(subItem.href)
+                                                        ? 'text-white'
+                                                        : 'text-slate-400 group-hover:text-slate-600 dark:text-slate-400 dark:group-hover:text-slate-200'
+                                                ]"></i>
+                                                <span class="truncate">{{ subItem.name }}</span>
+                                            </Link>
+                                        </div>
+                                    </TransitionRoot>
                                 </div>
-                            </TransitionRoot>
+                            </template>
                         </div>
                     </div>
-
-                    <!-- Quick Actions -->
-                    <!-- <div class="pt-6 mt-8 mb-20 border-t border-indigo-500/20">
-                        <h3 class="px-4 text-xs font-semibold tracking-wider text-indigo-200 uppercase">
-                            Quick Actions
-                        </h3>
-                        <div class="mt-4 space-y-2">
-                            <button v-for="action in quickActions" :key="action.name" @click="action.handler"
-                                class="w-full flex items-center px-4 py-2.5 text-sm text-indigo-100 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200 group">
-                                <div
-                                    class="p-2 mr-3 transition-all duration-200 rounded-lg bg-white/10 group-hover:bg-white/15">
-                                    <i :class="['fas', action.icon, 'w-4 h-4']"></i>
-                                </div>
-                                <span class="font-medium">{{ action.name }}</span>
-                            </button>
-                        </div>
-                    </div> -->
                 </nav>
             </div>
 
             <!-- Fixed Footer with User Profile -->
-            <div class="flex-shrink-0 p-3 border-t border-slate-200/70 dark:border-white/10">
+            <div class="flex-shrink-0 p-2 border-t border-slate-200/70 dark:border-white/10 bg-white/40 dark:bg-white/5">
                 <Menu as="div" class="relative">
                     <MenuButton
-                        class="flex items-center w-full p-2.5 transition-all duration-200 rounded-lg hover:bg-slate-900/5 dark:hover:bg-white/10">
-                        <div class="relative">
+                        class="flex items-center w-full p-1.5 transition-all duration-150 rounded-md hover:bg-slate-200/60 dark:hover:bg-white/10">
+                        <div class="relative flex-shrink-0">
                             <img :src="user.avatar || '/default-avatar.png'"
-                                class="w-9 h-9 border-2 rounded-lg border-white/20" alt="User Avatar" />
+                                class="w-7 h-7 border rounded-md border-slate-300/60 dark:border-white/20 object-cover" alt="User Avatar" />
                             <div
-                                class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-indigo-900 rounded-full">
+                                class="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 border border-white dark:border-slate-900 rounded-full">
                             </div>
                         </div>
-                        <div class="flex-1 ml-3 text-left">
-                            <p class="text-[13px] font-medium leading-4 text-slate-900 dark:text-white">{{ user.name }}</p>
-                            <p class="text-[11px] text-slate-500 dark:text-slate-300">{{ user.role.name || 'Administrator' }}</p>
+                        <div class="flex-1 ml-2 text-left min-w-0">
+                            <p class="text-[12px] font-semibold leading-tight text-slate-800 dark:text-white truncate">{{ user.name }}</p>
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate leading-tight">{{ user.role?.name || 'Administrator' }}</p>
                         </div>
-                        <i class="ml-2 text-slate-500 dark:text-slate-300 fas fa-chevron-up"></i>
+                        <i class="ml-1 text-[10px] text-slate-400 dark:text-slate-500 fas fa-chevron-up flex-shrink-0"></i>
                     </MenuButton>
 
                     <transition enter-active-class="transition duration-200 ease-out"
@@ -378,131 +370,235 @@ const counts = computed(() => page.props.counts || {});
 const isOpen = ref(false)
 const activeDropdowns = ref([])
 
-// Navigation items
-const singleNavItems = [
-    {
-        name: 'Dashboard',
-        href: '/admin/dashboard',
-        icon: 'fa-tachometer-alt',
-        allowedRoles: ['admin', 'manager', 'staff'] // Example roles
-    },
-    {
-        name: 'Orders',
-        href: '/admin/pending-sales',
-        icon: 'fa-clipboard-list',
-        badgeKey: 'pendingOrders',
-        allowedRoles: ['admin', 'manager']
+// Current reactive path
+const currentPath = computed(() => {
+    const url = page.url || (typeof window !== 'undefined' ? window.location.pathname : '');
+    return url.split('?')[0];
+});
+
+const isActivePath = (href) => {
+    if (!href) return false;
+    const current = currentPath.value;
+    if (current === href) return true;
+    if (href !== '/admin' && href !== '/admin/dashboard' && current.startsWith(href + '/')) {
+        return true;
     }
-]
+    return false;
+};
 
-const dropdownNavItems = [
+// Categorized Navigation Sections
+const navigationSections = [
     {
-        name: 'Products',
-        icon: 'fa-box',
-        allowedRoles: ['admin', 'manager'],
+        title: 'MAIN',
         items: [
-            { name: 'Products', href: '/admin/products', icon: 'fa-boxes', allowedRoles: ['admin', 'manager'] },
-            { name: 'Categories', href: '/admin/categories', icon: 'fa-folder', allowedRoles: ['admin'] },
-            { name: 'Units', href: '/admin/units', icon: 'fa-ruler', allowedRoles: ['admin'] },
-            { name: 'Brands', href: '/admin/brands', icon: 'fa-tag', allowedRoles: ['admin'] },
-            { name: 'Stock Management', href: '/admin/product-stocks', icon: 'fa-warehouse', allowedRoles: ['admin', 'manager'] }
+            {
+                type: 'link',
+                name: 'Dashboard',
+                href: '/admin/dashboard',
+                icon: 'fa-tachometer-alt',
+                allowedRoles: ['admin', 'manager', 'staff']
+            },
+            {
+                type: 'link',
+                name: 'POS Terminal',
+                href: '/admin/pos',
+                icon: 'fa-cash-register',
+                allowedRoles: ['admin', 'manager', 'staff']
+            },
+            {
+                type: 'link',
+                name: 'Online Orders',
+                href: '/admin/pending-sales',
+                icon: 'fa-clipboard-list',
+                badgeKey: 'pendingOrders',
+                allowedRoles: ['admin', 'manager']
+            }
         ]
     },
     {
-        name: 'Sales',
-        icon: 'fa-shopping-cart',
-        allowedRoles: ['admin', 'manager', 'staff'],
+        title: 'SALES & CRM',
         items: [
-            { name: 'Sales List', href: '/admin/sales', icon: 'fa-list', allowedRoles: ['admin', 'staff'] },
-            { name: 'POS', href: '/admin/pos', icon: 'fa-cash-register', allowedRoles: ['admin', 'manager', 'staff'] }
+            {
+                type: 'dropdown',
+                name: 'Sales',
+                icon: 'fa-shopping-cart',
+                allowedRoles: ['admin', 'manager', 'staff'],
+                items: [
+                    { name: 'Sales List', href: '/admin/sales', icon: 'fa-list', allowedRoles: ['admin', 'staff', 'manager'] },
+                    { name: 'POS Counter', href: '/admin/pos', icon: 'fa-cash-register', allowedRoles: ['admin', 'manager', 'staff'] }
+                ]
+            },
+            {
+                type: 'dropdown',
+                name: 'Customers',
+                icon: 'fa-users',
+                allowedRoles: ['admin', 'manager', 'staff'],
+                items: [
+                    { name: 'Customer List', href: '/admin/customers', icon: 'fa-user-friends', allowedRoles: ['admin', 'manager', 'staff'] }
+                ]
+            }
         ]
     },
     {
-        name: 'Extra Income',
-        icon: 'fa-coins',
-        allowedRoles: ['admin', 'manager'],
+        title: 'INVENTORY & CATALOG',
         items: [
-            { name: 'Extra Income Categories', href: '/admin/extra-income-categories', icon: 'fa-list', allowedRoles: ['admin'] },
-            { name: 'Extra Income', href: '/admin/extra-incomes', icon: 'fa-coins', allowedRoles: ['admin', 'manager'] }
+            {
+                type: 'dropdown',
+                name: 'Products & Stock',
+                icon: 'fa-boxes',
+                allowedRoles: ['admin', 'manager'],
+                items: [
+                    { name: 'All Products', href: '/admin/products', icon: 'fa-box', allowedRoles: ['admin', 'manager'] },
+                    { name: 'Stock Management', href: '/admin/product-stocks', icon: 'fa-warehouse', allowedRoles: ['admin', 'manager'] },
+                    { name: 'Categories', href: '/admin/categories', icon: 'fa-folder', allowedRoles: ['admin'] },
+                    { name: 'Brands', href: '/admin/brands', icon: 'fa-tag', allowedRoles: ['admin'] },
+                    { name: 'Units', href: '/admin/units', icon: 'fa-ruler', allowedRoles: ['admin'] }
+                ]
+            }
         ]
     },
     {
-        name: 'Customers',
-        icon: 'fa-users',
-        allowedRoles: ['admin', 'manager', 'staff'],
+        title: 'FINANCE & ACCOUNTS',
         items: [
-            { name: 'Customer List', href: '/admin/customers', icon: 'fa-user-friends', allowedRoles: ['admin', 'manager', 'staff'] }
+            {
+                type: 'dropdown',
+                name: 'Expenses & Assets',
+                icon: 'fa-receipt',
+                allowedRoles: ['admin', 'manager'],
+                items: [
+                    { name: 'Expenses', href: '/admin/expenses', icon: 'fa-file-invoice-dollar', allowedRoles: ['admin', 'manager'] },
+                    { name: 'Expense Categories', href: '/admin/expense-categories', icon: 'fa-folder-open', allowedRoles: ['admin'] },
+                    { name: 'Fixed Assets', href: '/admin/fixed-assets', icon: 'fa-building', allowedRoles: ['admin', 'manager'] }
+                ]
+            },
+            {
+                type: 'dropdown',
+                name: 'Banking & Accounts',
+                icon: 'fa-university',
+                allowedRoles: ['admin'],
+                items: [
+                    { name: 'Bank Accounts', href: '/admin/bank-accounts', icon: 'fa-piggy-bank', allowedRoles: ['admin'] },
+                    { name: 'Transactions', href: '/admin/bank-transactions', icon: 'fa-exchange-alt', allowedRoles: ['admin'] },
+                    { name: 'Funds', href: '/admin/funds', icon: 'fas fa-wallet', allowedRoles: ['admin'] }
+                ]
+            },
+            {
+                type: 'dropdown',
+                name: 'Extra Income',
+                icon: 'fa-coins',
+                allowedRoles: ['admin', 'manager'],
+                items: [
+                    { name: 'Extra Incomes', href: '/admin/extra-incomes', icon: 'fa-hand-holding-usd', allowedRoles: ['admin', 'manager'] },
+                    { name: 'Income Categories', href: '/admin/extra-income-categories', icon: 'fa-tags', allowedRoles: ['admin'] }
+                ]
+            }
         ]
     },
     {
-        name: 'Banking',
-        icon: 'fa-university',
-        allowedRoles: ['admin'],
+        title: 'REPORTS & ANALYTICS',
         items: [
-            { name: 'Bank Accounts', href: '/admin/bank-accounts', icon: 'fa-piggy-bank', allowedRoles: ['admin'] },
-            { name: 'Funds', href: '/admin/funds', icon: 'fas fa-wallet', allowedRoles: ['admin'] },
-            { name: 'Transactions', href: '/admin/bank-transactions', icon: 'fa-exchange-alt', allowedRoles: ['admin'] }
+            {
+                type: 'dropdown',
+                name: 'Reports',
+                icon: 'fa-chart-line',
+                allowedRoles: ['admin', 'manager'],
+                items: [
+                    { name: 'Sales Report', href: '/admin/reports/sales', icon: 'fa-chart-bar', allowedRoles: ['admin'] },
+                    { name: 'Stock Report', href: '/admin/reports/stock', icon: 'fa-warehouse', allowedRoles: ['admin'] },
+                    { name: 'Product Analysis', href: '/admin/reports/product-analysis', icon: 'fa-chart-pie', allowedRoles: ['admin', 'manager'] },
+                    { name: 'Bank Report', href: '/admin/reports/bank-transaction-report', icon: 'fa-university', allowedRoles: ['admin', 'manager'] },
+                    { name: 'Receipt & Payment', href: '/admin/reports/receipt-payment', icon: 'fa-credit-card', allowedRoles: ['admin'] },
+                    { name: 'Income & Expenditure', href: '/admin/reports/income-expenditure', icon: 'fa-file-alt', allowedRoles: ['admin'] },
+                    { name: 'Balance Sheet', href: '/admin/reports/balance-sheet', icon: 'fas fa-balance-scale', allowedRoles: ['admin'] }
+                ]
+            }
         ]
     },
     {
-        name: 'Expenses',
-        icon: 'fa-receipt',
-        allowedRoles: ['admin', 'manager'],
+        title: 'SYSTEM & SETTINGS',
         items: [
-            { name: 'Expenses', href: '/admin/expenses', icon: 'fa-file-invoice-dollar', allowedRoles: ['admin', 'manager'] },
-            { name: 'Fixed Assets', href: '/admin/fixed-assets', icon: 'fa-building', allowedRoles: ['admin', 'manager'] },
-            { name: 'Categories', href: '/admin/expense-categories', icon: 'fa-folder', allowedRoles: ['admin'] }
-        ]
-    },
-    {
-        name: 'Reports',
-        icon: 'fa-chart-line',
-        allowedRoles: ['admin', 'manager'],
-        items: [
-            { name: 'Bank Report', href: '/admin/reports/bank-transaction-report', icon: 'fa-university', allowedRoles: ['admin', 'manager'] },
-            { name: 'Stock Report', href: '/admin/reports/stock', icon: 'fa-warehouse', allowedRoles: ['admin',] },
-            { name: 'Sales Report', href: '/admin/reports/sales', icon: 'fa-chart-bar', allowedRoles: ['admin'] },
-            { name: 'Product', href: '/admin/reports/product-analysis', icon: 'fa-box', allowedRoles: ['admin', 'manager'] },
-            { name: 'Receipt & Payment', href: '/admin/reports/receipt-payment', icon: 'fa-credit-card', allowedRoles: ['admin'] },
-            { name: 'Income & Expenditure', href: '/admin/reports/income-expenditure', icon: 'fa-file-alt', allowedRoles: ['admin'] },
-            { name: 'Balance Sheet', href: '/admin/reports/balance-sheet', icon: 'fas fa-balance-scale', allowedRoles: ['admin'] }
+            {
+                type: 'link',
+                name: 'User Management',
+                href: '/admin/users',
+                icon: 'fa-users-cog',
+                allowedRoles: ['admin']
+            }
         ]
     }
-]
+];
 
+const userRoleName = computed(() => (user?.role?.name || '').toLowerCase());
+const isUserSuperAdmin = computed(() => {
+    return Boolean(
+        page.props.auth?.is_super_admin ||
+        user?.is_super_admin ||
+        userRoleName.value.includes('super') ||
+        user?.role?.slug === 'super-admin' ||
+        (user?.name || '').toLowerCase().includes('super admin') ||
+        user?.id === 1
+    );
+});
 
-const filteredSingleNavItems = computed(() => {
-    return singleNavItems.filter(item =>
-        item.allowedRoles?.includes(user.role.name.toLowerCase())
-    )
-})
+const hasRoleAccess = (allowedRoles = []) => {
+    if (!allowedRoles || allowedRoles.length === 0) return true;
+    if (isUserSuperAdmin.value) return true;
+    return allowedRoles.includes(userRoleName.value);
+};
 
-const filteredDropdownNavItems = computed(() => {
-    return dropdownNavItems.filter(group => {
-        // First check if the group itself is allowed for the user's role
-        if (!group.allowedRoles?.includes(user.role.name.toLowerCase())) {
-            return false
-        }
+const filteredNavSections = computed(() => {
+    return navigationSections.map(section => {
+        const filteredItems = section.items.map(item => {
+            if (item.type === 'dropdown') {
+                if (!hasRoleAccess(item.allowedRoles)) return null;
+                const filteredSubItems = (item.items || []).filter(sub => hasRoleAccess(sub.allowedRoles));
+                if (filteredSubItems.length === 0) return null;
+                return {
+                    ...item,
+                    items: filteredSubItems
+                };
+            } else {
+                if (!hasRoleAccess(item.allowedRoles)) return null;
+                return item;
+            }
+        }).filter(Boolean);
 
-        // Filter the items within the group
-        const filteredItems = group.items.filter(item =>
-            item.allowedRoles?.includes(user.role.name.toLowerCase())
-        )
+        return {
+            ...section,
+            items: filteredItems
+        };
+    }).filter(section => section.items.length > 0);
+});
 
-        // Only include groups that have at least one accessible item
-        return filteredItems.length > 0
-    }).map(group => ({
-        ...group,
-        items: group.items.filter(item =>
-            item.allowedRoles?.includes(user.role.name.toLowerCase())
-        )
-    }))
-})
+const isDropdownActive = (group) => {
+    if (!group || !group.items) return false;
+    return group.items.some(item => isActivePath(item.href));
+};
+
+const ensureActiveDropdownIsOpen = () => {
+    navigationSections.forEach(section => {
+        section.items.forEach(item => {
+            if (item.type === 'dropdown' && item.items) {
+                if (item.items.some(subItem => isActivePath(subItem.href))) {
+                    if (!activeDropdowns.value.includes(item.name)) {
+                        activeDropdowns.value.push(item.name);
+                    }
+                }
+            }
+        });
+    });
+};
+
+onMounted(() => {
+    ensureActiveDropdownIsOpen();
+});
+
+watch(() => page.url, () => {
+    ensureActiveDropdownIsOpen();
+});
 
 // Quick actions for frequently used features
-const quickActions = [
-
-]
+const quickActions = []
 
 // Sample notifications
 const notifications = [
@@ -528,19 +624,19 @@ const notifications = [
 
 // Breadcrumbs based on current route
 const breadcrumbs = computed(() => {
-    const path = window.location.pathname
-    const parts = path.split('/').filter(Boolean)
+    const path = currentPath.value;
+    const parts = path.split('/').filter(Boolean);
 
     return [{
         name: 'Dashboard',
         href: '/admin/dashboard'
     }].concat(
         parts.slice(1).map((part, index) => ({
-            name: part.charAt(0).toUpperCase() + part.slice(1),
+            name: part.charAt(0).toUpperCase() + part.slice(1).replace(/-/g, ' '),
             href: '/admin/' + parts.slice(1, index + 2).join('/')
         }))
-    )
-})
+    );
+});
 
 // Methods
 const toggleSidebar = () => {
@@ -554,17 +650,6 @@ const toggleDropdown = (name) => {
     } else {
         activeDropdowns.value.splice(index, 1)
     }
-}
-
-const isActivePath = (path) => {
-    return window.location.pathname.startsWith(path)
-}
-
-const isDropdownActive = (groupName) => {
-    const group = dropdownNavItems.find(g => g.name === groupName)
-    if (!group) return false
-    return group.items.some(item => isActivePath(item.href)) ||
-        activeDropdowns.value.includes(groupName)
 }
 </script>
 

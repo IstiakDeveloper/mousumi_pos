@@ -211,6 +211,11 @@ class ProductStockController extends Controller
             'bank_account_id' => 'required|exists:bank_accounts,id',
         ]);
 
+        // Security check: Only Super Admin can specify a custom or backdated date
+        if (!auth()->user()?->isSuperAdmin()) {
+            $validated['date'] = now()->toDateString();
+        }
+
         try {
             DB::beginTransaction();
 

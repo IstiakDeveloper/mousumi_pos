@@ -34,6 +34,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user() ? $request->user()->loadMissing('role') : null,
+                'is_super_admin' => $request->user() ? $request->user()->isSuperAdmin() : false,
             ],
             'counts' => [
                 'pendingOrders' => fn () => $request->user()

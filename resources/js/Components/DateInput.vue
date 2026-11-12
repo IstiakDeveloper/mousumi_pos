@@ -88,6 +88,24 @@ const onPicker = (event) => {
     commit(text.value)
 }
 
+const pickerInput = ref(null)
+
+const openCalendar = () => {
+    if (props.disabled) return
+    if (pickerInput.value) {
+        if (typeof pickerInput.value.showPicker === 'function') {
+            try {
+                pickerInput.value.showPicker()
+                return
+            } catch (e) {
+                // Ignore fallback to click
+            }
+        }
+        pickerInput.value.focus()
+        pickerInput.value.click()
+    }
+}
+
 watch(() => props.modelValue, (value) => {
     const next = toDisplay(value)
     if (next !== text.value) {
@@ -98,7 +116,7 @@ watch(() => props.modelValue, (value) => {
 </script>
 
 <template>
-    <div class="relative">
+    <div class="relative flex items-center w-full">
         <input
             v-bind="attrs"
             type="text"
@@ -109,19 +127,41 @@ watch(() => props.modelValue, (value) => {
             :value="text"
             :required="required"
             :disabled="disabled"
-            :class="[attrs.class, invalid ? 'border-red-500' : '', 'pr-10']"
+            :class="[attrs.class, invalid ? '!border-red-500 ring-1 ring-red-500' : '', 'pr-10']"
             @input="onType"
         />
+
+        <!-- Visible Calendar Icon -->
+        <button
+            type="button"
+            tabindex="-1"
+            :disabled="disabled"
+            @click="openCalendar"
+            title="Open calendar"
+            :class="[
+                'absolute right-0 inset-y-0 flex items-center justify-center w-10 transition-colors',
+                disabled
+                    ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50'
+                    : 'text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 cursor-pointer'
+            ]">
+            <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+        </button>
+
+        <!-- Hidden overlay date picker that triggers on click -->
         <input
+            ref="pickerInput"
             type="date"
             tabindex="-1"
             aria-label="Open calendar"
-            class="absolute right-0 top-0 h-full w-10 cursor-pointer opacity-0"
+            class="absolute right-0 top-0 h-full w-10 cursor-pointer opacity-0 z-10"
             :value="isoValue"
             :min="min || undefined"
             :max="max || undefined"
             :disabled="disabled"
             @input="onPicker"
+            @click="openCalendar"
         />
     </div>
 </template>

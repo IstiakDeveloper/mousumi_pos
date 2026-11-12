@@ -85,9 +85,6 @@
 </template>
 
 <script setup>
-import * as LucideIcons from 'lucide-vue-next'
-const CubeIcon = LucideIcons.Cube
-
 const props = defineProps({
     products: {
         type: Array,

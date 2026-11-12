@@ -71,12 +71,25 @@
 
                             <!-- Date -->
                             <div class="col-span-1">
-                                <InputLabel for="date" class="text-gray-700 dark:text-gray-300">
-                                    Date <span class="text-red-500">*</span>
-                                </InputLabel>
+                                <div class="flex items-center justify-between">
+                                    <InputLabel for="date" class="text-gray-700 dark:text-gray-300">
+                                        Date <span class="text-red-500">*</span>
+                                    </InputLabel>
+                                    <span v-if="isSuperAdmin" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                                        <i class="fas fa-shield-alt mr-1 text-[9px]"></i> Super Admin
+                                    </span>
+                                    <span v-else class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                                        <i class="fas fa-lock mr-1 text-[9px]"></i> Fixed: Today
+                                    </span>
+                                </div>
                                 <TextInput v-model="form.date" type="date" id="date"
-                                    class="mt-1 block w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                                    :disabled="!isSuperAdmin"
+                                    class="mt-1 block w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-800 dark:disabled:text-gray-400"
                                     required :max="maxDate" />
+                                <p class="mt-1 text-xs">
+                                    <span v-if="isSuperAdmin" class="text-purple-600 dark:text-purple-400">Super admin can select a custom date.</span>
+                                    <span v-else class="text-amber-600 dark:text-amber-400">Only Super Admin can change date. Locked to current date.</span>
+                                </p>
                                 <InputError :message="form.errors.date" />
                             </div>
                         </div>
@@ -182,12 +195,24 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
-import { useForm, Link } from '@inertiajs/vue3'
+import { useForm, Link, usePage } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TextInput from '@/Components/TextInput.vue'
 import InputLabel from '@/Components/InputLabel.vue'
 import InputError from '@/Components/InputError.vue'
 import TextArea from '@/Components/TextArea.vue'
+
+const page = usePage()
+const isSuperAdmin = computed(() => {
+    return Boolean(
+        page.props.auth?.is_super_admin ||
+        page.props.auth?.user?.is_super_admin ||
+        (page.props.auth?.user?.role?.slug === 'super-admin') ||
+        (page.props.auth?.user?.role?.name || '').toLowerCase().includes('super') ||
+        (page.props.auth?.user?.name || '').toLowerCase().includes('super admin') ||
+        page.props.auth?.user?.id === 1
+    );
+});
 
 const props = defineProps({
     bankAccounts: {

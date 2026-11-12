@@ -16,45 +16,77 @@ class ExpenseController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Expense::with(['category', 'bankAccount', 'createdBy']);
+        $query = Expense::with(['category', 'bankAccount', 'createdBy'])
+            ->whereDoesntHave('category', fn ($q) => $q->where('name', 'Fixed Asset'));
 
         // Apply filters
-        $filteredExpenses = $query
-            ->whereDoesntHave('category', fn ($q) => $q->where('name', 'Fixed Asset'))
+        $filteredExpenses = (clone $query)
+            ->when($request->search, function ($q, $search) {
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('description', 'like', "%{$search}%")
+                        ->orWhere('reference_no', 'like', "%{$search}%")
+                        ->orWhere('amount', 'like', "%{$search}%");
+                });
+            })
             ->when($request->category_id, fn ($q) => $q->where('expense_category_id', $request->category_id))
             ->when($request->bank_id, fn ($q) => $q->where('bank_account_id', $request->bank_id))
             ->when($request->from_date, fn ($q) => $q->whereDate('date', '>=', $request->from_date))
             ->when($request->to_date, fn ($q) => $q->whereDate('date', '<=', $request->to_date));
 
-        $totalExpenses = (clone $filteredExpenses)->sum('amount');
+        $filteredExpensesTotal = (clone $filteredExpenses)->sum('amount');
+        $baseExpenseQuery = Expense::whereDoesntHave('category', fn ($q) => $q->where('name', 'Fixed Asset'));
+
+        $totalExpenses = (clone $baseExpenseQuery)->sum('amount');
+        $todayExpenses = (clone $baseExpenseQuery)->whereDate('date', now()->toDateString())->sum('amount');
+        $thisMonthExpenses = (clone $baseExpenseQuery)
+            ->whereYear('date', now()->year)
+            ->whereMonth('date', now()->month)
+            ->sum('amount');
+        $totalCount = (clone $baseExpenseQuery)->count();
 
         $expenses = $filteredExpenses
-            ->latest()
-            ->paginate(10)
+            ->latest('date')
+            ->latest('id')
+            ->paginate(15)
             ->withQueryString();
 
         return Inertia::render('Admin/Expenses/Index', [
             'expenses' => $expenses,
-            'categories' => ExpenseCategory::where('status', true)->where('name', '!=', 'Fixed Asset')->get(),
-            'bankAccounts' => BankAccount::where('status', true)->get(),
-            'filters' => $request->only(['category_id', 'bank_id', 'from_date', 'to_date']),
+            'categories' => ExpenseCategory::where('status', true)->where('name', '!=', 'Fixed Asset')->orderBy('name')->get(),
+            'bankAccounts' => BankAccount::where('status', true)->orderBy('bank_name')->get(),
+            'filters' => $request->only(['search', 'category_id', 'bank_id', 'from_date', 'to_date']),
             'summary' => [
-                'totalExpenses' => $totalExpenses,
+                'totalExpenses' => (float) $totalExpenses,
+                'todayExpenses' => (float) $todayExpenses,
+                'thisMonthExpenses' => (float) $thisMonthExpenses,
+                'totalCount' => (int) $totalCount,
+                'filteredExpensesTotal' => (float) $filteredExpensesTotal,
             ],
         ]);
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $isSuperAdmin = $request->user()?->isSuperAdmin() ?? false;
+
+        $rules = [
             'expense_category_id' => 'required|exists:expense_categories,id',
             'bank_account_id' => 'required|exists:bank_accounts,id',
-            'amount' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'reference_no' => 'nullable|string',
-            'date' => 'required|date',
+            'amount' => 'required|numeric|min:0.01',
+            'description' => 'nullable|string|max:1000',
+            'reference_no' => 'nullable|string|max:255',
             'attachment' => 'nullable|file|max:2048',
-        ]);
+        ];
+
+        if ($isSuperAdmin) {
+            $rules['date'] = 'required|date';
+        }
+
+        $validated = $request->validate($rules);
+
+        if (!$isSuperAdmin) {
+            $validated['date'] = now()->toDateString();
+        }
 
         if ($this->isFixedAssetCategory((int) $validated['expense_category_id'])) {
             return redirect()->back()->withErrors([
@@ -102,15 +134,26 @@ class ExpenseController extends Controller
 
     public function update(Request $request, Expense $expense)
     {
-        $validated = $request->validate([
+        $isSuperAdmin = $request->user()?->isSuperAdmin() ?? false;
+
+        $rules = [
             'expense_category_id' => 'required|exists:expense_categories,id',
             'bank_account_id' => 'required|exists:bank_accounts,id',
-            'amount' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'reference_no' => 'nullable|string',
-            'date' => 'required|date',
+            'amount' => 'required|numeric|min:0.01',
+            'description' => 'nullable|string|max:1000',
+            'reference_no' => 'nullable|string|max:255',
             'attachment' => 'nullable|file|max:2048',
-        ]);
+        ];
+
+        if ($isSuperAdmin) {
+            $rules['date'] = 'required|date';
+        }
+
+        $validated = $request->validate($rules);
+
+        if (!$isSuperAdmin) {
+            $validated['date'] = $expense->date?->toDateString() ?? now()->toDateString();
+        }
 
         DB::beginTransaction();
         try {

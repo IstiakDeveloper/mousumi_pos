@@ -9,12 +9,30 @@ use Inertia\Inertia;
 
 class ExpenseCategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $categories = ExpenseCategory::latest()->paginate(10);
+        $query = ExpenseCategory::query()
+            ->withCount('expenses')
+            ->when($request->search, function ($q, $search) {
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->has('status') && $request->status !== '' && $request->status !== null, function ($q) use ($request) {
+                $q->where('status', (bool) $request->status);
+            });
+
+        $categories = $query->latest()->paginate(15)->withQueryString();
 
         return Inertia::render('Admin/ExpenseCategories/Index', [
             'categories' => $categories,
+            'filters' => $request->only(['search', 'status']),
+            'summary' => [
+                'total' => ExpenseCategory::count(),
+                'active' => ExpenseCategory::where('status', true)->count(),
+                'inactive' => ExpenseCategory::where('status', false)->count(),
+            ],
         ]);
     }
 
@@ -37,8 +55,10 @@ class ExpenseCategoryController extends Controller
         return redirect()->back()->with('success', 'Category created successfully');
     }
 
-    public function update(Request $request, ExpenseCategory $category)
+    public function update(Request $request, ExpenseCategory $expense_category)
     {
+        $category = $expense_category;
+
         if ($this->isReservedAssetName($request->input('name'))) {
             return redirect()->back()->withErrors([
                 'name' => 'Fixed assets are recorded under Fixed Assets, not as an expense category.',
@@ -56,8 +76,10 @@ class ExpenseCategoryController extends Controller
         return redirect()->back()->with('success', 'Category updated successfully');
     }
 
-    public function destroy(ExpenseCategory $category)
+    public function destroy(ExpenseCategory $expense_category)
     {
+        $category = $expense_category;
+
         // Check if category is being used by any expenses
         if ($category->expenses()->exists()) {
             return redirect()->back()->with('error', 'Cannot delete category as it is being used by expenses');

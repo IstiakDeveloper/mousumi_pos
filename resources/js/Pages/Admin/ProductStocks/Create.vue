@@ -104,16 +104,26 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Stock Date <span class="text-red-500">*</span>
-                        </label>
-                        <DateInput v-model="form.date" :max="new Date().toISOString().split('T')[0]" required
-                            class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            <svg class="inline w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                            </svg>
-                            Can be backdated
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Stock Date <span class="text-red-500">*</span>
+                            </label>
+                            <span v-if="isSuperAdmin" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                                <i class="fas fa-shield-alt mr-1 text-[9px]"></i> Super Admin: Editable
+                            </span>
+                            <span v-else class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                                <i class="fas fa-lock mr-1 text-[9px]"></i> Fixed: Today
+                            </span>
+                        </div>
+                        <DateInput v-model="form.date" :max="new Date().toISOString().split('T')[0]" required :disabled="!isSuperAdmin"
+                            class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-800 dark:disabled:text-gray-400" />
+                        <p class="mt-1 text-xs">
+                            <span v-if="isSuperAdmin" class="text-purple-600 dark:text-purple-400">
+                                Super admin can set a custom or backdated stock date.
+                            </span>
+                            <span v-else class="text-amber-600 dark:text-amber-400">
+                                Only Super Admin can change date. Locked to current date.
+                            </span>
                         </p>
                     </div>
                 </div>
@@ -209,20 +219,35 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
+import DateInput from '@/Components/DateInput.vue';
+
+const page = usePage();
+const isSuperAdmin = computed(() => {
+    return Boolean(
+        page.props.auth?.is_super_admin ||
+        page.props.auth?.user?.is_super_admin ||
+        (page.props.auth?.user?.role?.slug === 'super-admin') ||
+        (page.props.auth?.user?.role?.name || '').toLowerCase().includes('super') ||
+        (page.props.auth?.user?.name || '').toLowerCase().includes('super admin') ||
+        page.props.auth?.user?.id === 1
+    );
+});
 
 const props = defineProps({
     products: Array,
     bankAccounts: Array
 });
 
+const todayDate = new Date().toISOString().split('T')[0];
+
 const form = useForm({
     product_id: '',
     quantity: '',
     total_cost: '',
-    date: new Date().toISOString().split('T')[0], // Today's date
+    date: todayDate, // Default to Today
     note: '',
     bank_account_id: ''
 });

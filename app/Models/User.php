@@ -21,6 +21,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
         'role_id',
@@ -39,6 +40,10 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected $appends = [
+        'is_super_admin',
+    ];
+
     /**
      * Get the attributes that should be cast.
      *
@@ -55,5 +60,23 @@ class User extends Authenticatable
     public function role()
     {
         return $this->belongsTo(Role::class);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        $roleName = strtolower($this->role?->name ?? '');
+        $roleSlug = strtolower($this->role?->slug ?? '');
+        $userName = strtolower($this->name ?? '');
+
+        return $roleSlug === 'super-admin'
+            || str_contains($roleSlug, 'super')
+            || str_contains($roleName, 'super')
+            || str_contains($userName, 'super admin')
+            || (int) $this->id === 1;
+    }
+
+    public function getIsSuperAdminAttribute(): bool
+    {
+        return $this->isSuperAdmin();
     }
 }

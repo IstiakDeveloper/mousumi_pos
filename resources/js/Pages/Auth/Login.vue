@@ -12,12 +12,14 @@ defineProps({
 });
 
 const form = useForm({
+    login: '',
     email: '',
     password: '',
     remember: false,
 });
 
 const submit = () => {
+    form.email = form.login;
     form.post(route('login'), {
         onFinish: () => form.reset('password'),
     });
@@ -45,30 +47,29 @@ const submit = () => {
                     <h2 class="text-2xl font-semibold text-gray-800 mb-6">Welcome Back</h2>
 
                     <form @submit.prevent="submit" class="space-y-6">
-                        <!-- Email Field -->
+                        <!-- Username / Email Field -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1" for="email">
-                                Email Address
+                            <label class="block text-sm font-medium text-gray-700 mb-1" for="login">
+                                Username or Email
                             </label>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
                                     </svg>
                                 </div>
                                 <input
-                                    id="email"
-                                    type="email"
-                                    v-model="form.email"
+                                    id="login"
+                                    type="text"
+                                    v-model="form.login"
                                     class="pl-10 w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                     required
                                     autofocus
                                     autocomplete="username"
-                                    placeholder="your@email.com"
+                                    placeholder="Enter username or email"
                                 />
                             </div>
-                            <InputError class="mt-1" :message="form.errors.email" />
+                            <InputError class="mt-1" :message="form.errors.login || form.errors.email" />
                         </div>
 
                         <!-- Password Field -->

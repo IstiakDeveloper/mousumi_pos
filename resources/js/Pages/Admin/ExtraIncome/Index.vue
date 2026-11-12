@@ -248,7 +248,7 @@
                                 </td>
 
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <div class="flex items-center justify-end space-x-3" v-if="user.role.name.toLowerCase() === 'admin'">
+                                    <div class="flex items-center justify-end space-x-3" v-if="canManage">
                                         <Link :href="route('admin.extra-incomes.edit', income.id)"
                                             class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">
                                         Edit
@@ -324,6 +324,21 @@ import { formatDate } from '@/utils'
 
 const page = usePage();
 const user = page.props.auth.user;
+const isSuperAdmin = computed(() => {
+    return Boolean(
+        page.props.auth?.is_super_admin ||
+        user?.is_super_admin ||
+        (user?.role?.slug === 'super-admin') ||
+        (user?.role?.name || '').toLowerCase().includes('super') ||
+        (user?.name || '').toLowerCase().includes('super admin') ||
+        user?.id === 1
+    );
+});
+const canManage = computed(() => {
+    if (isSuperAdmin.value) return true;
+    const role = (user?.role?.name || '').toLowerCase();
+    return role === 'admin' || role === 'manager';
+});
 const props = defineProps({
     extraIncomes: {
         type: Object,

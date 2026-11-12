@@ -97,6 +97,11 @@ class ExtraIncomeController extends Controller
             'date' => 'required|date',
         ]);
 
+        // Security check: Only Super Admin can specify a custom date
+        if (!auth()->user()?->isSuperAdmin()) {
+            $validated['date'] = now()->toDateString();
+        }
+
         DB::transaction(function () use ($validated) {
             // Create extra income record
             $extraIncome = ExtraIncome::create([
@@ -146,6 +151,11 @@ class ExtraIncomeController extends Controller
             'description' => 'nullable|string',
             'date' => 'required|date',
         ]);
+
+        // Security check: Only Super Admin can change date
+        if (!auth()->user()?->isSuperAdmin()) {
+            $validated['date'] = now()->toDateString();
+        }
 
         DB::transaction(function () use ($validated, $extraIncome) {
             // Update bank account balance (reverse previous transaction)

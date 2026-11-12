@@ -18,26 +18,37 @@ class FixedAssetController extends Controller
         $assets = FixedAsset::query()
             ->with(['items' => function ($query) use ($request) {
                 $query->with('bankAccount')
+                    ->when($request->bank_id, fn ($q, $bankId) => $q->where('bank_account_id', $bankId))
                     ->when($request->from_date, fn ($q, $from) => $q->whereDate('purchase_date', '>=', $from))
                     ->when($request->to_date, fn ($q, $to) => $q->whereDate('purchase_date', '<=', $to))
-                    ->orderBy('purchase_date')
-                    ->orderBy('id');
+                    ->orderByDesc('purchase_date')
+                    ->orderByDesc('id');
             }])
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('name', 'like', "%{$search}%")
                         ->orWhere('asset_code', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
                         ->orWhereHas('items', fn ($items) => $items->where('item_name', 'like', "%{$search}%"));
                 });
             })
-            ->orderBy('asset_code')
+            ->when($request->bank_id, function ($query, $bankId) {
+                $query->whereHas('items', fn ($q) => $q->where('bank_account_id', $bankId));
+            })
+            ->when($request->from_date, function ($query, $from) {
+                $query->whereHas('items', fn ($q) => $q->whereDate('purchase_date', '>=', $from));
+            })
+            ->when($request->to_date, function ($query, $to) {
+                $query->whereHas('items', fn ($q) => $q->whereDate('purchase_date', '<=', $to));
+            })
+            ->orderByDesc('id')
             ->get();
 
         return Inertia::render('Admin/FixedAssets/Index', [
             'assets' => $assets,
-            'bankAccounts' => BankAccount::where('status', true)->orderBy('account_name')->get(),
+            'bankAccounts' => BankAccount::where('status', true)->orderBy('bank_name')->get(),
             'nextCode' => $this->nextAssetCode(),
-            'filters' => $request->only(['search', 'from_date', 'to_date']),
+            'filters' => $request->only(['search', 'bank_id', 'from_date', 'to_date']),
             'summary' => [
                 'count' => FixedAssetItem::count(),
                 'purchase_value' => (float) FixedAssetItem::sum('purchase_price'),
@@ -48,21 +59,40 @@ class FixedAssetController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $isSuperAdmin = $request->user()?->isSuperAdmin() ?? false;
+
+        $rules = [
             'name' => 'required|string|max:255',
             'asset_code' => 'nullable|string|max:50|unique:fixed_assets,asset_code',
             'description' => 'nullable|string',
-            'item_name' => 'required|string|max:255',
-            'purchase_date' => 'required|date',
+            'item_name' => 'nullable|string|max:255',
             'purchase_price' => 'required|numeric|min:0.01',
             'bank_account_id' => 'required|exists:bank_accounts,id',
             'item_description' => 'nullable|string',
-        ]);
+        ];
+
+        if ($isSuperAdmin) {
+            $rules['purchase_date'] = 'required|date';
+        }
+
+        $validated = $request->validate($rules);
+
+        if (!$isSuperAdmin) {
+            $validated['purchase_date'] = now()->toDateString();
+        }
+
+        if (empty($validated['item_name'])) {
+            $validated['item_name'] = $validated['name'];
+        }
+
+        if (empty($validated['item_description']) && !empty($validated['description'])) {
+            $validated['item_description'] = $validated['description'];
+        }
 
         DB::transaction(function () use ($validated) {
             $asset = FixedAsset::create([
                 'name' => $validated['name'],
-                'asset_code' => $validated['asset_code'] ?: $this->nextAssetCode(),
+                'asset_code' => !empty($validated['asset_code']) ? $validated['asset_code'] : $this->nextAssetCode(),
                 'status' => 'active',
                 'description' => $validated['description'] ?? null,
                 'created_by' => auth()->id(),
@@ -72,7 +102,7 @@ class FixedAssetController extends Controller
         });
 
         return redirect()->route('admin.fixed-assets.index')
-            ->with('success', 'Fixed asset recorded.');
+            ->with('success', 'Fixed asset recorded successfully.');
     }
 
     public function update(Request $request, FixedAsset $fixedAsset)
@@ -123,17 +153,27 @@ class FixedAssetController extends Controller
 
     public function updateItem(Request $request, FixedAssetItem $item)
     {
-        $validated = $request->validate([
+        $isSuperAdmin = $request->user()?->isSuperAdmin() ?? false;
+
+        $rules = [
             'item_name' => 'required|string|max:255',
-            'purchase_date' => 'required|date',
             'purchase_price' => 'required|numeric|min:0.01',
             'status' => 'required|in:active,disposed,damaged',
-            'description' => 'nullable|string',
-        ]);
+            'description' => 'nullable|string|max:1000',
+        ];
 
-        DB::transaction(function () use ($item, $validated) {
+        if ($isSuperAdmin) {
+            $rules['purchase_date'] = 'required|date';
+        }
+
+        $validated = $request->validate($rules);
+
+        if (!$isSuperAdmin) {
+            $validated['purchase_date'] = $item->purchase_date?->toDateString() ?? now()->toDateString();
+        }
+
+        DB::transaction(function () use ($item, $validated, $isSuperAdmin) {
             $item->load('asset');
-            $previousDate = $item->purchase_date?->toDateString();
             $price = round((float) $validated['purchase_price'], 2);
 
             $item->update([
@@ -145,25 +185,32 @@ class FixedAssetController extends Controller
                 'description' => $validated['description'] ?? null,
             ]);
 
+            // Also keep parent asset name in sync if single item
+            if ($item->asset && $item->asset->items()->count() <= 1) {
+                $item->asset->update([
+                    'name' => $validated['item_name'],
+                    'status' => $validated['status'] === 'active' ? 'active' : 'disposed',
+                    'description' => $validated['description'] ?? $item->asset->description,
+                ]);
+            }
+
             $transaction = $item->bankTransaction;
-            if (! $transaction) {
-                return;
+            if ($transaction) {
+                $changes = [
+                    'amount' => $price,
+                    'description' => "Fixed Asset: {$item->item_name} ({$item->asset->name})",
+                ];
+
+                if ($isSuperAdmin && !empty($validated['purchase_date'])) {
+                    $changes['date'] = $validated['purchase_date'];
+                }
+
+                $transaction->update($changes);
             }
-
-            $changes = [
-                'amount' => $price,
-                'description' => "Fixed Asset: {$item->item_name} ({$item->asset->name})",
-            ];
-
-            if ($previousDate && $transaction->date?->toDateString() === $previousDate) {
-                $changes['date'] = $item->purchase_date->toDateString();
-            }
-
-            $transaction->update($changes);
         });
 
         return redirect()->route('admin.fixed-assets.index')
-            ->with('success', 'Asset item updated.');
+            ->with('success', 'Asset item updated successfully.');
     }
 
     public function destroyItem(FixedAssetItem $item)
