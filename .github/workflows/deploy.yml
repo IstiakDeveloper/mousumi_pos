@@ -76,7 +76,8 @@ jobs:
         run: |
           mkdir -p deployment-package
 
-          # Document root on the server is public/. Vite output stays in public/build.
+          # public_html is the Laravel root and the site document root.
+          # @vite URLs are /build/assets/..., so the build must also sit at that root.
           rsync -a ./ deployment-package/ \
             --exclude='.git/' \
             --exclude='.github/' \
@@ -92,6 +93,10 @@ jobs:
             --exclude='public/storage/' \
             --exclude='public/hot' \
             --exclude='bootstrap/cache/*.php'
+
+          rm -rf deployment-package/build
+          mkdir -p deployment-package/build
+          cp -a public/build/. deployment-package/build/
 
           tar -czf deployment.tar.gz \
             -C deployment-package .
@@ -181,6 +186,9 @@ jobs:
             --exclude='bootstrap/cache/'
 
           cd "$DEPLOY_PATH"
+
+          # A leftover Vite hot file makes production load the dev server.
+          rm -f hot public/hot
 
           mkdir -p \
             storage/app/public \
